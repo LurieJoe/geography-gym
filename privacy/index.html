@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <script>
+    (() => {
+      const param = new URLSearchParams(window.location.search).get("clawpilotTheme");
+      const theme =
+        param || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+      document.documentElement.setAttribute("data-theme", theme);
+    })();
+  </script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Privacy information for Geography Gym." />
+  <link rel="icon" href="../icons/icon-192.png" />
+  <link rel="stylesheet" href="../site.css" />
+  <title>Privacy Policy — Geography Gym</title>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header"><div class="nav-shell"><a class="brand" href="../"><img src="../icons/icon-192.png" alt="" /><span>Geography Gym</span></a><nav class="site-nav" aria-label="Main navigation"><a class="nav-app" href="../">App</a><a href="../faq/">FAQ</a><a href="../help/">Help Center</a><a href="./" aria-current="page">Privacy</a><a href="https://github.com/LurieJoe/geography-gym/issues/new">Send Feedback</a></nav></div></header>
+  <main id="main" class="page-shell">
+    <p class="eyebrow">Privacy</p>
+    <h1>Privacy Policy</h1>
+    <p class="lead">Geography Gym is designed to work without accounts, advertising, or an application database.</p>
+    <section class="section content-card">
+      <h2>Information stored on your device</h2>
+      <p>Geography Gym stores workout totals, answer statistics, streaks, theme choices, sound and timer preferences, workout length, and tip preferences in your browser’s local storage. This information remains associated with that browser and device.</p>
+      <h2>No Geography Gym account</h2>
+      <p>The app does not require an account and does not ask for your name, email address, location, contacts, photos, microphone, or camera.</p>
+      <h2>Answer sounds</h2>
+      <p>Correct and incorrect sounds are generated locally by the browser. The app does not record or transmit audio.</p>
+      <h2>Offline storage</h2>
+      <p>A service worker may cache app files on your device so Geography Gym can load faster and continue working offline. You can remove cached files and local progress by clearing site data in your browser.</p>
+      <h2>Analytics and advertising</h2>
+      <p>Geography Gym does not include advertising trackers or an application analytics service.</p>
+      <h2>Hosting</h2>
+      <p>The public app is hosted using GitHub Pages. GitHub may process standard technical information needed to deliver the website according to GitHub’s own policies.</p>
+      <h2>Feedback</h2>
+      <p>Send Feedback opens GitHub. Information you choose to submit there is shared with GitHub and may be public. Do not include personal or sensitive information in a public issue.</p>
+      <h2>Changes to this policy</h2>
+      <p>This policy may be updated when the app adds features or changes how data is handled. The current version is dated September 14, 2026.</p>
+    </section>
+  </main>
+  <footer class="site-footer"><div class="footer-shell"><span>© 2026 Geography Gym</span><nav class="footer-links"><a href="../">App</a><a href="../faq/">FAQ</a><a href="../help/">Help Center</a></nav></div></footer>
+</body>
+</html>

@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <script>
+    (() => {
+      const param = new URLSearchParams(window.location.search).get("clawpilotTheme");
+      const theme =
+        param || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+      document.documentElement.setAttribute("data-theme", theme);
+    })();
+  </script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Help, troubleshooting, and feedback options for Geography Gym." />
+  <link rel="icon" href="../icons/icon-192.png" />
+  <link rel="stylesheet" href="../site.css" />
+  <title>Help Center — Geography Gym</title>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header"><div class="nav-shell"><a class="brand" href="../"><img src="../icons/icon-192.png" alt="" /><span>Geography Gym</span></a><nav class="site-nav" aria-label="Main navigation"><a class="nav-app" href="../">App</a><a href="../faq/">FAQ</a><a href="./" aria-current="page">Help Center</a><a href="../privacy/">Privacy</a><a href="https://github.com/LurieJoe/geography-gym/issues/new">Send Feedback</a></nav></div></header>
+  <main id="main" class="page-shell">
+    <p class="eyebrow">Support</p>
+    <h1>Geography Gym Help Center</h1>
+    <p class="lead">Find an answer, troubleshoot installation or updates, and help improve the app.</p>
+    <section class="section card-grid">
+      <article class="card"><div class="card-icon">?</div><h2>Find an answer</h2><p>Review common questions about workouts, retries, matching, settings, progress, installation, and offline use.</p><a class="button" href="../faq/">Open the FAQ</a></article>
+      <article class="card"><div class="card-icon">!</div><h2>Share feedback</h2><p>Report a problem, suggest a feature, correct a geography fact, or recommend a new question type.</p><a class="button primary" href="https://github.com/LurieJoe/geography-gym/issues/new">Send feedback</a></article>
+    </section>
+    <section class="section content-card">
+      <h2>The app shows an older version</h2>
+      <ol>
+        <li>Connect to the internet and reopen Geography Gym.</li>
+        <li>Refresh the browser page once to allow the new service worker to take control.</li>
+        <li>If installed, close and reopen the installed app after refreshing in the browser.</li>
+      </ol>
+      <h2>Sound does not play</h2>
+      <p>Confirm that Answer sounds is enabled in Settings and that the browser or device is not muted. Browsers permit audio after you interact with the page, so answer one question before testing again.</p>
+      <h2>Progress appears to be missing</h2>
+      <p>Progress is stored separately for each browser, browser profile, device, and website address. Open the same browser and app URL used previously.</p>
+      <h2>The install button is missing</h2>
+      <p>Some browsers place installation in their own menu instead of showing an in-app prompt. On iPhone and iPad, use Safari’s Share menu and choose Add to Home Screen.</p>
+      <h2>What to include in feedback</h2>
+      <ul>
+        <li>Your device, operating system, and browser.</li>
+        <li>The route and question that caused the issue.</li>
+        <li>What happened and what you expected.</li>
+        <li>A screenshot when it helps explain the problem.</li>
+      </ul>
+      <div class="callout"><p>Please report incorrect facts or ambiguous answers. Geography Gym should explain the world accurately and clearly.</p></div>
+    </section>
+  </main>
+  <footer class="site-footer"><div class="footer-shell"><span>© 2026 Geography Gym</span><nav class="footer-links"><a href="../">App</a><a href="../faq/">FAQ</a><a href="../privacy/">Privacy</a></nav></div></footer>
+</body>
+</html>
