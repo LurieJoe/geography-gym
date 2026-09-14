@@ -1,4 +1,4 @@
-const CACHE_NAME = 'geography-gym-v3'
+const CACHE_NAME = 'geography-gym-v4'
 const APP_SHELL = [
   './',
   './manifest.webmanifest',
@@ -26,6 +26,10 @@ self.addEventListener('activate', (event) => {
   self.clients.claim()
 })
 
+self.addEventListener('message', (event) => {
+  if (event.data?.type === 'SKIP_WAITING') self.skipWaiting()
+})
+
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return
   event.respondWith(
@@ -37,10 +41,6 @@ self.addEventListener('fetch', (event) => {
             caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy))
           }
           return response
-        })
-
-        self.addEventListener('message', (event) => {
-          if (event.data?.type === 'SKIP_WAITING') self.skipWaiting()
         })
         .catch(() => cached)
       return cached || network
