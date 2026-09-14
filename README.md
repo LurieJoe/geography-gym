@@ -24,7 +24,8 @@ The current question banks include:
 Players can choose 10-, 25-, or 50-question workouts. Multiple-choice, location, and
 ordering questions allow two attempts. Matching Pairs provides immediate animated
 feedback. Optional answer sounds, an elapsed timer, rotating startup tips, and local
-progress are available from Settings.
+progress are available from Settings. The home-page progress counters can be reset
+without changing workout preferences.
 
 No account or analytics service is used. Progress and preferences are stored locally,
 and no network connection is required after the app has been cached.

@@ -42,7 +42,7 @@ import './App.css'
 type Screen = 'home' | 'quiz' | 'results'
 type ThemeMode = 'system' | 'light' | 'dark'
 type RoundSize = 10 | 25 | 50
-type Modal = 'settings' | 'tips' | 'setup' | 'startup-tip' | null
+type Modal = 'settings' | 'tips' | 'setup' | 'startup-tip' | 'reset-stats' | null
 type FeedbackKind = 'correct' | 'incorrect'
 
 type Stats = {
@@ -61,7 +61,7 @@ type Preferences = {
 }
 
 const defaultStats: Stats = { games: 0, correct: 0, answered: 0, bestStreak: 0 }
-const APP_VERSION = 'v5'
+const APP_VERSION = 'v6'
 const defaultPreferences: Preferences = {
   theme: 'system',
   sound: true,
@@ -363,6 +363,19 @@ function App() {
     updatePreference('theme', next)
   }
 
+  function resetStats() {
+    setStats(defaultStats)
+    localStorage.setItem('geography-gym-stats', JSON.stringify(defaultStats))
+    setModal(null)
+  }
+
+  const themeLabel =
+    preferences.theme === 'system'
+      ? 'System'
+      : preferences.theme === 'light'
+        ? 'Light'
+        : 'Dark'
+
   return (
     <div className="app-shell">
       <header className="app-header">
@@ -378,13 +391,33 @@ function App() {
           </button>
           <button className="brand" type="button" onClick={() => setScreen('home')}>
             <span className="brand-mark" aria-hidden="true"><Compass size={25} /></span>
-            <span>
-              <strong>Geography Gym</strong>
-              <small>Give your world knowledge a workout</small>
-            </span>
+            <strong>Geography Gym</strong>
           </button>
         </div>
         <div className="header-actions">
+          <nav className="header-nav" aria-label="Primary navigation">
+            <button
+              className={`header-link ${screen === 'home' ? 'active' : ''}`}
+              type="button"
+              onClick={() => setScreen('home')}
+            >
+              Home
+            </button>
+            <button className="header-link open-app-link" type="button" onClick={() => openWorkoutSetup('mixed')}>
+              Open app
+            </button>
+            <a className="header-support-link" href="./faq/">FAQ</a>
+            <a className="header-support-link" href="./help/">Help Center</a>
+            <a className="header-support-link" href="./privacy/">Privacy</a>
+            <a
+              className="header-support-link"
+              href="https://github.com/LurieJoe/geography-gym/issues/new/choose"
+              target="_blank"
+              rel="noreferrer"
+            >
+              Feedback
+            </a>
+          </nav>
           <button
             className="icon-button"
             type="button"
@@ -400,7 +433,7 @@ function App() {
             </button>
           )}
           <button
-            className="icon-button"
+            className="quiet-button theme-button"
             type="button"
             onClick={cycleTheme}
             aria-label={`Theme: ${preferences.theme}. Change theme`}
@@ -411,12 +444,18 @@ function App() {
               : preferences.theme === 'dark'
                 ? <Moon size={19} />
                 : <Sparkles size={19} />}
+            <span>{themeLabel}</span>
           </button>
         </div>
       </header>
 
       {screen === 'home' && (
-        <Home stats={stats} accuracy={accuracy} openWorkoutSetup={openWorkoutSetup} />
+        <Home
+          stats={stats}
+          accuracy={accuracy}
+          openWorkoutSetup={openWorkoutSetup}
+          onResetStats={() => setModal('reset-stats')}
+        />
       )}
 
       {screen === 'quiz' && currentQuestion && (
@@ -602,6 +641,21 @@ function App() {
         </ModalShell>
       )}
 
+      {modal === 'reset-stats' && (
+        <ModalShell title="Reset learning progress?" eyebrow="Lifetime counters" onClose={() => setModal(null)}>
+          <p className="modal-lead">
+            This resets Workouts completed, Lifetime accuracy, and Best streak to zero on this
+            device. Your settings and preferences will not change.
+          </p>
+          <div className="confirmation-actions">
+            <button className="danger-button" type="button" onClick={resetStats}>
+              <RotateCcw size={17} /> Reset progress
+            </button>
+            <button className="quiet-button" type="button" onClick={() => setModal(null)}>Cancel</button>
+          </div>
+        </ModalShell>
+      )}
+
       {waitingWorker && (
         <section className="update-notification" role="status" aria-live="polite">
           <div>
@@ -622,10 +676,12 @@ function Home({
   stats,
   accuracy,
   openWorkoutSetup,
+  onResetStats,
 }: {
   stats: Stats
   accuracy: number
   openWorkoutSetup: (category: Category) => void
+  onResetStats: () => void
 }) {
   return (
     <main>
@@ -658,6 +714,9 @@ function Home({
         <div><strong>{stats.games}</strong><span>Workouts completed</span></div>
         <div><strong>{accuracy}%</strong><span>Lifetime accuracy</span></div>
         <div><strong>{stats.bestStreak}</strong><span>Best streak</span></div>
+        <button className="reset-stats-button" type="button" onClick={onResetStats} title="Reset lifetime counters">
+          <RotateCcw size={17} /> Reset
+        </button>
       </section>
 
       <section className="tracks-section">
