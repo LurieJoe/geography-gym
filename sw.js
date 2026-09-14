@@ -1,4 +1,4 @@
-const CACHE_NAME = 'geography-gym-v9'
+const CACHE_NAME = 'geography-gym-v10'
 const APP_SHELL = [
   './',
   './manifest.webmanifest',
