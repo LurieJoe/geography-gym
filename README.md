@@ -6,8 +6,9 @@ on memorization.
 
 ## MVP learning tracks
 
-- **U.S. Geography:** state abbreviations, locations, neighboring states, landmarks,
-  directions, and distance estimates.
+- **U.S. Geography:** state abbreviations, capitals, and location practice on
+  clickable U.S. Census Bureau state boundaries. Alaska and Hawaii remain in
+  their actual geographic positions.
 - **World Geography:** countries, capitals, map locations, directions, continents,
   latitude, and distance comparisons.
 - **Landmarks:** multiple choice, matching pairs, and geographic ordering from north

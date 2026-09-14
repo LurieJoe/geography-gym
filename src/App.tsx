@@ -36,6 +36,7 @@ import {
   type OrderQuestion,
   type Question,
 } from './data'
+import { US_MAP_VIEWBOX, usStateShapes } from './usStateShapes'
 import './App.css'
 
 type Screen = 'home' | 'quiz' | 'results'
@@ -60,7 +61,7 @@ type Preferences = {
 }
 
 const defaultStats: Stats = { games: 0, correct: 0, answered: 0, bestStreak: 0 }
-const APP_VERSION = 'v3'
+const APP_VERSION = 'v4'
 const defaultPreferences: Preferences = {
   theme: 'system',
   sound: true,
@@ -869,14 +870,16 @@ function QuestionCard({
   )
 }
 
-const stateMap = [
-  ['WA', 1, 1], ['MT', 3, 1], ['ND', 5, 1], ['MN', 6, 1], ['WI', 7, 2], ['MI', 8, 2], ['ME', 12, 1],
-  ['OR', 1, 2], ['ID', 2, 2], ['WY', 3, 2], ['SD', 5, 2], ['IA', 6, 3], ['IL', 7, 3], ['IN', 8, 3], ['OH', 9, 3], ['PA', 10, 2], ['NY', 11, 2], ['VT', 12, 2], ['NH', 13, 2],
-  ['CA', 1, 4], ['NV', 2, 3], ['UT', 3, 3], ['CO', 4, 3], ['NE', 5, 3], ['MO', 6, 4], ['KY', 8, 4], ['WV', 9, 4], ['VA', 10, 4], ['MD', 11, 3], ['NJ', 12, 3], ['MA', 13, 3],
-  ['AZ', 2, 5], ['NM', 3, 5], ['KS', 5, 4], ['AR', 6, 5], ['TN', 8, 5], ['NC', 10, 5], ['DE', 12, 4], ['CT', 13, 4], ['RI', 14, 4],
-  ['OK', 5, 5], ['LA', 6, 6], ['MS', 7, 6], ['AL', 8, 6], ['GA', 9, 6], ['SC', 10, 6],
-  ['TX', 4, 7], ['FL', 10, 7], ['AK', 1, 8], ['HI', 2, 8],
-] as const
+const stateLabelOverrides: Record<string, { x: number; y: number }> = {
+  CT: { x: 972, y: 324 },
+  DE: { x: 982, y: 378 },
+  MA: { x: 987, y: 285 },
+  MD: { x: 946, y: 382 },
+  NH: { x: 958, y: 246 },
+  NJ: { x: 970, y: 350 },
+  RI: { x: 1008, y: 310 },
+  VT: { x: 925, y: 246 },
+}
 
 function UsMap({
   answer,
@@ -893,27 +896,63 @@ function UsMap({
   answered: boolean
   onSelect: (value: string) => void
 }) {
+  const unavailable = (state: string) => answered || wrongAnswers.includes(state)
+
   return (
-    <div className="us-map" aria-label="Simplified map of the United States">
-      {stateMap.map(([state, column, row]) => (
-        <button
-          type="button"
-          key={state}
-          className={[
-            'state-cell',
-            (answered || correctAnswer) && state === answer ? 'map-correct' : '',
-            wrongAnswers.includes(state) ? 'map-wrong' : '',
-            shakingAnswer === state ? 'shake' : '',
-          ].join(' ')}
-          style={{ gridColumn: column, gridRow: row }}
-          onClick={() => onSelect(state)}
-          disabled={answered || wrongAnswers.includes(state)}
-          aria-label={state}
-        >
-          {state}
-        </button>
-      ))}
-    </div>
+    <figure className="us-map">
+      <svg viewBox={US_MAP_VIEWBOX} role="img" aria-label="Map of the United States with selectable state borders">
+        {usStateShapes.map((state) => {
+          const label = stateLabelOverrides[state.abbreviation] ?? {
+            x: state.labelX,
+            y: state.labelY,
+          }
+          const hasCallout = label.x !== state.labelX || label.y !== state.labelY
+          const isUnavailable = unavailable(state.abbreviation)
+
+          return (
+            <g
+              key={state.abbreviation}
+              role="button"
+              tabIndex={isUnavailable ? -1 : 0}
+              aria-label={state.name}
+              aria-disabled={isUnavailable}
+              className={[
+                'state-shape',
+                (answered || correctAnswer) && state.abbreviation === answer ? 'map-correct' : '',
+                wrongAnswers.includes(state.abbreviation) ? 'map-wrong' : '',
+                shakingAnswer === state.abbreviation ? 'shake' : '',
+                hasCallout ? 'state-has-callout' : '',
+                isUnavailable ? 'state-unavailable' : '',
+              ].join(' ')}
+              onClick={() => {
+                if (!isUnavailable) onSelect(state.abbreviation)
+              }}
+              onKeyDown={(event) => {
+                if (!isUnavailable && (event.key === 'Enter' || event.key === ' ')) {
+                  event.preventDefault()
+                  onSelect(state.abbreviation)
+                }
+              }}
+            >
+              <title>{state.name}</title>
+              <path d={state.path} fillRule="evenodd" />
+              {hasCallout && (
+                <line
+                  className="state-callout"
+                  x1={state.labelX}
+                  y1={state.labelY}
+                  x2={label.x}
+                  y2={label.y}
+                />
+              )}
+              <circle className="state-label-target" cx={label.x} cy={label.y} r="14" />
+              <text className="state-label" x={label.x} y={label.y}>{state.abbreviation}</text>
+            </g>
+          )
+        })}
+      </svg>
+      <figcaption>State boundaries: U.S. Census Bureau, January 1, 2026 vintage.</figcaption>
+    </figure>
   )
 }
 

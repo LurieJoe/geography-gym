@@ -237,7 +237,7 @@ const usQuestions: Question[] = states.flatMap(([name, abbreviation, capital], i
     label: 'Locate it',
     prompt: `Tap ${name} on the map.`,
     answer: abbreviation,
-    explanation: `${name} is shown by the ${abbreviation} tile on this simplified map.`,
+    explanation: `${name} is outlined on the map and labeled ${abbreviation}.`,
   },
 ])
 
