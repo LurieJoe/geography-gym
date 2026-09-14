@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mapwise-v1'
+const CACHE_NAME = 'geography-gym-v1'
 const APP_SHELL = ['./', './manifest.webmanifest', './icons/icon.svg']
 
 self.addEventListener('install', (event) => {

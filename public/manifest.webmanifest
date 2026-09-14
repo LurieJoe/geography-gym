@@ -1,8 +1,8 @@
 {
   "id": "./",
-  "name": "Mapwise",
-  "short_name": "Mapwise",
-  "description": "Geography games for building real spatial intuition.",
+  "name": "Geography Gym",
+  "short_name": "Geo Gym",
+  "description": "Give your world knowledge a workout with geography games that build real spatial intuition.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

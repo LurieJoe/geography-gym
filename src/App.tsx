@@ -58,11 +58,11 @@ function App() {
   const [wasCorrect, setWasCorrect] = useState(false)
   const [selected, setSelected] = useState<string | null>(null)
   const [stats, setStats] = useState<Stats>(() => {
-    const saved = localStorage.getItem('mapwise-stats')
+    const saved = localStorage.getItem('geography-gym-stats')
     return saved ? JSON.parse(saved) : defaultStats
   })
   const [themeMode, setThemeMode] = useState<ThemeMode>(() => {
-    return (localStorage.getItem('mapwise-theme') as ThemeMode | null) ?? 'system'
+    return (localStorage.getItem('geography-gym-theme') as ThemeMode | null) ?? 'system'
   })
   const [deferredPrompt, setDeferredPrompt] = useState<Event | null>(null)
 
@@ -78,7 +78,7 @@ function App() {
       document.documentElement.setAttribute('data-theme-mode', themeMode)
     }
     applyTheme()
-    localStorage.setItem('mapwise-theme', themeMode)
+    localStorage.setItem('geography-gym-theme', themeMode)
     const media = window.matchMedia('(prefers-color-scheme: dark)')
     media.addEventListener('change', applyTheme)
     return () => media.removeEventListener('change', applyTheme)
@@ -142,7 +142,7 @@ function App() {
         bestStreak: Math.max(stats.bestStreak, bestRunStreak),
       }
       setStats(nextStats)
-      localStorage.setItem('mapwise-stats', JSON.stringify(nextStats))
+      localStorage.setItem('geography-gym-stats', JSON.stringify(nextStats))
       setScreen('results')
       return
     }
@@ -167,8 +167,8 @@ function App() {
         <button className="brand" type="button" onClick={() => setScreen('home')}>
           <span className="brand-mark" aria-hidden="true"><Compass size={25} /></span>
           <span>
-            <strong>Mapwise</strong>
-            <small>Geography that sticks</small>
+            <strong>Geography Gym</strong>
+            <small>Give your world knowledge a workout</small>
           </span>
         </button>
         <div className="header-actions">
@@ -334,7 +334,7 @@ function Home({
         <div>
           <p className="eyebrow">More than memorization</p>
           <h2>Build a mental map, one connection at a time.</h2>
-          <p>Mapwise connects names to places, places to neighbors, and landmarks to the wider world.</p>
+          <p>Geography Gym connects names to places, places to neighbors, and landmarks to the wider world.</p>
         </div>
       </section>
     </main>

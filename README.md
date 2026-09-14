@@ -1,6 +1,6 @@
-# Mapwise
+# Geography Gym
 
-Mapwise is an installable geography learning PWA for teens and adults. It uses short,
+Geography Gym is an installable geography learning PWA for teens and adults. It uses short,
 varied games to build spatial intuition rather than relying only on memorization.
 
 ## MVP learning tracks
