@@ -1,8 +1,8 @@
 # Geography Gym
 
 Geography Gym is an installable geography learning PWA for teens and adults. Its
-workout programs use varied exercises to build spatial intuition and geographic
-strength rather than relying only on memorization.
+learning paths use varied games to build spatial intuition rather than relying only
+on memorization.
 
 ## MVP learning tracks
 

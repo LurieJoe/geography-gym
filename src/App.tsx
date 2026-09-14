@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   ArrowLeft,
   Award,
@@ -60,6 +60,7 @@ type Preferences = {
 }
 
 const defaultStats: Stats = { games: 0, correct: 0, answered: 0, bestStreak: 0 }
+const APP_VERSION = 'v3'
 const defaultPreferences: Preferences = {
   theme: 'system',
   sound: true,
@@ -83,7 +84,7 @@ const tips = [
   },
   {
     title: 'Choose your workout length',
-    text: 'Every workout program offers 10, 25, or 50 questions. Short sets are great for daily practice; longer sets build endurance.',
+    text: 'Every workout offers 10, 25, or 50 questions. Short rounds are great for daily practice; longer rounds provide more variety.',
   },
   {
     title: 'Use the timer only when it helps',
@@ -166,6 +167,9 @@ function App() {
   )
   const [startupTip, setStartupTip] = useState(tips[0])
   const [deferredPrompt, setDeferredPrompt] = useState<Event | null>(null)
+  const [waitingWorker, setWaitingWorker] = useState<ServiceWorker | null>(null)
+  const updateRequested = useRef(false)
+  const reloadingForUpdate = useRef(false)
 
   useEffect(() => {
     const resolveTheme = () => {
@@ -202,12 +206,67 @@ function App() {
       setDeferredPrompt(event)
     }
     window.addEventListener('beforeinstallprompt', handleInstall)
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js').catch(() => undefined)
+    if (!('serviceWorker' in navigator)) {
+      return () => window.removeEventListener('beforeinstallprompt', handleInstall)
+    }
+
+    let registration: ServiceWorkerRegistration | null = null
+    let updateInterval: number | null = null
+
+    const handleControllerChange = () => {
+      if (!updateRequested.current || reloadingForUpdate.current) return
+      reloadingForUpdate.current = true
+      window.location.reload()
+    }
+
+    const handleUpdateFound = () => {
+      const installingWorker = registration?.installing
+      if (!installingWorker) return
+      installingWorker.addEventListener('statechange', () => {
+        if (installingWorker.state === 'installed' && navigator.serviceWorker.controller) {
+          setWaitingWorker(installingWorker)
+        }
       })
     }
-    return () => window.removeEventListener('beforeinstallprompt', handleInstall)
+
+    const checkForUpdate = () => {
+      registration?.update().catch(() => undefined)
+    }
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') checkForUpdate()
+    }
+
+    const registerServiceWorker = async () => {
+      try {
+        registration = await navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' })
+        if (registration.waiting && navigator.serviceWorker.controller) {
+          setWaitingWorker(registration.waiting)
+        }
+        registration.addEventListener('updatefound', handleUpdateFound)
+        checkForUpdate()
+        updateInterval = window.setInterval(checkForUpdate, 30 * 60 * 1000)
+      } catch (error) {
+        console.error('Service worker registration failed:', error)
+      }
+    }
+
+    navigator.serviceWorker.addEventListener('controllerchange', handleControllerChange)
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    if (document.readyState === 'complete') {
+      void registerServiceWorker()
+    } else {
+      window.addEventListener('load', registerServiceWorker, { once: true })
+    }
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleInstall)
+      window.removeEventListener('load', registerServiceWorker)
+      navigator.serviceWorker.removeEventListener('controllerchange', handleControllerChange)
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+      registration?.removeEventListener('updatefound', handleUpdateFound)
+      if (updateInterval !== null) window.clearInterval(updateInterval)
+    }
   }, [])
 
   useEffect(() => {
@@ -285,6 +344,12 @@ function App() {
     const prompt = deferredPrompt as Event & { prompt: () => Promise<void> }
     await prompt.prompt()
     setDeferredPrompt(null)
+  }
+
+  function applyUpdate() {
+    if (!waitingWorker) return
+    updateRequested.current = true
+    waitingWorker.postMessage({ type: 'SKIP_WAITING' })
   }
 
   function cycleTheme() {
@@ -494,11 +559,12 @@ function App() {
           <nav className="support-links" aria-label="Help and support">
             <a href="./faq/"><HelpCircle /> FAQ</a>
             <a href="./help/"><HelpCircle /> Help Center</a>
-            <a href="https://github.com/LurieJoe/geography-gym/issues/new" target="_blank" rel="noreferrer">
+            <a href="https://github.com/LurieJoe/geography-gym/issues/new/choose" target="_blank" rel="noreferrer">
               <ExternalLink /> Send Feedback
             </a>
             <a href="./privacy/"><ExternalLink /> Privacy Policy</a>
           </nav>
+          <p className="version-label">Geography Gym {APP_VERSION}</p>
         </ModalShell>
       )}
 
@@ -534,6 +600,19 @@ function App() {
           </label>
         </ModalShell>
       )}
+
+      {waitingWorker && (
+        <section className="update-notification" role="status" aria-live="polite">
+          <div>
+            <strong>A new version is available.</strong>
+            <p>Restart Geography Gym to apply the update. Your progress and settings stay saved.</p>
+          </div>
+          <div className="update-actions">
+            <button className="primary-button" type="button" onClick={applyUpdate}>Update and Restart</button>
+            <button className="quiet-button" type="button" onClick={() => setWaitingWorker(null)}>Later</button>
+          </div>
+        </section>
+      )}
     </div>
   )
 }
@@ -551,10 +630,10 @@ function Home({
     <main>
       <section className="hero">
         <div className="hero-copy">
-          <p className="eyebrow">A workout for your world knowledge</p>
-          <h1>Train your brain.<br />Strengthen your sense of place.</h1>
+          <p className="eyebrow">Learn the world by playing it</p>
+          <h1>Strengthen your sense of place.<br />Explore with confidence.</h1>
           <p className="hero-description">
-            Build geographic strength through quick exercises covering states,
+            Build geographic intuition through quick challenges covering states,
             countries, capitals, directions, locations, and landmarks.
           </p>
           <div className="hero-actions">
@@ -583,10 +662,10 @@ function Home({
       <section className="tracks-section">
         <div className="section-heading">
           <div>
-            <p className="eyebrow">Choose a workout program</p>
-            <h2>Three ways to train</h2>
+            <p className="eyebrow">Choose a learning path</p>
+            <h2>Three ways to practice</h2>
           </div>
-          <p>Each program mixes exercises that train recall, map placement, and spatial reasoning.</p>
+          <p>Each path mixes question styles that develop recall, map placement, and spatial reasoning.</p>
         </div>
         <div className="track-grid">
           <TrackCard
@@ -622,9 +701,9 @@ function Home({
       <section className="principle-card">
         <Route size={32} />
         <div>
-          <p className="eyebrow">Geographic strength training</p>
-          <h2>Build your mental map, one rep at a time.</h2>
-          <p>Every question strengthens the connections between names, places, neighbors, and the wider world.</p>
+          <p className="eyebrow">More than memorization</p>
+          <h2>Build a mental map, one connection at a time.</h2>
+          <p>Connect names to places, places to neighbors, and landmarks to the wider world.</p>
         </div>
       </section>
     </main>
@@ -1083,10 +1162,10 @@ function Results({
       <section className="results-card">
         <div className="result-medal">{percent >= 80 ? <Trophy /> : <Award />}</div>
         <p className="eyebrow">{categoryDetails[category].label} complete</p>
-        <h1>{percent >= 80 ? 'Excellent workout.' : percent >= 55 ? 'You’re building strength.' : 'A good first set.'}</h1>
+        <h1>{percent >= 80 ? 'Excellent workout.' : percent >= 55 ? 'You’re making progress.' : 'A good first round.'}</h1>
         <p className="result-copy">
           {percent >= 80
-            ? 'Your geographic strength is growing. Try another workout program to keep the streak going.'
+            ? 'Your mental map is taking shape. Try another learning path to keep the streak going.'
             : 'Every workout strengthens the connections between names, places, and directions.'}
         </p>
         <div className="result-score">
@@ -1100,7 +1179,7 @@ function Results({
         </div>
         <div className="result-actions">
           <button className="primary-button" type="button" onClick={onReplay}><RotateCcw size={18} /> Play again</button>
-          <button className="quiet-button" type="button" onClick={onHome}>Choose another program</button>
+          <button className="quiet-button" type="button" onClick={onHome}>Choose another path</button>
         </div>
       </section>
     </main>
@@ -1178,7 +1257,7 @@ function AppFooter() {
         <nav aria-label="Footer navigation">
           <a href="./faq/">FAQ</a>
           <a href="./help/">Help Center</a>
-          <a href="https://github.com/LurieJoe/geography-gym/issues/new" target="_blank" rel="noreferrer">Send Feedback</a>
+          <a href="https://github.com/LurieJoe/geography-gym/issues/new/choose" target="_blank" rel="noreferrer">Send Feedback</a>
           <a href="./privacy/">Privacy</a>
         </nav>
       </div>

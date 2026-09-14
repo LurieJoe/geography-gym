@@ -1,0 +1,33 @@
+name: Share feedback or an idea
+description: Suggest a feature, question type, or improvement to Geography Gym.
+title: "[Feedback] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping improve Geography Gym.
+  - type: dropdown
+    id: feedback-type
+    attributes:
+      label: What would you like to share?
+      options:
+        - A feature idea
+        - A new question or game type
+        - A correction to a geography fact
+        - Feedback about the website or app
+        - Something else
+    validations:
+      required: true
+  - type: textarea
+    id: feedback
+    attributes:
+      label: Tell us about your idea or feedback
+      description: What would you like to see, and how would it improve the experience?
+      placeholder: Describe your suggestion or feedback.
+    validations:
+      required: true
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional context
+      description: Add any examples, details, or screenshots that help explain your suggestion.
