@@ -130,6 +130,34 @@ const tips = [
     title: 'Install for easy access',
     text: 'Install Geography Gym from your browser and keep practicing after the app has been cached for offline use.',
   },
+  {
+    title: 'Zoom in before locating a state',
+    text: 'U.S. location questions first ask for a broad map section, then zoom in for a more accurate state placement challenge. State borders appear after you finish.',
+  },
+  {
+    title: 'Give each learner a profile',
+    text: 'Use the profile button at the right of the toolbar to add or switch learners. Each profile keeps its own progress and preferences on this device.',
+  },
+  {
+    title: 'Personalize every profile',
+    text: 'Theme, accent color, answer sounds, timer, startup tips, and default workout length are saved separately for each profile.',
+  },
+  {
+    title: 'Reset only the active profile',
+    text: 'The Reset button clears the current learner’s workout totals, accuracy, and best streak without changing settings or other profiles.',
+  },
+  {
+    title: 'Listen for answer feedback',
+    text: 'Optional sounds reinforce correct and incorrect answers. Each profile can turn them on or off in Settings.',
+  },
+  {
+    title: 'Choose when to update',
+    text: 'When a new version is ready, choose Update and Restart to use it now or Later to finish what you are doing first.',
+  },
+  {
+    title: 'Help improve Geography Gym',
+    text: 'The FAQ and Help Center explain app features, and Send Feedback lets you report a problem, suggest an idea, or flag a geography fact.',
+  },
 ]
 
 function readJson<T>(key: string, fallback: T): T {
