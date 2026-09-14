@@ -314,6 +314,74 @@
   font-size: 0.7rem;
   text-align: right;
 }
+.map-step {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 10px;
+  margin-bottom: 10px;
+  color: var(--cp-text-muted);
+  font-size: 0.82rem;
+}
+.map-step strong {
+  color: var(--cp-accent);
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.us-region {
+  cursor: pointer;
+  outline: none;
+}
+.us-region path {
+  stroke: var(--cp-bg-elevated);
+  stroke-width: 2.5;
+  vector-effect: non-scaling-stroke;
+  transition: fill 140ms ease, stroke 140ms ease;
+}
+.region-tone-0 path { fill: var(--cp-surface-soft); }
+.region-tone-1 path { fill: var(--cp-accent-soft); }
+.region-tone-2 path { fill: var(--cp-panel-strong); }
+.us-region:hover path,
+.us-region:focus-visible path {
+  fill: var(--cp-accent-soft);
+  stroke: var(--cp-accent);
+}
+.us-region.map-wrong path {
+  fill: var(--cp-danger);
+  stroke: var(--cp-danger);
+}
+.region-label-background {
+  fill: var(--cp-panel-strong);
+  stroke: var(--cp-border);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+.region-label {
+  fill: var(--cp-text);
+  font-size: 10px;
+  font-weight: 800;
+  text-anchor: middle;
+  dominant-baseline: central;
+  pointer-events: none;
+}
+.us-region.map-wrong .region-label-background {
+  fill: var(--cp-danger);
+  stroke: var(--cp-danger);
+}
+.us-region.map-wrong .region-label { fill: var(--cp-accent-fg); }
+.region-hint {
+  margin: 10px 0 0;
+  color: var(--cp-danger);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+.region-silhouette {
+  fill: var(--cp-surface-soft);
+  stroke: var(--cp-border-strong);
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+}
 .state-shape {
   cursor: pointer;
   outline: none;
@@ -324,6 +392,15 @@
   stroke-width: 1.4;
   vector-effect: non-scaling-stroke;
   transition: fill 140ms ease, stroke 140ms ease;
+}
+.state-hit-area path {
+  fill: transparent;
+  stroke: transparent;
+}
+.state-hit-area.reveal-boundary path {
+  fill: var(--cp-surface-soft);
+  stroke: var(--cp-border-strong);
+  stroke-width: 1.4;
 }
 .state-label-target {
   fill: transparent;
@@ -350,8 +427,10 @@
   vector-effect: non-scaling-stroke;
   pointer-events: none;
 }
-.state-shape:hover path,
-.state-shape:focus-visible path {
+.state-shape:not(.state-hit-area):hover path,
+.state-shape:not(.state-hit-area):focus-visible path,
+.state-hit-area.reveal-boundary:hover path,
+.state-hit-area.reveal-boundary:focus-visible path {
   fill: var(--cp-accent-soft);
   stroke: var(--cp-accent);
   stroke-width: 2.5;

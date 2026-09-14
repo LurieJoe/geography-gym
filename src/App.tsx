@@ -36,7 +36,7 @@ import {
   type OrderQuestion,
   type Question,
 } from './data'
-import { US_MAP_VIEWBOX, usStateShapes } from './usStateShapes'
+import { US_MAP_VIEWBOX, usRegionShapes, usStateShapes } from './usStateShapes'
 import './App.css'
 
 type Screen = 'home' | 'quiz' | 'results'
@@ -61,7 +61,7 @@ type Preferences = {
 }
 
 const defaultStats: Stats = { games: 0, correct: 0, answered: 0, bestStreak: 0 }
-const APP_VERSION = 'v4'
+const APP_VERSION = 'v5'
 const defaultPreferences: Preferences = {
   theme: 'system',
   sound: true,
@@ -896,12 +896,100 @@ function UsMap({
   answered: boolean
   onSelect: (value: string) => void
 }) {
+  const [selectedRegion, setSelectedRegion] = useState<string | null>(null)
+  const [wrongRegions, setWrongRegions] = useState<string[]>([])
+  const [shakingRegion, setShakingRegion] = useState<string | null>(null)
+  const answerState = usStateShapes.find((state) => state.abbreviation === answer)
+  const targetRegion = usRegionShapes.find((region) => region.id === answerState?.region)
   const unavailable = (state: string) => answered || wrongAnswers.includes(state)
 
+  if (!answerState || !targetRegion) return null
+
+  function chooseRegion(regionId: string) {
+    if (wrongRegions.includes(regionId)) return
+    if (regionId === targetRegion?.id) {
+      setSelectedRegion(regionId)
+      return
+    }
+
+    const nextWrong = [...wrongRegions, regionId]
+    setWrongRegions(nextWrong)
+    setShakingRegion(regionId)
+    window.setTimeout(() => setShakingRegion(null), 550)
+    if (nextWrong.length >= 2) {
+      window.setTimeout(() => setSelectedRegion(targetRegion?.id ?? null), 650)
+    }
+  }
+
+  if (!selectedRegion) {
+    return (
+      <figure className="us-map region-picker">
+        <div className="map-step">
+          <strong>Step 1 of 2</strong>
+          <span>Choose the map section containing {answerState.name}.</span>
+        </div>
+        <svg viewBox={US_MAP_VIEWBOX} role="img" aria-label="United States divided into selectable map sections">
+          {usRegionShapes.map((region, index) => {
+            const isWrong = wrongRegions.includes(region.id)
+            return (
+              <g
+                key={region.id}
+                role="button"
+                tabIndex={isWrong ? -1 : 0}
+                aria-label={region.label}
+                aria-disabled={isWrong}
+                className={[
+                  'us-region',
+                  `region-tone-${index % 3}`,
+                  isWrong ? 'map-wrong state-unavailable' : '',
+                  shakingRegion === region.id ? 'shake' : '',
+                ].join(' ')}
+                onClick={() => chooseRegion(region.id)}
+                onKeyDown={(event) => {
+                  if (!isWrong && (event.key === 'Enter' || event.key === ' ')) {
+                    event.preventDefault()
+                    chooseRegion(region.id)
+                  }
+                }}
+              >
+                <title>{region.label}</title>
+                <path d={region.path} fillRule="evenodd" />
+                <rect
+                  className="region-label-background"
+                  x={region.labelX - 31}
+                  y={region.labelY - 12}
+                  width="62"
+                  height="24"
+                  rx="8"
+                />
+                <text className="region-label" x={region.labelX} y={region.labelY}>{region.label}</text>
+              </g>
+            )
+          })}
+        </svg>
+        {wrongRegions.length === 1 && (
+          <p className="region-hint" role="status">Try another map section. The state is still hidden.</p>
+        )}
+        {wrongRegions.length >= 2 && (
+          <p className="region-hint" role="status">Opening the correct map section so you can place the state.</p>
+        )}
+        <figcaption>Regional outlines derived from U.S. Census Bureau state boundaries.</figcaption>
+      </figure>
+    )
+  }
+
+  const visibleStates = usStateShapes.filter((state) => state.region === selectedRegion)
+  const revealBoundaries = answered || Boolean(correctAnswer)
+
   return (
-    <figure className="us-map">
-      <svg viewBox={US_MAP_VIEWBOX} role="img" aria-label="Map of the United States with selectable state borders">
-        {usStateShapes.map((state) => {
+    <figure className="us-map regional-state-map">
+      <div className="map-step">
+        <strong>Step 2 of 2</strong>
+        <span>Tap the approximate location of {answerState.name}.</span>
+      </div>
+      <svg viewBox={targetRegion.viewBox} role="img" aria-label={`${targetRegion.label} region with selectable state locations`}>
+        <path className="region-silhouette" d={targetRegion.path} fillRule="evenodd" />
+        {visibleStates.map((state) => {
           const label = stateLabelOverrides[state.abbreviation] ?? {
             x: state.labelX,
             y: state.labelY,
@@ -918,6 +1006,8 @@ function UsMap({
               aria-disabled={isUnavailable}
               className={[
                 'state-shape',
+                'state-hit-area',
+                revealBoundaries ? 'reveal-boundary' : '',
                 (answered || correctAnswer) && state.abbreviation === answer ? 'map-correct' : '',
                 wrongAnswers.includes(state.abbreviation) ? 'map-wrong' : '',
                 shakingAnswer === state.abbreviation ? 'shake' : '',
@@ -936,7 +1026,7 @@ function UsMap({
             >
               <title>{state.name}</title>
               <path d={state.path} fillRule="evenodd" />
-              {hasCallout && (
+              {revealBoundaries && hasCallout && (
                 <line
                   className="state-callout"
                   x1={state.labelX}
@@ -945,13 +1035,20 @@ function UsMap({
                   y2={label.y}
                 />
               )}
-              <circle className="state-label-target" cx={label.x} cy={label.y} r="14" />
-              <text className="state-label" x={label.x} y={label.y}>{state.abbreviation}</text>
+              {revealBoundaries && (
+                <>
+                  <circle className="state-label-target" cx={label.x} cy={label.y} r="14" />
+                  <text className="state-label" x={label.x} y={label.y}>{state.abbreviation}</text>
+                </>
+              )}
             </g>
           )
         })}
       </svg>
-      <figcaption>State boundaries: U.S. Census Bureau, January 1, 2026 vintage.</figcaption>
+      <figcaption>
+        State boundaries stay hidden until the answer is complete. Source: U.S. Census Bureau,
+        January 1, 2026 vintage.
+      </figcaption>
     </figure>
   )
 }

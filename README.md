@@ -6,9 +6,10 @@ on memorization.
 
 ## MVP learning tracks
 
-- **U.S. Geography:** state abbreviations, capitals, and location practice on
-  clickable U.S. Census Bureau state boundaries. Alaska and Hawaii remain in
-  their actual geographic positions.
+- **U.S. Geography:** state abbreviations, capitals, and two-stage location
+  practice. Players choose a map section, then tap the state's approximate
+  location on a zoomed silhouette. State boundaries appear after the answer,
+  using U.S. Census Bureau geometry.
 - **World Geography:** countries, capitals, map locations, directions, continents,
   latitude, and distance comparisons.
 - **Landmarks:** multiple choice, matching pairs, and geographic ordering from north
