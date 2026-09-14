@@ -1,8 +1,10 @@
 export type Category = 'us' | 'world' | 'landmarks' | 'mixed'
+export type PracticeMode = 'variety' | 'clue-ladder' | 'neighbors' | 'closer' | 'pinpoint'
 
 type BaseQuestion = {
   id: string
   category: Exclude<Category, 'mixed'>
+  practice?: PracticeMode
   label: string
   prompt: string
   hint?: string
@@ -39,18 +41,57 @@ export type OrderQuestion = BaseQuestion & {
   endLabel: string
 }
 
+export type ClueQuestion = BaseQuestion & {
+  kind: 'clue'
+  clues: string[]
+  options: string[]
+  answer: string
+}
+
+export type PinpointQuestion = BaseQuestion & {
+  kind: 'pinpoint'
+  answer: string
+  target: { lat: number; lon: number }
+  place: string
+}
+
 export type Question =
   | ChoiceQuestion
   | LocateUsQuestion
   | LocateWorldQuestion
   | MatchingQuestion
   | OrderQuestion
+  | ClueQuestion
+  | PinpointQuestion
 
 export const categoryDetails: Record<Category, { label: string }> = {
   us: { label: 'U.S. Geography' },
   world: { label: 'World Geography' },
   landmarks: { label: 'Landmarks' },
   mixed: { label: 'Mixed Workout' },
+}
+
+export const practiceDetails: Record<PracticeMode, { label: string; description: string }> = {
+  variety: {
+    label: 'Variety',
+    description: 'A rotating mix of the original question styles.',
+  },
+  'clue-ladder': {
+    label: 'Clue Ladder',
+    description: 'Identify a place from progressively more specific clues.',
+  },
+  neighbors: {
+    label: 'Neighbor Challenge',
+    description: 'Build a mental map by identifying shared land borders.',
+  },
+  closer: {
+    label: 'Which Is Closer?',
+    description: 'Compare real distances between famous landmarks.',
+  },
+  pinpoint: {
+    label: 'Map Pinpoint',
+    description: 'Place a landmark on the world map and see how close you were.',
+  },
 }
 
 const states = [
@@ -359,7 +400,286 @@ const landmarkQuestions: Question[] = [
   ...landmarkOrderQuestions,
 ]
 
-const banks = { us: usQuestions, world: worldQuestions, landmarks: landmarkQuestions }
+const stateNeighbors: Record<string, string[]> = {
+  AL: ['FL', 'GA', 'MS', 'TN'],
+  AZ: ['CA', 'NV', 'NM', 'UT'],
+  AR: ['LA', 'MS', 'MO', 'OK', 'TN', 'TX'],
+  CA: ['AZ', 'NV', 'OR'],
+  CO: ['KS', 'NE', 'NM', 'OK', 'UT', 'WY'],
+  CT: ['MA', 'NY', 'RI'],
+  DE: ['MD', 'NJ', 'PA'],
+  FL: ['AL', 'GA'],
+  GA: ['AL', 'FL', 'NC', 'SC', 'TN'],
+  ID: ['MT', 'NV', 'OR', 'UT', 'WA', 'WY'],
+  IL: ['IN', 'IA', 'KY', 'MO', 'WI'],
+  IN: ['IL', 'KY', 'MI', 'OH'],
+  IA: ['IL', 'MN', 'MO', 'NE', 'SD', 'WI'],
+  KS: ['CO', 'MO', 'NE', 'OK'],
+  KY: ['IL', 'IN', 'MO', 'OH', 'TN', 'VA', 'WV'],
+  LA: ['AR', 'MS', 'TX'],
+  ME: ['NH'],
+  MD: ['DE', 'PA', 'VA', 'WV'],
+  MA: ['CT', 'NH', 'NY', 'RI', 'VT'],
+  MI: ['IN', 'OH', 'WI'],
+  MN: ['IA', 'ND', 'SD', 'WI'],
+  MS: ['AL', 'AR', 'LA', 'TN'],
+  MO: ['AR', 'IA', 'IL', 'KS', 'KY', 'NE', 'OK', 'TN'],
+  MT: ['ID', 'ND', 'SD', 'WY'],
+  NE: ['CO', 'IA', 'KS', 'MO', 'SD', 'WY'],
+  NV: ['AZ', 'CA', 'ID', 'OR', 'UT'],
+  NH: ['ME', 'MA', 'VT'],
+  NJ: ['DE', 'NY', 'PA'],
+  NM: ['AZ', 'CO', 'OK', 'TX'],
+  NY: ['CT', 'MA', 'NJ', 'PA', 'VT'],
+  NC: ['GA', 'SC', 'TN', 'VA'],
+  ND: ['MN', 'MT', 'SD'],
+  OH: ['IN', 'KY', 'MI', 'PA', 'WV'],
+  OK: ['AR', 'CO', 'KS', 'MO', 'NM', 'TX'],
+  OR: ['CA', 'ID', 'NV', 'WA'],
+  PA: ['DE', 'MD', 'NJ', 'NY', 'OH', 'WV'],
+  RI: ['CT', 'MA'],
+  SC: ['GA', 'NC'],
+  SD: ['IA', 'MN', 'MT', 'ND', 'NE', 'WY'],
+  TN: ['AL', 'AR', 'GA', 'KY', 'MS', 'MO', 'NC', 'VA'],
+  TX: ['AR', 'LA', 'NM', 'OK'],
+  UT: ['AZ', 'CO', 'ID', 'NV', 'WY'],
+  VT: ['MA', 'NH', 'NY'],
+  VA: ['KY', 'MD', 'NC', 'TN', 'WV'],
+  WA: ['ID', 'OR'],
+  WV: ['KY', 'MD', 'OH', 'PA', 'VA'],
+  WI: ['IA', 'IL', 'MI', 'MN'],
+  WY: ['CO', 'ID', 'MT', 'NE', 'SD', 'UT'],
+}
+
+const stateByAbbreviation = Object.fromEntries(
+  states.map(([name, abbreviation]) => [abbreviation, name]),
+) as Record<string, string>
+
+const worldNeighbors: Record<string, string[]> = {
+  Austria: ['Czechia', 'Germany', 'Hungary', 'Italy', 'Liechtenstein', 'Slovakia', 'Slovenia', 'Switzerland'],
+  Belgium: ['France', 'Germany', 'Luxembourg', 'Netherlands'],
+  Brazil: ['Argentina', 'Bolivia', 'Colombia', 'Guyana', 'Paraguay', 'Peru', 'Suriname', 'Uruguay', 'Venezuela'],
+  Chile: ['Argentina', 'Bolivia', 'Peru'],
+  China: ['Afghanistan', 'Bhutan', 'India', 'Kazakhstan', 'Kyrgyzstan', 'Laos', 'Mongolia', 'Myanmar', 'Nepal', 'North Korea', 'Pakistan', 'Russia', 'Tajikistan', 'Vietnam'],
+  Colombia: ['Brazil', 'Ecuador', 'Panama', 'Peru', 'Venezuela'],
+  Czechia: ['Austria', 'Germany', 'Poland', 'Slovakia'],
+  Denmark: ['Germany'],
+  Ecuador: ['Colombia', 'Peru'],
+  Finland: ['Norway', 'Russia', 'Sweden'],
+  Germany: ['Austria', 'Belgium', 'Czechia', 'Denmark', 'France', 'Luxembourg', 'Netherlands', 'Poland', 'Switzerland'],
+  Hungary: ['Austria', 'Croatia', 'Romania', 'Serbia', 'Slovakia', 'Slovenia', 'Ukraine'],
+  India: ['Bangladesh', 'Bhutan', 'China', 'Myanmar', 'Nepal', 'Pakistan'],
+  Ireland: ['United Kingdom'],
+  Italy: ['Austria', 'France', 'San Marino', 'Slovenia', 'Switzerland', 'Vatican City'],
+  Netherlands: ['Belgium', 'Germany'],
+  Norway: ['Finland', 'Russia', 'Sweden'],
+  Pakistan: ['Afghanistan', 'China', 'India', 'Iran'],
+  Peru: ['Bolivia', 'Brazil', 'Chile', 'Colombia', 'Ecuador'],
+  Poland: ['Belarus', 'Czechia', 'Germany', 'Lithuania', 'Russia', 'Slovakia', 'Ukraine'],
+  Portugal: ['Spain'],
+  Romania: ['Bulgaria', 'Hungary', 'Moldova', 'Serbia', 'Ukraine'],
+  Spain: ['Andorra', 'France', 'Portugal'],
+  Sweden: ['Finland', 'Norway'],
+  Switzerland: ['Austria', 'France', 'Germany', 'Italy', 'Liechtenstein'],
+  Thailand: ['Cambodia', 'Laos', 'Malaysia', 'Myanmar'],
+  Türkiye: ['Armenia', 'Azerbaijan', 'Bulgaria', 'Georgia', 'Greece', 'Iran', 'Iraq', 'Syria'],
+  Vietnam: ['Cambodia', 'China', 'Laos'],
+}
+
+function hemisphereClue(lat: number, lon: number) {
+  const northSouth = lat >= 0 ? 'Northern' : 'Southern'
+  const eastWest = lon >= 0 ? 'Eastern' : 'Western'
+  return `It is in the ${northSouth} and ${eastWest} Hemispheres.`
+}
+
+const usClueQuestions: ClueQuestion[] = states.map(([name, abbreviation, capital], index) => ({
+  id: `clue-us-${abbreviation}`,
+  category: 'us',
+  practice: 'clue-ladder',
+  kind: 'clue',
+  label: 'Clue Ladder',
+  prompt: 'Which U.S. state matches these clues?',
+  clues: [
+    `Its capital is ${capital}.`,
+    stateNeighbors[abbreviation]
+      ? `It shares a land border with ${stateByAbbreviation[stateNeighbors[abbreviation][index % stateNeighbors[abbreviation].length]]}.`
+      : 'It does not share a land border with another U.S. state.',
+    `Its postal abbreviation is ${abbreviation}.`,
+  ],
+  options: uniqueOptions(name, stateNames, index + 31),
+  answer: name,
+  explanation: `${name} has the capital ${capital} and uses the abbreviation ${abbreviation}.`,
+}))
+
+const worldClueQuestions: ClueQuestion[] = countries.map(([country, capital, continent], index) => ({
+  id: `clue-world-${index}`,
+  category: 'world',
+  practice: 'clue-ladder',
+  kind: 'clue',
+  label: 'Clue Ladder',
+  prompt: 'Which country matches these clues?',
+  clues: [
+    `It is in ${continent}.`,
+    `Its capital is ${capital}.`,
+    `Its name begins with ${country[0]} and contains ${[...country].length} characters.`,
+  ],
+  options: uniqueOptions(country, countries.map(([name]) => name), index + 43),
+  answer: country,
+  explanation: `${country} is in ${continent}, and its capital is ${capital}.`,
+}))
+
+const landmarkNames = landmarks.map((landmark) => landmark.name)
+const landmarkClueQuestions: ClueQuestion[] = landmarks.map((landmark, index) => ({
+  id: `clue-landmark-${index}`,
+  category: 'landmarks',
+  practice: 'clue-ladder',
+  kind: 'clue',
+  label: 'Clue Ladder',
+  prompt: 'Which landmark matches these clues?',
+  clues: [
+    hemisphereClue(landmark.lat, landmark.lon),
+    `It is in ${landmark.region}.`,
+    `Look for it in or near ${landmark.place}.`,
+  ],
+  options: uniqueOptions(landmark.name, landmarkNames, index + 59),
+  answer: landmark.name,
+  explanation: `${landmark.name} is in ${landmark.place}, ${landmark.region}.`,
+}))
+
+const usNeighborQuestions: ChoiceQuestion[] = Object.entries(stateNeighbors).flatMap(
+  ([abbreviation, neighbors], stateIndex) =>
+    neighbors.map((answerAbbreviation, neighborIndex) => {
+      const answer = stateByAbbreviation[answerAbbreviation]
+      const target = stateByAbbreviation[abbreviation]
+      const nonNeighbors = stateNames.filter(
+        (name) =>
+          name !== target &&
+          !neighbors.some((neighbor) => stateByAbbreviation[neighbor] === name),
+      )
+      return {
+        id: `neighbor-us-${abbreviation}-${answerAbbreviation}`,
+        category: 'us' as const,
+        practice: 'neighbors' as const,
+        kind: 'choice' as const,
+        label: 'Neighbor Challenge',
+        prompt: `Which state shares a land border with ${target}?`,
+        options: uniqueOptions(answer, nonNeighbors, stateIndex * 7 + neighborIndex),
+        answer,
+        explanation: `${target} borders ${neighbors.map((neighbor) => stateByAbbreviation[neighbor]).join(', ')}.`,
+      }
+    }),
+)
+
+const worldNeighborDistractors = [
+  ...new Set([
+    ...countries.map(([name]) => name),
+    ...Object.values(worldNeighbors).flat(),
+  ]),
+]
+const worldNeighborQuestions: ChoiceQuestion[] = Object.entries(worldNeighbors).flatMap(
+  ([target, neighbors], countryIndex) =>
+    neighbors.map((answer, neighborIndex) => ({
+      id: `neighbor-world-${countryIndex}-${neighborIndex}`,
+      category: 'world' as const,
+      practice: 'neighbors' as const,
+      kind: 'choice' as const,
+      label: 'Neighbor Challenge',
+      prompt: `Which country shares a land border with ${target}?`,
+      options: uniqueOptions(
+        answer,
+        worldNeighborDistractors.filter((country) => country !== target && !neighbors.includes(country)),
+        countryIndex * 11 + neighborIndex,
+      ),
+      answer,
+      explanation: `${target} shares land borders with ${neighbors.join(', ')}.`,
+    })),
+)
+
+function distanceKm(
+  first: { lat: number; lon: number },
+  second: { lat: number; lon: number },
+) {
+  const radians = (degrees: number) => degrees * Math.PI / 180
+  const latitudeDelta = radians(second.lat - first.lat)
+  const longitudeDelta = radians(second.lon - first.lon)
+  const firstLatitude = radians(first.lat)
+  const secondLatitude = radians(second.lat)
+  const value =
+    Math.sin(latitudeDelta / 2) ** 2 +
+    Math.cos(firstLatitude) * Math.cos(secondLatitude) * Math.sin(longitudeDelta / 2) ** 2
+  return 6371 * 2 * Math.atan2(Math.sqrt(value), Math.sqrt(1 - value))
+}
+
+const closerQuestions: ChoiceQuestion[] = landmarks.map((anchor, index) => {
+  const first = landmarks[(index + 7) % landmarks.length]
+  const second = landmarks[(index + 19) % landmarks.length]
+  const firstDistance = distanceKm(anchor, first)
+  const secondDistance = distanceKm(anchor, second)
+  const answer = firstDistance < secondDistance ? first.name : second.name
+  return {
+    id: `closer-landmark-${index}`,
+    category: 'landmarks',
+    practice: 'closer',
+    kind: 'choice',
+    label: 'Which Is Closer?',
+    prompt: `Which landmark is closer to ${anchor.name}?`,
+    options: [first.name, second.name],
+    answer,
+    explanation: `By straight-line distance, ${first.name} is about ${Math.round(firstDistance).toLocaleString()} km away; ${second.name} is about ${Math.round(secondDistance).toLocaleString()} km away.`,
+  }
+})
+
+const pinpointQuestions: PinpointQuestion[] = landmarks.map((landmark, index) => ({
+  id: `pinpoint-landmark-${index}`,
+  category: 'landmarks',
+  practice: 'pinpoint',
+  kind: 'pinpoint',
+  label: 'Map Pinpoint',
+  prompt: `Place ${landmark.name} on the world map.`,
+  hint: `It is in ${landmark.region}. Tap as close as you can.`,
+  answer: landmark.name,
+  target: { lat: landmark.lat, lon: landmark.lon },
+  place: `${landmark.place}, ${landmark.region}`,
+  explanation: `${landmark.name} is in ${landmark.place}, ${landmark.region}.`,
+}))
+
+const varietyBanks = { us: usQuestions, world: worldQuestions, landmarks: landmarkQuestions }
+const clueBanks = {
+  us: usClueQuestions,
+  world: worldClueQuestions,
+  landmarks: landmarkClueQuestions,
+}
+const neighborBanks = {
+  us: usNeighborQuestions,
+  world: worldNeighborQuestions,
+  landmarks: [] as Question[],
+}
+const closerBanks = {
+  us: [] as Question[],
+  world: [] as Question[],
+  landmarks: closerQuestions,
+}
+const pinpointBanks = {
+  us: [] as Question[],
+  world: [] as Question[],
+  landmarks: pinpointQuestions,
+}
+const practiceBanks: Record<
+  PracticeMode,
+  Record<Exclude<Category, 'mixed'>, Question[]>
+> = {
+  variety: varietyBanks,
+  'clue-ladder': clueBanks,
+  neighbors: neighborBanks,
+  closer: closerBanks,
+  pinpoint: pinpointBanks,
+}
+
+const allQuestions = Object.values(practiceBanks).flatMap((bank) => [
+  ...bank.us,
+  ...bank.world,
+  ...bank.landmarks,
+])
 
 export const questionPoolCounts = {
   us: usQuestions.length,
@@ -372,9 +692,49 @@ function shuffled<T>(items: readonly T[]) {
   return [...items].sort(() => Math.random() - 0.5)
 }
 
-export function buildQuestions(category: Category, count: number) {
+function questionsFor(category: Category, practice: PracticeMode) {
+  const bank = practiceBanks[practice]
+  return category === 'mixed'
+    ? [...bank.us, ...bank.world, ...bank.landmarks]
+    : bank[category]
+}
+
+export function getQuestionPoolCount(
+  category: Category,
+  practice: PracticeMode,
+  flaggedIds: string[] = [],
+  onlyFlagged = false,
+  allFlaggedModes = false,
+) {
+  const source = allFlaggedModes
+    ? allQuestions.filter((question) => category === 'mixed' || question.category === category)
+    : questionsFor(category, practice)
+  if (!onlyFlagged) return source.length
+  const flagged = new Set(flaggedIds)
+  return source.filter((question) => flagged.has(question.id)).length
+}
+
+export function buildQuestions(
+  category: Category,
+  count: number,
+  practice: PracticeMode = 'variety',
+  flaggedIds: string[] = [],
+  onlyFlagged = false,
+  allFlaggedModes = false,
+) {
+  const flagged = new Set(flaggedIds)
+  const completeSource = allFlaggedModes
+    ? allQuestions.filter((question) => category === 'mixed' || question.category === category)
+    : questionsFor(category, practice)
+  const source = onlyFlagged
+    ? completeSource.filter((question) => flagged.has(question.id))
+    : completeSource
+
+  if (onlyFlagged || practice !== 'variety') {
+    return shuffled(source).slice(0, count)
+  }
+
   if (category !== 'mixed') {
-    const source = banks[category]
     const guaranteed = category === 'landmarks'
       ? [
           shuffled(landmarkMatchingQuestions)[0],
@@ -391,7 +751,6 @@ export function buildQuestions(category: Category, count: number) {
     shuffled(landmarkMatchingQuestions)[0],
     shuffled(landmarkOrderQuestions)[0],
   ]
-  const all = [...usQuestions, ...worldQuestions, ...landmarkQuestions]
-  const rest = shuffled(all).filter((question) => !guaranteed.some((item) => item.id === question.id))
+  const rest = shuffled(source).filter((question) => !guaranteed.some((item) => item.id === question.id))
   return shuffled([...guaranteed, ...rest.slice(0, Math.max(0, count - guaranteed.length))])
 }

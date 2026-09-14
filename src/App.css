@@ -203,6 +203,7 @@
 .reset-stats-button:hover { background: var(--cp-surface-soft); color: var(--cp-danger); }
 
 .tracks-section { width: min(1180px, calc(100% - 40px)); margin: 0 auto; padding-bottom: 84px; }
+.practice-section { width: min(1180px, calc(100% - 40px)); margin: 0 auto; padding-bottom: 84px; }
 .section-heading {
   display: flex;
   align-items: end;
@@ -254,6 +255,31 @@
   background: var(--cp-surface-soft);
 }
 .card-button:hover { border-color: var(--cp-accent); color: var(--cp-accent); }
+.practice-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; }
+.practice-card {
+  display: flex;
+  flex-direction: column;
+  min-height: 310px;
+  padding: 20px;
+  border: 1px solid var(--cp-border);
+  border-radius: 16px;
+  background: var(--cp-surface);
+  box-shadow: 0 0 2px var(--cp-border), 0 1px 2px var(--cp-border);
+}
+.practice-icon {
+  width: 46px;
+  height: 46px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 18px;
+  border-radius: 0.625rem;
+  background: var(--cp-accent-soft);
+  color: var(--cp-accent);
+}
+.practice-card h3 { margin: 0 0 8px; font-size: 1.12rem; }
+.practice-card p { margin: 0 0 14px; color: var(--cp-text-muted); font-size: 0.88rem; line-height: 1.5; }
+.practice-card > span { margin-bottom: 18px; color: var(--cp-text-soft); font-size: 0.74rem; font-weight: 700; }
+.practice-card .card-button { padding-inline: 11px; font-size: 0.82rem; }
 .principle-card {
   width: min(1180px, calc(100% - 40px));
   display: grid;
@@ -533,6 +559,61 @@
 .map-key span { padding: 5px 8px; border-radius: 0.625rem; background: var(--cp-surface-soft); color: var(--cp-text-muted); font-size: 0.75rem; }
 .map-key b { color: var(--cp-accent); }
 .map-answer { margin-top: 10px; font-size: 0.84rem; }
+.pinpoint-map svg { cursor: crosshair; }
+.pinpoint-map svg.pinpoint-complete { cursor: default; }
+.pinpoint-attempt circle { fill: var(--cp-danger); stroke: var(--cp-surface); stroke-width: 4; }
+.pinpoint-attempt text {
+  fill: var(--cp-accent-fg);
+  font-size: 12px;
+  font-weight: 800;
+  text-anchor: middle;
+  pointer-events: none;
+}
+.pinpoint-target circle { fill: var(--cp-success); stroke: var(--cp-surface); stroke-width: 4; }
+.pinpoint-target path {
+  fill: none;
+  stroke: var(--cp-accent-fg);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 4;
+}
+.clue-ladder { margin-top: 28px; }
+.clue-ladder ol { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.clue-ladder li {
+  display: grid;
+  grid-template-columns: 30px 1fr;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--cp-border);
+  border-radius: 0.625rem;
+  background: var(--cp-surface-soft);
+  color: var(--cp-text);
+}
+.clue-ladder li > span {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--cp-accent);
+  color: var(--cp-accent-fg);
+  font-weight: 800;
+}
+.reveal-clue-button { margin-top: 12px; }
+.question-flag {
+  width: fit-content;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 26px auto 0;
+  color: var(--cp-text-muted);
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.question-flag input { width: 20px; height: 20px; accent-color: var(--cp-warning); }
+.question-flag:has(input:checked) { color: var(--cp-warning); }
 
 .matching-board { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 30px; }
 .matching-board > div { display: grid; gap: 10px; }
@@ -810,6 +891,7 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
   background: var(--cp-bg-elevated);
   cursor: pointer;
 }
+.toggle-row.disabled { opacity: 0.55; cursor: not-allowed; }
 .setting-icon {
   width: 38px;
   height: 38px;
@@ -924,6 +1006,7 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
   .pin-two { left: 20%; }
   .pin-three { right: 23%; }
   .track-grid { grid-template-columns: 1fr; }
+  .practice-grid { grid-template-columns: repeat(2, 1fr); }
   .track-card { min-height: auto; }
   .section-heading { display: block; }
   .section-heading > p { margin-top: 12px; }
@@ -940,7 +1023,7 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
   .theme-button span { display: none; }
   .profile-menu-button { width: 38px; height: 38px; }
   .install-button { display: none; }
-  .hero, .tracks-section, .principle-card { width: min(100% - 28px, 1180px); }
+  .hero, .tracks-section, .practice-section, .principle-card { width: min(100% - 28px, 1180px); }
   .hero { padding-top: 28px; }
   .hero-visual { min-height: 260px; }
   .hero-globe { width: 175px; height: 175px; }
@@ -967,6 +1050,8 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
   .us-map figcaption { text-align: left; }
   .state-label { font-size: 8px; }
   .matching-board { gap: 8px; }
+  .practice-grid { grid-template-columns: 1fr; }
+  .practice-card { min-height: auto; }
   .match-tile { min-height: 62px; padding: 8px; font-size: 0.78rem; }
   .result-actions > button { width: 100%; }
   .modal-backdrop { padding: 8px; align-items: end; }

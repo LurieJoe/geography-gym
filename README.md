@@ -4,7 +4,7 @@ Geography Gym is an installable geography learning PWA for teens and adults. Its
 learning paths use varied games to build spatial intuition rather than relying only
 on memorization.
 
-## MVP learning tracks
+## Learning paths
 
 - **U.S. Geography:** state abbreviations, capitals, and two-stage location
   practice. Players choose a map section, then tap the state's approximate
@@ -21,6 +21,15 @@ The current question banks include:
 - 120 world geography questions
 - 136 landmark questions
 
+Additional practice modes reuse and extend those subjects:
+
+- **Clue Ladder:** 150 state, country, and landmark identification questions
+- **Neighbor Challenge:** 344 U.S. state and world-country border questions
+- **Which Is Closer?:** 50 straight-line landmark distance comparisons
+- **Map Pinpoint:** 50 two-attempt landmark placement challenges
+- **Flagged Review:** a profile-specific workout assembled from questions the learner
+  flags during any activity
+
 Players can choose 10-, 25-, or 50-question workouts. Multiple-choice, location, and
 ordering questions allow two attempts. Matching Pairs provides immediate animated
 feedback. Optional answer sounds, an elapsed timer, rotating startup tips, and local
@@ -28,9 +37,10 @@ progress are available from Settings.
 
 Multiple local profiles can share one device without accounts or passwords. Each
 profile has independent progress, theme, accent color, sounds, timer, startup tips,
-tip rotation, and default workout length. Existing single-profile progress and
-preferences migrate into an initial **Me** profile. A profile's home-page progress
-counters can be reset without changing its preferences or other profiles.
+tip rotation, default workout length, and flagged-question review list. Existing
+single-profile progress and preferences migrate into an initial **Me** profile. A
+profile's home-page progress counters can be reset without changing its preferences,
+flags, or other profiles.
 
 No account or analytics service is used. Profiles, progress, and preferences are
 stored locally, and no network connection is required after the app has been cached.

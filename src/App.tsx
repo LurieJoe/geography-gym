@@ -34,10 +34,15 @@ import {
 import {
   buildQuestions,
   categoryDetails,
+  getQuestionPoolCount,
+  practiceDetails,
   questionPoolCounts,
   type Category,
+  type ClueQuestion,
   type MatchingQuestion,
   type OrderQuestion,
+  type PinpointQuestion,
+  type PracticeMode,
   type Question,
 } from './data'
 import { US_MAP_VIEWBOX, usRegionShapes, usStateShapes } from './usStateShapes'
@@ -72,6 +77,7 @@ type Profile = {
   stats: Stats
   preferences: Preferences
   tipIndex: number
+  flaggedQuestionIds: string[]
 }
 
 type ProfileStore = {
@@ -80,7 +86,7 @@ type ProfileStore = {
 }
 
 const defaultStats: Stats = { games: 0, correct: 0, answered: 0, bestStreak: 0 }
-const APP_VERSION = 'v8'
+const APP_VERSION = 'v9'
 const PROFILES_KEY = 'geography-gym-profiles-v1'
 const defaultPreferences: Preferences = {
   theme: 'system',
@@ -158,6 +164,26 @@ const tips = [
     title: 'Help improve Geography Gym',
     text: 'The FAQ and Help Center explain app features, and Send Feedback lets you report a problem, suggest an idea, or flag a geography fact.',
   },
+  {
+    title: 'Climb the Clue Ladder',
+    text: 'Start with a broad clue, reveal more when needed, and identify the state, country, or landmark before the answer is shown.',
+  },
+  {
+    title: 'Learn what touches what',
+    text: 'Neighbor Challenge strengthens your mental map by asking which U.S. states or countries share a land border.',
+  },
+  {
+    title: 'Compare straight-line distances',
+    text: 'Which Is Closer? uses landmark coordinates to compare direct distances across the globe, not driving or travel routes.',
+  },
+  {
+    title: 'Pinpoint a landmark in two tries',
+    text: 'Your first Map Pinpoint miss reports the distance but hides the target. A second try reveals the landmark’s location.',
+  },
+  {
+    title: 'Build your own review list',
+    text: 'Flag any Geography Gym question during a workout, then use Flagged Review or Only use flagged questions to practice it again.',
+  },
 ]
 
 function readJson<T>(key: string, fallback: T): T {
@@ -194,6 +220,9 @@ function readProfileStore(): ProfileStore {
                 stats: { ...defaultStats, ...profile.stats },
                 preferences,
                 tipIndex: Number.isInteger(profile.tipIndex) ? profile.tipIndex : 0,
+                flaggedQuestionIds: Array.isArray(profile.flaggedQuestionIds)
+                  ? profile.flaggedQuestionIds.filter((id): id is string => typeof id === 'string')
+                  : [],
               }
             })
         : []
@@ -215,6 +244,7 @@ function readProfileStore(): ProfileStore {
     stats: readJson('geography-gym-stats', defaultStats),
     preferences: readJson('geography-gym-preferences', defaultPreferences),
     tipIndex: Number.parseInt(localStorage.getItem('geography-gym-tip-index') ?? '0', 10) || 0,
+    flaggedQuestionIds: [],
   }
   return { activeProfileId: profile.id, profiles: [profile] }
 }
@@ -260,7 +290,13 @@ function App() {
   const [screen, setScreen] = useState<Screen>('home')
   const [modal, setModal] = useState<Modal>(null)
   const [pendingCategory, setPendingCategory] = useState<Category>('mixed')
+  const [pendingPractice, setPendingPractice] = useState<PracticeMode>('variety')
+  const [onlyFlagged, setOnlyFlagged] = useState(false)
+  const [allFlaggedModes, setAllFlaggedModes] = useState(false)
   const [category, setCategory] = useState<Category>('mixed')
+  const [practice, setPractice] = useState<PracticeMode>('variety')
+  const [workoutOnlyFlagged, setWorkoutOnlyFlagged] = useState(false)
+  const [workoutAllFlaggedModes, setWorkoutAllFlaggedModes] = useState(false)
   const [questions, setQuestions] = useState<Question[]>([])
   const [questionIndex, setQuestionIndex] = useState(0)
   const [score, setScore] = useState(0)
@@ -412,6 +448,21 @@ function App() {
 
   const currentQuestion = questions[questionIndex]
   const accuracy = stats.answered ? Math.round((stats.correct / stats.answered) * 100) : 0
+  const flaggedCount = getQuestionPoolCount(
+    'mixed',
+    'variety',
+    activeProfile.flaggedQuestionIds,
+    true,
+    true,
+  )
+  const setupPoolCount = getQuestionPoolCount(
+    pendingCategory,
+    pendingPractice,
+    activeProfile.flaggedQuestionIds,
+    onlyFlagged,
+    allFlaggedModes,
+  )
+  const setupQuestionCount = Math.min(preferences.roundSize, setupPoolCount)
 
   function updateActiveProfile(updater: (profile: Profile) => Profile) {
     setProfileStore((current) => ({
@@ -429,14 +480,43 @@ function App() {
     }))
   }
 
-  function openWorkoutSetup(nextCategory: Category) {
+  function openWorkoutSetup(nextCategory: Category, nextPractice: PracticeMode = 'variety') {
     setPendingCategory(nextCategory)
+    setPendingPractice(nextPractice)
+    setOnlyFlagged(false)
+    setAllFlaggedModes(false)
+    setModal('setup')
+  }
+
+  function openFlaggedReview() {
+    setPendingCategory('mixed')
+    setPendingPractice('variety')
+    setOnlyFlagged(true)
+    setAllFlaggedModes(true)
     setModal('setup')
   }
 
   function startWorkout() {
+    const available = getQuestionPoolCount(
+      pendingCategory,
+      pendingPractice,
+      activeProfile.flaggedQuestionIds,
+      onlyFlagged,
+      allFlaggedModes,
+    )
+    if (available === 0) return
     setCategory(pendingCategory)
-    setQuestions(buildQuestions(pendingCategory, preferences.roundSize))
+    setPractice(pendingPractice)
+    setWorkoutOnlyFlagged(onlyFlagged)
+    setWorkoutAllFlaggedModes(allFlaggedModes)
+    setQuestions(buildQuestions(
+      pendingCategory,
+      Math.min(preferences.roundSize, available),
+      pendingPractice,
+      activeProfile.flaggedQuestionIds,
+      onlyFlagged,
+      allFlaggedModes,
+    ))
     setQuestionIndex(0)
     setScore(0)
     setStreak(0)
@@ -451,6 +531,14 @@ function App() {
   function resetQuestion() {
     setAnswered(false)
     setWasCorrect(false)
+  }
+
+  function replayWorkout() {
+    setPendingCategory(category)
+    setPendingPractice(practice)
+    setOnlyFlagged(workoutOnlyFlagged)
+    setAllFlaggedModes(workoutAllFlaggedModes)
+    setModal('setup')
   }
 
   function recordAnswer(correct: boolean) {
@@ -511,6 +599,15 @@ function App() {
     setModal(null)
   }
 
+  function setQuestionFlag(questionId: string, flagged: boolean) {
+    updateActiveProfile((profile) => ({
+      ...profile,
+      flaggedQuestionIds: flagged
+        ? [...new Set([...profile.flaggedQuestionIds, questionId])]
+        : profile.flaggedQuestionIds.filter((id) => id !== questionId),
+    }))
+  }
+
   function openProfiles() {
     setNewProfileName('')
     setEditingProfileId(null)
@@ -534,6 +631,7 @@ function App() {
       stats: { ...defaultStats },
       preferences: { ...defaultPreferences },
       tipIndex: 0,
+      flaggedQuestionIds: [],
     }
     setProfileStore((current) => ({
       activeProfileId: profile.id,
@@ -669,7 +767,9 @@ function App() {
         <Home
           stats={stats}
           accuracy={accuracy}
+          flaggedCount={flaggedCount}
           openWorkoutSetup={openWorkoutSetup}
+          openFlaggedReview={openFlaggedReview}
           onResetStats={() => setModal('reset-stats')}
         />
       )}
@@ -705,6 +805,8 @@ function App() {
             answered={answered}
             onAnswer={recordAnswer}
             onFeedback={(kind) => playFeedbackSound(kind, preferences.sound)}
+            flagged={activeProfile.flaggedQuestionIds.includes(currentQuestion.id)}
+            onFlagChange={(flagged) => setQuestionFlag(currentQuestion.id, flagged)}
           />
 
           {answered && (
@@ -730,7 +832,8 @@ function App() {
           elapsed={elapsed}
           timerEnabled={preferences.timer}
           category={category}
-          onReplay={() => openWorkoutSetup(category)}
+          practice={practice}
+          onReplay={replayWorkout}
           onHome={() => setScreen('home')}
         />
       )}
@@ -738,8 +841,16 @@ function App() {
       {screen === 'home' && <AppFooter />}
 
       {modal === 'setup' && (
-        <ModalShell title="Set up your workout" eyebrow={categoryDetails[pendingCategory].label} onClose={() => setModal(null)}>
-          <p className="modal-lead">Choose how long you want to practice. Questions are selected from a pool of {questionPoolCounts[pendingCategory].toLocaleString()}.</p>
+        <ModalShell
+          title="Set up your workout"
+          eyebrow={allFlaggedModes ? 'Flagged Review' : `${categoryDetails[pendingCategory].label} · ${practiceDetails[pendingPractice].label}`}
+          onClose={() => setModal(null)}
+        >
+          <p className="modal-lead">
+            {onlyFlagged
+              ? `${setupPoolCount.toLocaleString()} flagged ${setupPoolCount === 1 ? 'question is' : 'questions are'} available for this workout.`
+              : `${practiceDetails[pendingPractice].description} Choose from a pool of ${setupPoolCount.toLocaleString()} questions.`}
+          </p>
           <fieldset className="choice-fieldset">
             <legend>Questions this round</legend>
             <div className="segmented-options">
@@ -765,8 +876,30 @@ function App() {
             title="Show workout timer"
             description="Track elapsed time without creating a deadline."
           />
-          <button className="primary-button modal-primary" type="button" onClick={startWorkout}>
-            Start {preferences.roundSize}-question workout
+          <ToggleRow
+            checked={onlyFlagged}
+            onChange={(checked) => {
+              setOnlyFlagged(checked)
+              if (!checked) setAllFlaggedModes(false)
+            }}
+            icon={<Flag />}
+            title="Only use flagged questions"
+            description={
+              flaggedCount > 0
+                ? `${flaggedCount} ${flaggedCount === 1 ? 'question is' : 'questions are'} flagged in ${activeProfile.name}'s profile.`
+                : 'Flag questions during a workout to build a personal review list.'
+            }
+            disabled={flaggedCount === 0 || allFlaggedModes}
+          />
+          <button
+            className="primary-button modal-primary"
+            type="button"
+            onClick={startWorkout}
+            disabled={setupQuestionCount === 0}
+          >
+            {setupQuestionCount > 0
+              ? `Start ${setupQuestionCount}-question workout`
+              : 'No flagged questions available'}
           </button>
         </ModalShell>
       )}
@@ -1022,12 +1155,16 @@ function App() {
 function Home({
   stats,
   accuracy,
+  flaggedCount,
   openWorkoutSetup,
+  openFlaggedReview,
   onResetStats,
 }: {
   stats: Stats
   accuracy: number
-  openWorkoutSetup: (category: Category) => void
+  flaggedCount: number
+  openWorkoutSetup: (category: Category, practice?: PracticeMode) => void
+  openFlaggedReview: () => void
   onResetStats: () => void
 }) {
   return (
@@ -1070,7 +1207,7 @@ function Home({
         <div className="section-heading">
           <div>
             <p className="eyebrow">Choose a learning path</p>
-            <h2>Three ways to practice</h2>
+            <h2>Three subjects to explore</h2>
           </div>
           <p>Each path mixes question styles that develop recall, map placement, and spatial reasoning.</p>
         </div>
@@ -1105,6 +1242,54 @@ function Home({
         </div>
       </section>
 
+      <section className="practice-section">
+        <div className="section-heading">
+          <div>
+            <p className="eyebrow">Choose how to practice</p>
+            <h2>Build different geography skills</h2>
+          </div>
+          <p>Use clues, borders, distance comparisons, map placement, or your own flagged review list.</p>
+        </div>
+        <div className="practice-grid">
+          <PracticeCard
+            icon={<Lightbulb />}
+            title="Clue Ladder"
+            description="Identify states, countries, and landmarks as clues become more specific."
+            detail="U.S. · World · Landmarks"
+            onStart={() => openWorkoutSetup('mixed', 'clue-ladder')}
+          />
+          <PracticeCard
+            icon={<Route />}
+            title="Neighbor Challenge"
+            description="Choose which states or countries share a land border."
+            detail="U.S. · World"
+            onStart={() => openWorkoutSetup('mixed', 'neighbors')}
+          />
+          <PracticeCard
+            icon={<Compass />}
+            title="Which Is Closer?"
+            description="Compare real-world distances between famous landmarks."
+            detail="Landmarks"
+            onStart={() => openWorkoutSetup('landmarks', 'closer')}
+          />
+          <PracticeCard
+            icon={<MapPin />}
+            title="Map Pinpoint"
+            description="Tap the world map and see how close you are to a landmark."
+            detail="Landmarks"
+            onStart={() => openWorkoutSetup('landmarks', 'pinpoint')}
+          />
+          <PracticeCard
+            icon={<Flag />}
+            title="Flagged Review"
+            description="Practice only the questions this profile has marked for another look."
+            detail={`${flaggedCount} flagged ${flaggedCount === 1 ? 'question' : 'questions'}`}
+            onStart={openFlaggedReview}
+            disabled={flaggedCount === 0}
+          />
+        </div>
+      </section>
+
       <section className="principle-card">
         <Route size={32} />
         <div>
@@ -1114,6 +1299,34 @@ function Home({
         </div>
       </section>
     </main>
+  )
+}
+
+function PracticeCard({
+  icon,
+  title,
+  description,
+  detail,
+  onStart,
+  disabled = false,
+}: {
+  icon: React.ReactNode
+  title: string
+  description: string
+  detail: string
+  onStart: () => void
+  disabled?: boolean
+}) {
+  return (
+    <article className="practice-card">
+      <div className="practice-icon">{icon}</div>
+      <h3>{title}</h3>
+      <p>{description}</p>
+      <span>{detail}</span>
+      <button className="card-button" type="button" onClick={onStart} disabled={disabled}>
+        {disabled ? 'Flag questions to begin' : 'Start this practice'} <span aria-hidden="true">→</span>
+      </button>
+    </article>
   )
 }
 
@@ -1157,11 +1370,15 @@ function QuestionCard({
   answered,
   onAnswer,
   onFeedback,
+  flagged,
+  onFlagChange,
 }: {
   question: Question
   answered: boolean
   onAnswer: (correct: boolean) => void
   onFeedback: (kind: FeedbackKind) => void
+  flagged: boolean
+  onFlagChange: (flagged: boolean) => void
 }) {
   const [wrongAnswers, setWrongAnswers] = useState<string[]>([])
   const [correctAnswer, setCorrectAnswer] = useState<string | null>(null)
@@ -1187,8 +1404,10 @@ function QuestionCard({
   return (
     <section className="question-card">
       <div className="question-label">
-        {question.kind === 'locate-us' || question.kind === 'locate-world'
+        {question.kind === 'locate-us' || question.kind === 'locate-world' || question.kind === 'pinpoint'
           ? <MapPin size={17} />
+          : question.kind === 'clue'
+            ? <Lightbulb size={17} />
           : question.kind === 'matching'
             ? <Route size={17} />
             : question.kind === 'order'
@@ -1200,32 +1419,24 @@ function QuestionCard({
       {question.hint && <p className="question-hint">{question.hint}</p>}
 
       {question.kind === 'choice' && (
-        <div className="answer-grid">
-          {question.options.map((option) => {
-            const isCorrect = option === question.answer
-            const isWrong = wrongAnswers.includes(option)
-            const classes = [
-              'answer',
-              answered && isCorrect ? 'correct-answer' : '',
-              isWrong ? 'wrong-answer' : '',
-              shakingAnswer === option ? 'shake' : '',
-              answered && !isCorrect && !isWrong ? 'muted-answer' : '',
-            ].join(' ')
-            return (
-              <button
-                className={classes}
-                type="button"
-                key={option}
-                disabled={answered || isWrong}
-                onClick={() => attemptAnswer(option, question.answer)}
-              >
-                <span>{option}</span>
-                {answered && isCorrect && <Check size={19} />}
-                {isWrong && <X size={19} />}
-              </button>
-            )
-          })}
-        </div>
+        <AnswerChoices
+          options={question.options}
+          answer={question.answer}
+          answered={answered}
+          wrongAnswers={wrongAnswers}
+          shakingAnswer={shakingAnswer}
+          onSelect={(value) => attemptAnswer(value, question.answer)}
+        />
+      )}
+
+      {question.kind === 'clue' && (
+        <ClueLadder
+          question={question}
+          answered={answered}
+          wrongAnswers={wrongAnswers}
+          shakingAnswer={shakingAnswer}
+          onSelect={(value) => attemptAnswer(value, question.answer)}
+        />
       )}
 
       {question.kind === 'locate-us' && (
@@ -1269,10 +1480,117 @@ function QuestionCard({
         />
       )}
 
+      {question.kind === 'pinpoint' && (
+        <PinpointMap
+          question={question}
+          answered={answered}
+          onComplete={onAnswer}
+          onFeedback={onFeedback}
+        />
+      )}
+
       {!answered && wrongAnswers.length === 1 && (
         <p className="try-again-message" role="status">Try once more. The correct answer is still hidden.</p>
       )}
+
+      <label className="question-flag">
+        <input
+          type="checkbox"
+          checked={flagged}
+          onChange={(event) => onFlagChange(event.target.checked)}
+        />
+        <Flag size={17} />
+        <span>Flag this question for review</span>
+      </label>
     </section>
+  )
+}
+
+function AnswerChoices({
+  options,
+  answer,
+  answered,
+  wrongAnswers,
+  shakingAnswer,
+  onSelect,
+}: {
+  options: string[]
+  answer: string
+  answered: boolean
+  wrongAnswers: string[]
+  shakingAnswer: string | null
+  onSelect: (value: string) => void
+}) {
+  return (
+    <div className="answer-grid">
+      {options.map((option) => {
+        const isCorrect = option === answer
+        const isWrong = wrongAnswers.includes(option)
+        const classes = [
+          'answer',
+          answered && isCorrect ? 'correct-answer' : '',
+          isWrong ? 'wrong-answer' : '',
+          shakingAnswer === option ? 'shake' : '',
+          answered && !isCorrect && !isWrong ? 'muted-answer' : '',
+        ].join(' ')
+        return (
+          <button
+            className={classes}
+            type="button"
+            key={option}
+            disabled={answered || isWrong}
+            onClick={() => onSelect(option)}
+          >
+            <span>{option}</span>
+            {answered && isCorrect && <Check size={19} />}
+            {isWrong && <X size={19} />}
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+function ClueLadder({
+  question,
+  answered,
+  wrongAnswers,
+  shakingAnswer,
+  onSelect,
+}: {
+  question: ClueQuestion
+  answered: boolean
+  wrongAnswers: string[]
+  shakingAnswer: string | null
+  onSelect: (value: string) => void
+}) {
+  const [revealedClues, setRevealedClues] = useState(1)
+
+  return (
+    <div className="clue-ladder">
+      <ol>
+        {question.clues.slice(0, revealedClues).map((clue, index) => (
+          <li key={clue}><span>{index + 1}</span>{clue}</li>
+        ))}
+      </ol>
+      {revealedClues < question.clues.length && !answered && (
+        <button
+          className="quiet-button reveal-clue-button"
+          type="button"
+          onClick={() => setRevealedClues((count) => count + 1)}
+        >
+          <Lightbulb size={17} /> Reveal another clue
+        </button>
+      )}
+      <AnswerChoices
+        options={question.options}
+        answer={question.answer}
+        answered={answered}
+        wrongAnswers={wrongAnswers}
+        shakingAnswer={shakingAnswer}
+        onSelect={onSelect}
+      />
+    </div>
   )
 }
 
@@ -1518,6 +1836,104 @@ function WorldMap({
   )
 }
 
+function mapPoint(lat: number, lon: number) {
+  return {
+    x: ((lon + 180) / 360) * 900,
+    y: ((90 - lat) / 180) * 440,
+  }
+}
+
+function mapDistanceKm(
+  first: { lat: number; lon: number },
+  second: { lat: number; lon: number },
+) {
+  const radians = (degrees: number) => degrees * Math.PI / 180
+  const latitudeDelta = radians(second.lat - first.lat)
+  const longitudeDelta = radians(second.lon - first.lon)
+  const firstLatitude = radians(first.lat)
+  const secondLatitude = radians(second.lat)
+  const value =
+    Math.sin(latitudeDelta / 2) ** 2 +
+    Math.cos(firstLatitude) * Math.cos(secondLatitude) * Math.sin(longitudeDelta / 2) ** 2
+  return 6371 * 2 * Math.atan2(Math.sqrt(value), Math.sqrt(1 - value))
+}
+
+function PinpointMap({
+  question,
+  answered,
+  onComplete,
+  onFeedback,
+}: {
+  question: PinpointQuestion
+  answered: boolean
+  onComplete: (correct: boolean) => void
+  onFeedback: (kind: FeedbackKind) => void
+}) {
+  const [attempts, setAttempts] = useState<{ x: number; y: number; distance: number }[]>([])
+  const target = mapPoint(question.target.lat, question.target.lon)
+
+  function choosePoint(event: React.MouseEvent<SVGSVGElement>) {
+    if (answered || attempts.length >= 2) return
+    const bounds = event.currentTarget.getBoundingClientRect()
+    const x = ((event.clientX - bounds.left) / bounds.width) * 900
+    const y = ((event.clientY - bounds.top) / bounds.height) * 440
+    const selected = {
+      lat: 90 - (y / 440) * 180,
+      lon: (x / 900) * 360 - 180,
+    }
+    const distance = mapDistanceKm(selected, question.target)
+    const nextAttempts = [...attempts, { x, y, distance }]
+    const correct = distance <= 750
+    setAttempts(nextAttempts)
+    onFeedback(correct ? 'correct' : 'incorrect')
+    if (correct || nextAttempts.length >= 2) onComplete(correct)
+  }
+
+  const latestAttempt = attempts.at(-1)
+
+  return (
+    <div className="world-map pinpoint-map">
+      <svg
+        viewBox="0 0 900 440"
+        role="button"
+        aria-label={`World map. Place ${question.answer}.`}
+        className={answered ? 'pinpoint-complete' : ''}
+        onClick={choosePoint}
+      >
+        <path className="continent" d="M70 70 L145 38 250 62 300 118 270 165 218 172 190 220 140 205 110 150 55 125Z" />
+        <path className="continent" d="M245 220 L300 245 325 325 292 405 250 360 228 280Z" />
+        <path className="continent" d="M390 85 L455 65 500 92 475 125 432 132 400 112Z" />
+        <path className="continent" d="M430 145 L505 138 555 205 530 322 480 360 445 292 420 205Z" />
+        <path className="continent" d="M505 78 L650 58 785 105 820 180 755 215 675 185 625 230 550 190 500 130Z" />
+        <path className="continent" d="M700 285 L790 275 835 330 785 380 710 350Z" />
+        {attempts.map((attempt, index) => (
+          <g className="pinpoint-attempt" key={`${attempt.x}-${attempt.y}`}>
+            <circle cx={attempt.x} cy={attempt.y} r="13" />
+            <text x={attempt.x} y={attempt.y + 5}>{index + 1}</text>
+          </g>
+        ))}
+        {answered && (
+          <g className="pinpoint-target">
+            <circle cx={target.x} cy={target.y} r="15" />
+            <path d={`M${target.x - 7} ${target.y} L${target.x - 2} ${target.y + 6} L${target.x + 9} ${target.y - 7}`} />
+          </g>
+        )}
+      </svg>
+      {!answered && attempts.length === 0 && <p className="map-answer">Tap anywhere on the map to place your first marker.</p>}
+      {!answered && latestAttempt && (
+        <p className="try-again-message" role="status">
+          About {Math.round(latestAttempt.distance).toLocaleString()} km away. Try once more—the exact location is still hidden.
+        </p>
+      )}
+      {answered && latestAttempt && (
+        <p className="map-answer">
+          Your final marker was about {Math.round(latestAttempt.distance).toLocaleString()} km from {question.place}.
+        </p>
+      )}
+    </div>
+  )
+}
+
 function MatchingGame({
   question,
   answered,
@@ -1686,6 +2102,7 @@ function Results({
   elapsed,
   timerEnabled,
   category,
+  practice,
   onReplay,
   onHome,
 }: {
@@ -1695,6 +2112,7 @@ function Results({
   elapsed: number
   timerEnabled: boolean
   category: Category
+  practice: PracticeMode
   onReplay: () => void
   onHome: () => void
 }) {
@@ -1703,7 +2121,11 @@ function Results({
     <main className="results-shell">
       <section className="results-card">
         <div className="result-medal">{percent >= 80 ? <Trophy /> : <Award />}</div>
-        <p className="eyebrow">{categoryDetails[category].label} complete</p>
+        <p className="eyebrow">
+          {practice === 'variety'
+            ? `${categoryDetails[category].label} complete`
+            : `${practiceDetails[practice].label} complete`}
+        </p>
         <h1>{percent >= 80 ? 'Excellent workout.' : percent >= 55 ? 'You’re making progress.' : 'A good first round.'}</h1>
         <p className="result-copy">
           {percent >= 80
@@ -1763,19 +2185,26 @@ function ToggleRow({
   icon,
   title,
   description,
+  disabled = false,
 }: {
   checked: boolean
   onChange: (checked: boolean) => void
   icon: React.ReactNode
   title: string
   description: string
+  disabled?: boolean
 }) {
   return (
-    <label className="toggle-row">
+    <label className={`toggle-row ${disabled ? 'disabled' : ''}`}>
       <span className="setting-icon">{icon}</span>
       <span className="setting-copy"><strong>{title}</strong><small>{description}</small></span>
       <span className="switch">
-        <input type="checkbox" checked={checked} onChange={(event) => onChange(event.target.checked)} />
+        <input
+          type="checkbox"
+          checked={checked}
+          disabled={disabled}
+          onChange={(event) => onChange(event.target.checked)}
+        />
         <span />
       </span>
     </label>
