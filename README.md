@@ -24,11 +24,16 @@ The current question banks include:
 Players can choose 10-, 25-, or 50-question workouts. Multiple-choice, location, and
 ordering questions allow two attempts. Matching Pairs provides immediate animated
 feedback. Optional answer sounds, an elapsed timer, rotating startup tips, and local
-progress are available from Settings. The home-page progress counters can be reset
-without changing workout preferences.
+progress are available from Settings.
 
-No account or analytics service is used. Progress and preferences are stored locally,
-and no network connection is required after the app has been cached.
+Multiple local profiles can share one device without accounts or passwords. Each
+profile has independent progress, theme, accent color, sounds, timer, startup tips,
+tip rotation, and default workout length. Existing single-profile progress and
+preferences migrate into an initial **Me** profile. A profile's home-page progress
+counters can be reset without changing its preferences or other profiles.
+
+No account or analytics service is used. Profiles, progress, and preferences are
+stored locally, and no network connection is required after the app has been cached.
 
 The production site also includes an FAQ, Help Center, feedback link, and privacy policy.
 

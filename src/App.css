@@ -64,6 +64,24 @@
 }
 .header-link.open-app-link:hover { background: var(--cp-accent-hover); color: var(--cp-accent-fg); }
 .theme-button { min-height: 40px; padding: 7px 10px; }
+.profile-menu-button,
+.profile-avatar {
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--cp-accent);
+  color: var(--cp-accent-fg);
+  font-weight: 800;
+}
+.profile-menu-button {
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 1px solid var(--cp-accent);
+  cursor: pointer;
+}
+.profile-avatar { width: 36px; height: 36px; }
 .icon-button, .quiet-button, .primary-button, .card-button, .back-button {
   min-height: 42px;
   display: inline-flex;
@@ -610,6 +628,153 @@
   font-weight: 700;
   cursor: pointer;
 }
+.profile-settings-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px;
+  border: 1px solid var(--cp-border);
+  border-radius: 0.625rem;
+  background: var(--cp-bg-elevated);
+}
+.profile-settings-banner strong,
+.profile-settings-banner small { display: block; }
+.profile-settings-banner small { margin-top: 2px; color: var(--cp-text-muted); }
+.appearance-fieldset {
+  display: grid;
+  gap: 16px;
+  padding: 16px;
+  border: 1px solid var(--cp-border);
+  border-radius: 16px;
+  background: var(--cp-bg-elevated);
+}
+.appearance-fieldset legend {
+  padding-inline: 5px;
+  color: var(--cp-accent);
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.appearance-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+}
+.appearance-row > span { font-weight: 750; }
+.theme-options {
+  display: flex;
+  padding: 3px;
+  border: 1px solid var(--cp-border);
+  border-radius: 0.625rem;
+  background: var(--cp-surface);
+}
+.theme-options label {
+  min-width: 72px;
+  padding: 7px 10px;
+  border-radius: 7px;
+  font-weight: 700;
+  text-align: center;
+  cursor: pointer;
+}
+.theme-options label.selected-option { background: var(--cp-accent); color: var(--cp-accent-fg); }
+.theme-options input { position: absolute; opacity: 0; pointer-events: none; }
+.accent-options { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 9px; }
+.accent-option {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 3px solid transparent;
+  border-radius: 50%;
+  color: var(--cp-accent-fg);
+  cursor: pointer;
+}
+.accent-option[aria-pressed="true"] {
+  border-color: var(--cp-surface);
+  outline: 2px solid var(--cp-text);
+  outline-offset: 1px;
+}
+.accent-option[data-accent-option="indigo"] { background: #4f46e5; }
+.accent-option[data-accent-option="blue"] { background: #2563eb; }
+.accent-option[data-accent-option="teal"] { background: #0d9488; }
+.accent-option[data-accent-option="green"] { background: #16a34a; }
+.accent-option[data-accent-option="violet"] { background: #7c3aed; }
+.accent-option[data-accent-option="rose"] { background: #e11d48; }
+.accent-option[data-accent-option="orange"] { background: #ea580c; }
+.accent-option[data-accent-option="crimson"] { background: #be123c; }
+.profile-list { display: grid; gap: 10px; }
+.profile-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 8px;
+}
+.profile-select {
+  min-height: 52px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 11px;
+  padding: 7px 11px;
+  border: 1px solid var(--cp-border);
+  border-radius: 0.625rem;
+  background: var(--cp-bg-elevated);
+  color: var(--cp-text);
+  font-weight: 750;
+  text-align: left;
+  cursor: pointer;
+}
+.profile-select.active { border-color: var(--cp-accent); background: var(--cp-accent-soft); }
+.profile-select > svg { color: var(--cp-accent); }
+.profile-edit-form {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 8px;
+}
+.profile-edit-form input,
+.profile-add-form input {
+  min-width: 0;
+  min-height: 42px;
+  padding: 9px 11px;
+  border: 1px solid var(--cp-border);
+  border-radius: 0.625rem;
+  background: var(--cp-surface);
+  color: var(--cp-text);
+  font: inherit;
+}
+.profile-delete-confirm {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 11px;
+  border: 1px solid var(--cp-danger);
+  border-radius: 0.625rem;
+  color: var(--cp-danger);
+  font-size: 0.84rem;
+}
+.profile-delete-confirm span { margin-right: auto; }
+.profile-add-form {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding-top: 15px;
+  border-top: 1px solid var(--cp-border);
+}
+.profile-add-form > svg { color: var(--cp-accent); }
+.profile-privacy-note {
+  margin: 0;
+  color: var(--cp-text-muted);
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+button:disabled { opacity: 0.5; cursor: not-allowed; }
 .choice-fieldset {
   min-width: 0;
   margin: 0;
@@ -773,6 +938,7 @@
   .header-link.open-app-link { min-height: 38px; padding-inline: 9px; }
   .theme-button { width: 38px; padding: 0; }
   .theme-button span { display: none; }
+  .profile-menu-button { width: 38px; height: 38px; }
   .install-button { display: none; }
   .hero, .tracks-section, .principle-card { width: min(100% - 28px, 1180px); }
   .hero { padding-top: 28px; }
@@ -807,9 +973,19 @@
   .modal-card { max-height: calc(100vh - 16px); border-radius: 16px 16px 0 0; }
   .modal-header, .modal-content { padding-inline: 17px; }
   .support-links { grid-template-columns: 1fr; }
+  .appearance-row { align-items: flex-start; flex-direction: column; }
+  .theme-options { width: 100%; }
+  .theme-options label { flex: 1; min-width: 0; }
+  .accent-options { justify-content: flex-start; }
+  .profile-add-form { grid-template-columns: minmax(0, 1fr) auto; }
+  .profile-add-form > svg { display: none; }
+  .profile-add-form .primary-button { padding-inline: 10px; }
   .app-footer > div { align-items: flex-start; flex-direction: column; padding-block: 20px; }
   .update-notification { grid-template-columns: 1fr; }
   .update-actions > button { flex: 1; }
+}
+@media (max-width: 460px) {
+  .brand strong { display: none; }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; }

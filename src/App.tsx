@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import {
   ArrowLeft,
   Award,
@@ -18,11 +18,15 @@ import {
   Map,
   MapPin,
   Moon,
+  Pencil,
+  Plus,
   RotateCcw,
   Route,
   Sparkles,
   Sun,
+  Trash2,
   Trophy,
+  UserRound,
   Volume2,
   VolumeX,
   X,
@@ -42,7 +46,8 @@ import './App.css'
 type Screen = 'home' | 'quiz' | 'results'
 type ThemeMode = 'system' | 'light' | 'dark'
 type RoundSize = 10 | 25 | 50
-type Modal = 'settings' | 'tips' | 'setup' | 'startup-tip' | 'reset-stats' | null
+type AccentColor = 'indigo' | 'blue' | 'teal' | 'green' | 'violet' | 'rose' | 'orange' | 'crimson'
+type Modal = 'settings' | 'tips' | 'setup' | 'startup-tip' | 'reset-stats' | 'profiles' | null
 type FeedbackKind = 'correct' | 'incorrect'
 
 type Stats = {
@@ -54,21 +59,47 @@ type Stats = {
 
 type Preferences = {
   theme: ThemeMode
+  accent: AccentColor
   sound: boolean
   timer: boolean
   tipsStartup: boolean
   roundSize: RoundSize
 }
 
+type Profile = {
+  id: string
+  name: string
+  stats: Stats
+  preferences: Preferences
+  tipIndex: number
+}
+
+type ProfileStore = {
+  activeProfileId: string
+  profiles: Profile[]
+}
+
 const defaultStats: Stats = { games: 0, correct: 0, answered: 0, bestStreak: 0 }
-const APP_VERSION = 'v6'
+const APP_VERSION = 'v7'
+const PROFILES_KEY = 'geography-gym-profiles-v1'
 const defaultPreferences: Preferences = {
   theme: 'system',
+  accent: 'indigo',
   sound: true,
   timer: false,
   tipsStartup: true,
   roundSize: 10,
 }
+const accentColors: { id: AccentColor; label: string }[] = [
+  { id: 'indigo', label: 'Indigo' },
+  { id: 'blue', label: 'Blue' },
+  { id: 'teal', label: 'Teal' },
+  { id: 'green', label: 'Green' },
+  { id: 'violet', label: 'Violet' },
+  { id: 'rose', label: 'Rose' },
+  { id: 'orange', label: 'Orange' },
+  { id: 'crimson', label: 'Crimson' },
+]
 
 const tips = [
   {
@@ -108,6 +139,60 @@ function readJson<T>(key: string, fallback: T): T {
   } catch {
     return fallback
   }
+}
+
+function createProfileId() {
+  return typeof crypto.randomUUID === 'function'
+    ? crypto.randomUUID()
+    : `profile-${Date.now()}-${Math.random().toString(36).slice(2)}`
+}
+
+function readProfileStore(): ProfileStore {
+  try {
+    const saved = localStorage.getItem(PROFILES_KEY)
+    if (saved) {
+      const parsed = JSON.parse(saved) as Partial<ProfileStore>
+      const profiles = Array.isArray(parsed.profiles)
+        ? parsed.profiles
+            .filter((profile) => profile && typeof profile.id === 'string' && typeof profile.name === 'string')
+            .map((profile) => {
+              const preferences = { ...defaultPreferences, ...profile.preferences }
+              if (!accentColors.some((color) => color.id === preferences.accent)) {
+                preferences.accent = 'indigo'
+              }
+              return {
+                id: profile.id,
+                name: profile.name.trim().slice(0, 24) || 'Profile',
+                stats: { ...defaultStats, ...profile.stats },
+                preferences,
+                tipIndex: Number.isInteger(profile.tipIndex) ? profile.tipIndex : 0,
+              }
+            })
+        : []
+
+      if (profiles.length > 0) {
+        const activeProfileId = profiles.some((profile) => profile.id === parsed.activeProfileId)
+          ? parsed.activeProfileId as string
+          : profiles[0].id
+        return { activeProfileId, profiles }
+      }
+    }
+  } catch {
+    // Fall through to the legacy-data migration.
+  }
+
+  const profile: Profile = {
+    id: createProfileId(),
+    name: 'Me',
+    stats: readJson('geography-gym-stats', defaultStats),
+    preferences: readJson('geography-gym-preferences', defaultPreferences),
+    tipIndex: Number.parseInt(localStorage.getItem('geography-gym-tip-index') ?? '0', 10) || 0,
+  }
+  return { activeProfileId: profile.id, profiles: [profile] }
+}
+
+function profileInitial(name: string) {
+  return name.trim().charAt(0).toUpperCase() || '?'
 }
 
 function shuffle<T>(items: readonly T[]) {
@@ -157,20 +242,33 @@ function App() {
   const [wasCorrect, setWasCorrect] = useState(false)
   const [elapsed, setElapsed] = useState(0)
   const [roundStartedAt, setRoundStartedAt] = useState<number | null>(null)
-  const [stats, setStats] = useState<Stats>(() =>
-    readJson('geography-gym-stats', defaultStats),
-  )
-  const [preferences, setPreferences] = useState<Preferences>(() =>
-    readJson('geography-gym-preferences', defaultPreferences),
-  )
-  const [showStartupOnLaunch] = useState(() =>
-    readJson('geography-gym-preferences', defaultPreferences).tipsStartup,
-  )
+  const [profileStore, setProfileStore] = useState<ProfileStore>(readProfileStore)
+  const activeProfile =
+    profileStore.profiles.find((profile) => profile.id === profileStore.activeProfileId)
+    ?? profileStore.profiles[0]
+  const stats = activeProfile.stats
+  const preferences = activeProfile.preferences
+  const [startupContext] = useState(() => ({
+    profileId: activeProfile.id,
+    enabled: activeProfile.preferences.tipsStartup,
+    tipIndex: activeProfile.tipIndex,
+  }))
   const [startupTip, setStartupTip] = useState(tips[0])
+  const [newProfileName, setNewProfileName] = useState('')
+  const [editingProfileId, setEditingProfileId] = useState<string | null>(null)
+  const [editingProfileName, setEditingProfileName] = useState('')
+  const [deleteProfileId, setDeleteProfileId] = useState<string | null>(null)
   const [deferredPrompt, setDeferredPrompt] = useState<Event | null>(null)
   const [waitingWorker, setWaitingWorker] = useState<ServiceWorker | null>(null)
   const updateRequested = useRef(false)
   const reloadingForUpdate = useRef(false)
+
+  useEffect(() => {
+    localStorage.setItem(PROFILES_KEY, JSON.stringify(profileStore))
+    localStorage.removeItem('geography-gym-stats')
+    localStorage.removeItem('geography-gym-preferences')
+    localStorage.removeItem('geography-gym-tip-index')
+  }, [profileStore])
 
   useEffect(() => {
     const resolveTheme = () => {
@@ -182,24 +280,30 @@ function App() {
           : preferences.theme
       document.documentElement.setAttribute('data-theme', theme)
       document.documentElement.setAttribute('data-theme-mode', preferences.theme)
+      document.documentElement.setAttribute('data-accent', preferences.accent)
     }
     resolveTheme()
-    localStorage.setItem('geography-gym-preferences', JSON.stringify(preferences))
     const media = window.matchMedia('(prefers-color-scheme: dark)')
     media.addEventListener('change', resolveTheme)
     return () => media.removeEventListener('change', resolveTheme)
   }, [preferences])
 
   useEffect(() => {
-    if (!showStartupOnLaunch) return
+    if (!startupContext.enabled) return
     const timer = window.setTimeout(() => {
-      const index = Number.parseInt(localStorage.getItem('geography-gym-tip-index') ?? '0', 10)
-      setStartupTip(tips[index % tips.length])
-      localStorage.setItem('geography-gym-tip-index', String((index + 1) % tips.length))
+      setStartupTip(tips[startupContext.tipIndex % tips.length])
+      setProfileStore((current) => ({
+        ...current,
+        profiles: current.profiles.map((profile) =>
+          profile.id === startupContext.profileId
+            ? { ...profile, tipIndex: (startupContext.tipIndex + 1) % tips.length }
+            : profile,
+        ),
+      }))
       setModal('startup-tip')
     }, 0)
     return () => window.clearTimeout(timer)
-  }, [showStartupOnLaunch])
+  }, [startupContext])
 
   useEffect(() => {
     const handleInstall = (event: Event) => {
@@ -281,8 +385,20 @@ function App() {
   const currentQuestion = questions[questionIndex]
   const accuracy = stats.answered ? Math.round((stats.correct / stats.answered) * 100) : 0
 
+  function updateActiveProfile(updater: (profile: Profile) => Profile) {
+    setProfileStore((current) => ({
+      ...current,
+      profiles: current.profiles.map((profile) =>
+        profile.id === current.activeProfileId ? updater(profile) : profile,
+      ),
+    }))
+  }
+
   function updatePreference<K extends keyof Preferences>(key: K, value: Preferences[K]) {
-    setPreferences((current) => ({ ...current, [key]: value }))
+    updateActiveProfile((profile) => ({
+      ...profile,
+      preferences: { ...profile.preferences, [key]: value },
+    }))
   }
 
   function openWorkoutSetup(nextCategory: Category) {
@@ -331,8 +447,7 @@ function App() {
         answered: stats.answered + questions.length,
         bestStreak: Math.max(stats.bestStreak, bestRunStreak),
       }
-      setStats(nextStats)
-      localStorage.setItem('geography-gym-stats', JSON.stringify(nextStats))
+      updateActiveProfile((profile) => ({ ...profile, stats: nextStats }))
       setScreen('results')
       return
     }
@@ -364,9 +479,73 @@ function App() {
   }
 
   function resetStats() {
-    setStats(defaultStats)
-    localStorage.setItem('geography-gym-stats', JSON.stringify(defaultStats))
+    updateActiveProfile((profile) => ({ ...profile, stats: { ...defaultStats } }))
     setModal(null)
+  }
+
+  function openProfiles() {
+    setNewProfileName('')
+    setEditingProfileId(null)
+    setDeleteProfileId(null)
+    setModal('profiles')
+  }
+
+  function selectProfile(profileId: string) {
+    setProfileStore((current) => ({ ...current, activeProfileId: profileId }))
+    setScreen('home')
+    setModal(null)
+  }
+
+  function addProfile(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    const name = newProfileName.trim()
+    if (!name) return
+    const profile: Profile = {
+      id: createProfileId(),
+      name: name.slice(0, 24),
+      stats: { ...defaultStats },
+      preferences: { ...defaultPreferences },
+      tipIndex: 0,
+    }
+    setProfileStore((current) => ({
+      activeProfileId: profile.id,
+      profiles: [...current.profiles, profile],
+    }))
+    setNewProfileName('')
+    setScreen('home')
+    setModal(null)
+  }
+
+  function startRenamingProfile(profile: Profile) {
+    setEditingProfileId(profile.id)
+    setEditingProfileName(profile.name)
+    setDeleteProfileId(null)
+  }
+
+  function saveProfileName(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    const name = editingProfileName.trim()
+    if (!editingProfileId || !name) return
+    setProfileStore((current) => ({
+      ...current,
+      profiles: current.profiles.map((profile) =>
+        profile.id === editingProfileId ? { ...profile, name: name.slice(0, 24) } : profile,
+      ),
+    }))
+    setEditingProfileId(null)
+  }
+
+  function deleteProfile(profileId: string) {
+    setProfileStore((current) => {
+      if (current.profiles.length === 1) return current
+      const profiles = current.profiles.filter((profile) => profile.id !== profileId)
+      const activeProfileId =
+        current.activeProfileId === profileId ? profiles[0].id : current.activeProfileId
+      return { activeProfileId, profiles }
+    })
+    setDeleteProfileId(null)
+    setEditingProfileId(null)
+    setScreen('home')
   }
 
   const themeLabel =
@@ -445,6 +624,15 @@ function App() {
                 ? <Moon size={19} />
                 : <Sparkles size={19} />}
             <span>{themeLabel}</span>
+          </button>
+          <button
+            className="profile-menu-button"
+            type="button"
+            onClick={openProfiles}
+            aria-label={`Profile: ${activeProfile.name}. Manage profiles`}
+            title={`Profile: ${activeProfile.name}`}
+          >
+            {profileInitial(activeProfile.name)}
           </button>
         </div>
       </header>
@@ -556,7 +744,52 @@ function App() {
       )}
 
       {modal === 'settings' && (
-        <ModalShell title="Settings" eyebrow="Your workout" onClose={() => setModal(null)}>
+        <ModalShell title="Settings" eyebrow={`${activeProfile.name}'s profile`} onClose={() => setModal(null)}>
+          <div className="profile-settings-banner">
+            <span className="profile-avatar" aria-hidden="true">{profileInitial(activeProfile.name)}</span>
+            <div>
+              <strong>{activeProfile.name}</strong>
+              <small>These settings apply only to this profile.</small>
+            </div>
+          </div>
+          <fieldset className="choice-fieldset appearance-fieldset">
+            <legend>Appearance</legend>
+            <div className="appearance-row">
+              <span>Theme</span>
+              <div className="theme-options">
+                {(['system', 'light', 'dark'] as ThemeMode[]).map((theme) => (
+                  <label key={theme} className={preferences.theme === theme ? 'selected-option' : ''}>
+                    <input
+                      type="radio"
+                      name="profile-theme"
+                      checked={preferences.theme === theme}
+                      onChange={() => updatePreference('theme', theme)}
+                    />
+                    {theme.charAt(0).toUpperCase() + theme.slice(1)}
+                  </label>
+                ))}
+              </div>
+            </div>
+            <div className="appearance-row accent-row">
+              <span>Accent color</span>
+              <div className="accent-options">
+                {accentColors.map((color) => (
+                  <button
+                    key={color.id}
+                    className="accent-option"
+                    data-accent-option={color.id}
+                    type="button"
+                    aria-label={color.label}
+                    aria-pressed={preferences.accent === color.id}
+                    title={color.label}
+                    onClick={() => updatePreference('accent', color.id)}
+                  >
+                    {preferences.accent === color.id && <Check size={17} />}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </fieldset>
           <div className="settings-list">
             <ToggleRow
               checked={preferences.sound}
@@ -608,6 +841,92 @@ function App() {
         </ModalShell>
       )}
 
+      {modal === 'profiles' && (
+        <ModalShell title="Profiles" eyebrow="Choose who is learning" onClose={() => setModal(null)}>
+          <div className="profile-list">
+            {profileStore.profiles.map((profile) => {
+              const isActive = profile.id === activeProfile.id
+              const isEditing = profile.id === editingProfileId
+              const isDeleting = profile.id === deleteProfileId
+
+              if (isEditing) {
+                return (
+                  <form className="profile-edit-form" key={profile.id} onSubmit={saveProfileName}>
+                    <span className="profile-avatar" aria-hidden="true">{profileInitial(editingProfileName)}</span>
+                    <input
+                      value={editingProfileName}
+                      maxLength={24}
+                      aria-label="Profile name"
+                      onChange={(event) => setEditingProfileName(event.target.value)}
+                      autoFocus
+                    />
+                    <button className="icon-button" type="submit" aria-label="Save profile name" disabled={!editingProfileName.trim()}>
+                      <Check size={18} />
+                    </button>
+                    <button className="icon-button" type="button" aria-label="Cancel rename" onClick={() => setEditingProfileId(null)}>
+                      <X size={18} />
+                    </button>
+                  </form>
+                )
+              }
+
+              return (
+                <div className="profile-row" key={profile.id}>
+                  <button
+                    className={`profile-select ${isActive ? 'active' : ''}`}
+                    type="button"
+                    onClick={() => selectProfile(profile.id)}
+                  >
+                    <span className="profile-avatar" aria-hidden="true">{profileInitial(profile.name)}</span>
+                    <span>{profile.name}</span>
+                    {isActive && <Check size={18} />}
+                  </button>
+                  <button className="icon-button" type="button" aria-label={`Rename ${profile.name}`} onClick={() => startRenamingProfile(profile)}>
+                    <Pencil size={17} />
+                  </button>
+                  <button
+                    className="icon-button"
+                    type="button"
+                    aria-label={`Delete ${profile.name}`}
+                    disabled={profileStore.profiles.length === 1}
+                    onClick={() => {
+                      setDeleteProfileId(profile.id)
+                      setEditingProfileId(null)
+                    }}
+                  >
+                    <Trash2 size={17} />
+                  </button>
+                  {isDeleting && (
+                    <div className="profile-delete-confirm">
+                      <span>Delete {profile.name} and all of this profile's progress?</span>
+                      <button className="danger-button" type="button" onClick={() => deleteProfile(profile.id)}>Delete</button>
+                      <button className="quiet-button" type="button" onClick={() => setDeleteProfileId(null)}>Cancel</button>
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+          <form className="profile-add-form" onSubmit={addProfile}>
+            <UserRound aria-hidden="true" />
+            <input
+              value={newProfileName}
+              maxLength={24}
+              placeholder="New profile name"
+              aria-label="New profile name"
+              onChange={(event) => setNewProfileName(event.target.value)}
+            />
+            <button className="primary-button" type="submit" disabled={!newProfileName.trim()}>
+              <Plus size={17} /> Add profile
+            </button>
+          </form>
+          <p className="profile-privacy-note">
+            Each profile keeps its own progress, theme, accent color, sounds, timer, tips, and
+            workout defaults on this device. No accounts or passwords are used.
+          </p>
+        </ModalShell>
+      )}
+
       {modal === 'tips' && (
         <ModalShell title="Tips" eyebrow="Get more from every workout" onClose={() => setModal(null)}>
           <div className="tips-list">
@@ -642,10 +961,10 @@ function App() {
       )}
 
       {modal === 'reset-stats' && (
-        <ModalShell title="Reset learning progress?" eyebrow="Lifetime counters" onClose={() => setModal(null)}>
+        <ModalShell title="Reset learning progress?" eyebrow={`${activeProfile.name}'s counters`} onClose={() => setModal(null)}>
           <p className="modal-lead">
-            This resets Workouts completed, Lifetime accuracy, and Best streak to zero on this
-            device. Your settings and preferences will not change.
+            This resets Workouts completed, Lifetime accuracy, and Best streak for
+            {' '}{activeProfile.name}. Other profiles and this profile's settings will not change.
           </p>
           <div className="confirmation-actions">
             <button className="danger-button" type="button" onClick={resetStats}>
