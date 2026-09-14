@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <script>
+      (() => {
+        const param = new URLSearchParams(window.location.search).get("clawpilotTheme");
+        const theme =
+          param || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+        document.documentElement.setAttribute("data-theme", theme);
+      })();
+    </script>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="description" content="Build geographic intuition through quick games about U.S. states, world geography, distances, directions, and landmarks." />
+    <meta name="theme-color" content="#b11f4b" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Geography Gym" />
+    <link rel="icon" type="image/svg+xml" href="./icons/icon.svg" />
+    <link rel="apple-touch-icon" href="./icons/icon-192.png" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <title>Geography Gym — Give your world knowledge a workout</title>
+    <script type="module" crossorigin src="./assets/index-B7qJH7Un.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-FWgh1aRK.css">
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>
