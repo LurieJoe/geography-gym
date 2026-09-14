@@ -30,6 +30,12 @@ Additional practice modes reuse and extend those subjects:
 - **Flagged Review:** a profile-specific workout assembled from questions the learner
   flags during any activity
 
+The home page uses a two-step workout path: first choose what to study (U.S.,
+World, Landmarks, or Mixed), then choose a compatible practice style. Practice
+styles that do not apply to the selected subject remain visible but disabled so
+their scope is clear. Flagged Review remains available as a profile-specific
+shortcut beside the progress counters.
+
 Players can choose 10-, 25-, or 50-question workouts. Multiple-choice, location, and
 ordering questions allow two attempts. Matching Pairs provides immediate animated
 feedback. Optional answer sounds, an elapsed timer, rotating startup tips, and local

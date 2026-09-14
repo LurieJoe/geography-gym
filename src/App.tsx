@@ -86,7 +86,7 @@ type ProfileStore = {
 }
 
 const defaultStats: Stats = { games: 0, correct: 0, answered: 0, bestStreak: 0 }
-const APP_VERSION = 'v9'
+const APP_VERSION = 'v10'
 const PROFILES_KEY = 'geography-gym-profiles-v1'
 const defaultPreferences: Preferences = {
   theme: 'system',
@@ -106,6 +106,21 @@ const accentColors: { id: AccentColor; label: string }[] = [
   { id: 'orange', label: 'Orange' },
   { id: 'crimson', label: 'Crimson' },
 ]
+const practiceModes: PracticeMode[] = ['variety', 'clue-ladder', 'neighbors', 'closer', 'pinpoint']
+
+function practiceAvailable(category: Category, practice: PracticeMode) {
+  if (practice === 'variety' || practice === 'clue-ladder') return true
+  if (practice === 'neighbors') return category === 'us' || category === 'world' || category === 'mixed'
+  return category === 'landmarks'
+}
+
+function practiceScope(category: Category, practice: PracticeMode) {
+  if (practice === 'neighbors' && category === 'mixed') return 'Uses U.S. and World questions'
+  if (!practiceAvailable(category, practice)) {
+    return practice === 'neighbors' ? 'Available for U.S., World, or Mixed' : 'Available for Landmarks'
+  }
+  return `${getQuestionPoolCount(category, practice).toLocaleString()} questions available`
+}
 
 const tips = [
   {
@@ -183,6 +198,10 @@ const tips = [
   {
     title: 'Build your own review list',
     text: 'Flag any Geography Gym question during a workout, then use Flagged Review or Only use flagged questions to practice it again.',
+  },
+  {
+    title: 'Build a workout in two steps',
+    text: 'First choose what to study—U.S., World, Landmarks, or Mixed. Then choose the practice style that builds the skill you want.',
   },
 ]
 
@@ -480,9 +499,9 @@ function App() {
     }))
   }
 
-  function openWorkoutSetup(nextCategory: Category, nextPractice: PracticeMode = 'variety') {
+  function openWorkoutSetup(nextCategory: Category) {
     setPendingCategory(nextCategory)
-    setPendingPractice(nextPractice)
+    setPendingPractice('variety')
     setOnlyFlagged(false)
     setAllFlaggedModes(false)
     setModal('setup')
@@ -842,15 +861,48 @@ function App() {
 
       {modal === 'setup' && (
         <ModalShell
-          title="Set up your workout"
-          eyebrow={allFlaggedModes ? 'Flagged Review' : `${categoryDetails[pendingCategory].label} · ${practiceDetails[pendingPractice].label}`}
+          title={allFlaggedModes ? 'Set up Flagged Review' : 'Choose how to practice'}
+          eyebrow={allFlaggedModes ? 'Profile review' : `Step 2 of 2 · ${categoryDetails[pendingCategory].label}`}
           onClose={() => setModal(null)}
         >
           <p className="modal-lead">
             {onlyFlagged
               ? `${setupPoolCount.toLocaleString()} flagged ${setupPoolCount === 1 ? 'question is' : 'questions are'} available for this workout.`
-              : `${practiceDetails[pendingPractice].description} Choose from a pool of ${setupPoolCount.toLocaleString()} questions.`}
+              : `You chose ${categoryDetails[pendingCategory].label}. Select a practice style, then choose your workout length.`}
           </p>
+          {!allFlaggedModes && (
+            <fieldset className="choice-fieldset">
+              <legend>Practice style</legend>
+              <div className="practice-options">
+                {practiceModes.map((mode) => {
+                  const available = practiceAvailable(pendingCategory, mode)
+                  return (
+                    <label
+                      key={mode}
+                      className={[
+                        pendingPractice === mode ? 'selected-option' : '',
+                        !available ? 'disabled-option' : '',
+                      ].join(' ')}
+                    >
+                      <input
+                        type="radio"
+                        name="practice-mode"
+                        value={mode}
+                        checked={pendingPractice === mode}
+                        disabled={!available}
+                        onChange={() => setPendingPractice(mode)}
+                      />
+                      <span>
+                        <strong>{practiceDetails[mode].label}</strong>
+                        <small>{practiceDetails[mode].description}</small>
+                        <em>{practiceScope(pendingCategory, mode)}</em>
+                      </span>
+                    </label>
+                  )
+                })}
+              </div>
+            </fieldset>
+          )}
           <fieldset className="choice-fieldset">
             <legend>Questions this round</legend>
             <div className="segmented-options">
@@ -1163,7 +1215,7 @@ function Home({
   stats: Stats
   accuracy: number
   flaggedCount: number
-  openWorkoutSetup: (category: Category, practice?: PracticeMode) => void
+  openWorkoutSetup: (category: Category) => void
   openFlaggedReview: () => void
   onResetStats: () => void
 }) {
@@ -1178,8 +1230,12 @@ function Home({
             countries, capitals, directions, locations, and landmarks.
           </p>
           <div className="hero-actions">
-            <button className="primary-button large" type="button" onClick={() => openWorkoutSetup('mixed')}>
-              <Sparkles size={19} /> Start a mixed workout
+            <button
+              className="primary-button large"
+              type="button"
+              onClick={() => document.getElementById('subjects')?.scrollIntoView({ behavior: 'smooth' })}
+            >
+              <Sparkles size={19} /> Choose a subject
             </button>
             <span>Choose 10, 25, or 50 questions</span>
           </div>
@@ -1198,18 +1254,27 @@ function Home({
         <div><strong>{stats.games}</strong><span>Workouts completed</span></div>
         <div><strong>{accuracy}%</strong><span>Lifetime accuracy</span></div>
         <div><strong>{stats.bestStreak}</strong><span>Best streak</span></div>
+        <button
+          className="review-stats-button"
+          type="button"
+          onClick={openFlaggedReview}
+          disabled={flaggedCount === 0}
+          title="Practice flagged questions"
+        >
+          <Flag size={17} /> Review flagged ({flaggedCount})
+        </button>
         <button className="reset-stats-button" type="button" onClick={onResetStats} title="Reset lifetime counters">
           <RotateCcw size={17} /> Reset
         </button>
       </section>
 
-      <section className="tracks-section">
+      <section className="tracks-section" id="subjects">
         <div className="section-heading">
           <div>
-            <p className="eyebrow">Choose a learning path</p>
-            <h2>Three subjects to explore</h2>
+            <p className="eyebrow">Step 1 · Choose what to study</p>
+            <h2>Pick a subject</h2>
           </div>
-          <p>Each path mixes question styles that develop recall, map placement, and spatial reasoning.</p>
+          <p>After choosing a subject, you’ll choose how you want to practice it.</p>
         </div>
         <div className="track-grid">
           <TrackCard
@@ -1239,53 +1304,14 @@ function Home({
             count={questionPoolCounts.landmarks}
             onStart={openWorkoutSetup}
           />
-        </div>
-      </section>
-
-      <section className="practice-section">
-        <div className="section-heading">
-          <div>
-            <p className="eyebrow">Choose how to practice</p>
-            <h2>Build different geography skills</h2>
-          </div>
-          <p>Use clues, borders, distance comparisons, map placement, or your own flagged review list.</p>
-        </div>
-        <div className="practice-grid">
-          <PracticeCard
-            icon={<Lightbulb />}
-            title="Clue Ladder"
-            description="Identify states, countries, and landmarks as clues become more specific."
-            detail="U.S. · World · Landmarks"
-            onStart={() => openWorkoutSetup('mixed', 'clue-ladder')}
-          />
-          <PracticeCard
-            icon={<Route />}
-            title="Neighbor Challenge"
-            description="Choose which states or countries share a land border."
-            detail="U.S. · World"
-            onStart={() => openWorkoutSetup('mixed', 'neighbors')}
-          />
-          <PracticeCard
-            icon={<Compass />}
-            title="Which Is Closer?"
-            description="Compare real-world distances between famous landmarks."
-            detail="Landmarks"
-            onStart={() => openWorkoutSetup('landmarks', 'closer')}
-          />
-          <PracticeCard
-            icon={<MapPin />}
-            title="Map Pinpoint"
-            description="Tap the world map and see how close you are to a landmark."
-            detail="Landmarks"
-            onStart={() => openWorkoutSetup('landmarks', 'pinpoint')}
-          />
-          <PracticeCard
-            icon={<Flag />}
-            title="Flagged Review"
-            description="Practice only the questions this profile has marked for another look."
-            detail={`${flaggedCount} flagged ${flaggedCount === 1 ? 'question' : 'questions'}`}
-            onStart={openFlaggedReview}
-            disabled={flaggedCount === 0}
+          <TrackCard
+            icon={<Sparkles />}
+            category="mixed"
+            title="Mixed Geography"
+            description="Combine U.S. geography, world geography, and landmarks in one workout."
+            games={['All three subjects', 'Varied question styles', 'Clue practice', 'Broader review']}
+            count={questionPoolCounts.mixed}
+            onStart={openWorkoutSetup}
           />
         </div>
       </section>
@@ -1299,34 +1325,6 @@ function Home({
         </div>
       </section>
     </main>
-  )
-}
-
-function PracticeCard({
-  icon,
-  title,
-  description,
-  detail,
-  onStart,
-  disabled = false,
-}: {
-  icon: React.ReactNode
-  title: string
-  description: string
-  detail: string
-  onStart: () => void
-  disabled?: boolean
-}) {
-  return (
-    <article className="practice-card">
-      <div className="practice-icon">{icon}</div>
-      <h3>{title}</h3>
-      <p>{description}</p>
-      <span>{detail}</span>
-      <button className="card-button" type="button" onClick={onStart} disabled={disabled}>
-        {disabled ? 'Flag questions to begin' : 'Start this practice'} <span aria-hidden="true">→</span>
-      </button>
-    </article>
   )
 }
 
@@ -1359,7 +1357,7 @@ function TrackCard({
         {games.map((game) => <li key={game}><Check size={14} /> {game}</li>)}
       </ul>
       <button className="card-button" type="button" onClick={() => onStart(category)}>
-        Begin this workout <span aria-hidden="true">→</span>
+        Choose practice style <span aria-hidden="true">→</span>
       </button>
     </article>
   )
@@ -2143,7 +2141,7 @@ function Results({
         </div>
         <div className="result-actions">
           <button className="primary-button" type="button" onClick={onReplay}><RotateCcw size={18} /> Play again</button>
-          <button className="quiet-button" type="button" onClick={onHome}>Choose another path</button>
+          <button className="quiet-button" type="button" onClick={onHome}>Build another workout</button>
         </div>
       </section>
     </main>
