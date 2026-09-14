@@ -83,7 +83,7 @@ const tips = [
   },
   {
     title: 'Choose your workout length',
-    text: 'Every route offers 10, 25, or 50 questions. Short rounds are great for daily practice; longer rounds build endurance.',
+    text: 'Every workout program offers 10, 25, or 50 questions. Short sets are great for daily practice; longer sets build endurance.',
   },
   {
     title: 'Use the timer only when it helps',
@@ -551,11 +551,11 @@ function Home({
     <main>
       <section className="hero">
         <div className="hero-copy">
-          <p className="eyebrow">Learn the world by playing it</p>
-          <h1>Know where you are.<br />Understand what’s around you.</h1>
+          <p className="eyebrow">A workout for your world knowledge</p>
+          <h1>Train your brain.<br />Strengthen your sense of place.</h1>
           <p className="hero-description">
-            Build real geographic intuition through quick challenges about states,
-            countries, distances, directions, and landmarks.
+            Build geographic strength through quick exercises covering states,
+            countries, capitals, directions, locations, and landmarks.
           </p>
           <div className="hero-actions">
             <button className="primary-button large" type="button" onClick={() => openWorkoutSetup('mixed')}>
@@ -583,10 +583,10 @@ function Home({
       <section className="tracks-section">
         <div className="section-heading">
           <div>
-            <p className="eyebrow">Choose a route</p>
-            <h2>Three ways to explore</h2>
+            <p className="eyebrow">Choose a workout program</p>
+            <h2>Three ways to train</h2>
           </div>
-          <p>Each workout mixes question styles so you practice recall, placement, and spatial reasoning.</p>
+          <p>Each program mixes exercises that train recall, map placement, and spatial reasoning.</p>
         </div>
         <div className="track-grid">
           <TrackCard
@@ -622,9 +622,9 @@ function Home({
       <section className="principle-card">
         <Route size={32} />
         <div>
-          <p className="eyebrow">More than memorization</p>
-          <h2>Build a mental map, one connection at a time.</h2>
-          <p>Geography Gym connects names to places, places to neighbors, and landmarks to the wider world.</p>
+          <p className="eyebrow">Geographic strength training</p>
+          <h2>Build your mental map, one rep at a time.</h2>
+          <p>Every question strengthens the connections between names, places, neighbors, and the wider world.</p>
         </div>
       </section>
     </main>
@@ -660,7 +660,7 @@ function TrackCard({
         {games.map((game) => <li key={game}><Check size={14} /> {game}</li>)}
       </ul>
       <button className="card-button" type="button" onClick={() => onStart(category)}>
-        Start this workout <span aria-hidden="true">→</span>
+        Begin this workout <span aria-hidden="true">→</span>
       </button>
     </article>
   )
@@ -1086,7 +1086,7 @@ function Results({
         <h1>{percent >= 80 ? 'Excellent workout.' : percent >= 55 ? 'You’re building strength.' : 'A good first set.'}</h1>
         <p className="result-copy">
           {percent >= 80
-            ? 'Your mental map is taking shape. Try another route to keep the streak going.'
+            ? 'Your geographic strength is growing. Try another workout program to keep the streak going.'
             : 'Every workout strengthens the connections between names, places, and directions.'}
         </p>
         <div className="result-score">
@@ -1100,7 +1100,7 @@ function Results({
         </div>
         <div className="result-actions">
           <button className="primary-button" type="button" onClick={onReplay}><RotateCcw size={18} /> Play again</button>
-          <button className="quiet-button" type="button" onClick={onHome}>Choose another route</button>
+          <button className="quiet-button" type="button" onClick={onHome}>Choose another program</button>
         </div>
       </section>
     </main>
