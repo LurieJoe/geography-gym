@@ -680,6 +680,7 @@ const allQuestions = Object.values(practiceBanks).flatMap((bank) => [
   ...bank.world,
   ...bank.landmarks,
 ])
+const questionsById = new Map(allQuestions.map((question) => [question.id, question]))
 
 export const questionPoolCounts = {
   us: usQuestions.length,
@@ -712,6 +713,12 @@ export function getQuestionPoolCount(
   if (!onlyFlagged) return source.length
   const flagged = new Set(flaggedIds)
   return source.filter((question) => flagged.has(question.id)).length
+}
+
+export function getQuestionsByIds(ids: string[]) {
+  return ids
+    .map((id) => questionsById.get(id))
+    .filter((question): question is Question => Boolean(question))
 }
 
 export function buildQuestions(

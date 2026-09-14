@@ -31,7 +31,8 @@ Additional practice modes reuse and extend those subjects:
   flags during any activity
 
 The home page uses a two-step workout path: first choose what to study (U.S.,
-World, Landmarks, or Mixed), then choose a compatible practice style. Practice
+World, Landmarks, or Mixed), then choose how to study it with a compatible
+practice style. Practice
 styles that do not apply to the selected subject remain visible but disabled so
 their scope is clear. Flagged Review remains available as a profile-specific
 shortcut beside the progress counters.
@@ -47,6 +48,10 @@ tip rotation, default workout length, and flagged-question review list. Existing
 single-profile progress and preferences migrate into an initial **Me** profile. A
 profile's home-page progress counters can be reset without changing its preferences,
 flags, or other profiles.
+
+An unfinished workout is also saved separately for each profile. Returning to the
+home page or reopening the app displays a Resume workout panel with the saved subject,
+practice style, question position, score, streak, order, and paused elapsed time.
 
 No account or analytics service is used. Profiles, progress, and preferences are
 stored locally, and no network connection is required after the app has been cached.

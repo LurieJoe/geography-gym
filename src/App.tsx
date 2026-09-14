@@ -35,6 +35,7 @@ import {
   buildQuestions,
   categoryDetails,
   getQuestionPoolCount,
+  getQuestionsByIds,
   practiceDetails,
   questionPoolCounts,
   type Category,
@@ -85,9 +86,26 @@ type ProfileStore = {
   profiles: Profile[]
 }
 
+type SavedWorkout = {
+  category: Category
+  practice: PracticeMode
+  questionIds: string[]
+  questionIndex: number
+  score: number
+  streak: number
+  bestRunStreak: number
+  elapsed: number
+  timerEnabled: boolean
+  onlyFlagged: boolean
+  allFlaggedModes: boolean
+}
+
+type SavedWorkoutStore = Record<string, SavedWorkout>
+
 const defaultStats: Stats = { games: 0, correct: 0, answered: 0, bestStreak: 0 }
-const APP_VERSION = 'v10'
+const APP_VERSION = 'v11'
 const PROFILES_KEY = 'geography-gym-profiles-v1'
+const SAVED_WORKOUTS_KEY = 'geography-gym-saved-workouts-v1'
 const defaultPreferences: Preferences = {
   theme: 'system',
   accent: 'indigo',
@@ -203,6 +221,10 @@ const tips = [
     title: 'Build a workout in two steps',
     text: 'First choose what to study—U.S., World, Landmarks, or Mixed. Then choose the practice style that builds the skill you want.',
   },
+  {
+    title: 'Resume where you stopped',
+    text: 'If you leave during a workout, the active profile remembers the question order, position, score, streak, and timer. Choose Resume workout on the home page to continue.',
+  },
 ]
 
 function readJson<T>(key: string, fallback: T): T {
@@ -233,6 +255,7 @@ function readProfileStore(): ProfileStore {
               if (!accentColors.some((color) => color.id === preferences.accent)) {
                 preferences.accent = 'indigo'
               }
+
               return {
                 id: profile.id,
                 name: profile.name.trim().slice(0, 24) || 'Profile',
@@ -266,6 +289,17 @@ function readProfileStore(): ProfileStore {
     flaggedQuestionIds: [],
   }
   return { activeProfileId: profile.id, profiles: [profile] }
+}
+
+function readSavedWorkouts(): SavedWorkoutStore {
+  try {
+    const saved = JSON.parse(localStorage.getItem(SAVED_WORKOUTS_KEY) ?? '{}')
+    return saved && typeof saved === 'object' && !Array.isArray(saved)
+      ? saved as SavedWorkoutStore
+      : {}
+  } catch {
+    return {}
+  }
 }
 
 function profileInitial(name: string) {
@@ -324,13 +358,16 @@ function App() {
   const [answered, setAnswered] = useState(false)
   const [wasCorrect, setWasCorrect] = useState(false)
   const [elapsed, setElapsed] = useState(0)
+  const [workoutTimerEnabled, setWorkoutTimerEnabled] = useState(false)
   const [roundStartedAt, setRoundStartedAt] = useState<number | null>(null)
   const [profileStore, setProfileStore] = useState<ProfileStore>(readProfileStore)
+  const [savedWorkouts, setSavedWorkouts] = useState<SavedWorkoutStore>(readSavedWorkouts)
   const activeProfile =
     profileStore.profiles.find((profile) => profile.id === profileStore.activeProfileId)
     ?? profileStore.profiles[0]
   const stats = activeProfile.stats
   const preferences = activeProfile.preferences
+  const savedWorkout = savedWorkouts[activeProfile.id]
   const [startupContext] = useState(() => ({
     profileId: activeProfile.id,
     enabled: activeProfile.preferences.tipsStartup,
@@ -352,6 +389,10 @@ function App() {
     localStorage.removeItem('geography-gym-preferences')
     localStorage.removeItem('geography-gym-tip-index')
   }, [profileStore])
+
+  useEffect(() => {
+    localStorage.setItem(SAVED_WORKOUTS_KEY, JSON.stringify(savedWorkouts))
+  }, [savedWorkouts])
 
   useEffect(() => {
     const resolveTheme = () => {
@@ -458,12 +499,19 @@ function App() {
   }, [])
 
   useEffect(() => {
-    if (screen !== 'quiz' || !preferences.timer || !roundStartedAt) return
-    const update = () => setElapsed(Math.floor((Date.now() - roundStartedAt) / 1000))
-    update()
+    if (screen !== 'quiz' || !workoutTimerEnabled || !roundStartedAt) return
+    const update = () => {
+      const nextElapsed = Math.floor((Date.now() - roundStartedAt) / 1000)
+      setElapsed(nextElapsed)
+      setSavedWorkouts((current) => {
+        const saved = current[activeProfile.id]
+        if (!saved || saved.elapsed === nextElapsed) return current
+        return { ...current, [activeProfile.id]: { ...saved, elapsed: nextElapsed } }
+      })
+    }
     const interval = window.setInterval(update, 1000)
     return () => window.clearInterval(interval)
-  }, [screen, preferences.timer, roundStartedAt])
+  }, [activeProfile.id, screen, workoutTimerEnabled, roundStartedAt])
 
   const currentQuestion = questions[questionIndex]
   const accuracy = stats.answered ? Math.round((stats.correct / stats.answered) * 100) : 0
@@ -524,24 +572,42 @@ function App() {
       allFlaggedModes,
     )
     if (available === 0) return
-    setCategory(pendingCategory)
-    setPractice(pendingPractice)
-    setWorkoutOnlyFlagged(onlyFlagged)
-    setWorkoutAllFlaggedModes(allFlaggedModes)
-    setQuestions(buildQuestions(
+    const nextQuestions = buildQuestions(
       pendingCategory,
       Math.min(preferences.roundSize, available),
       pendingPractice,
       activeProfile.flaggedQuestionIds,
       onlyFlagged,
       allFlaggedModes,
-    ))
+    )
+    setCategory(pendingCategory)
+    setPractice(pendingPractice)
+    setWorkoutOnlyFlagged(onlyFlagged)
+    setWorkoutAllFlaggedModes(allFlaggedModes)
+    setQuestions(nextQuestions)
     setQuestionIndex(0)
     setScore(0)
     setStreak(0)
     setBestRunStreak(0)
     setElapsed(0)
+    setWorkoutTimerEnabled(preferences.timer)
     setRoundStartedAt(Date.now())
+    setSavedWorkouts((current) => ({
+      ...current,
+      [activeProfile.id]: {
+        category: pendingCategory,
+        practice: pendingPractice,
+        questionIds: nextQuestions.map((question) => question.id),
+        questionIndex: 0,
+        score: 0,
+        streak: 0,
+        bestRunStreak: 0,
+        elapsed: 0,
+        timerEnabled: preferences.timer,
+        onlyFlagged,
+        allFlaggedModes,
+      },
+    }))
     resetQuestion()
     setModal(null)
     setScreen('quiz')
@@ -558,6 +624,48 @@ function App() {
     setOnlyFlagged(workoutOnlyFlagged)
     setAllFlaggedModes(workoutAllFlaggedModes)
     setModal('setup')
+  }
+
+  function exitWorkout() {
+    setSavedWorkouts((current) => {
+      const saved = current[activeProfile.id]
+      return saved
+        ? { ...current, [activeProfile.id]: { ...saved, elapsed } }
+        : current
+    })
+    setScreen('home')
+  }
+
+  function resumeWorkout() {
+    if (!savedWorkout) return
+    const restoredQuestions = getQuestionsByIds(savedWorkout.questionIds)
+    if (restoredQuestions.length !== savedWorkout.questionIds.length) {
+      dismissSavedWorkout()
+      return
+    }
+    setCategory(savedWorkout.category)
+    setPractice(savedWorkout.practice)
+    setWorkoutOnlyFlagged(savedWorkout.onlyFlagged)
+    setWorkoutAllFlaggedModes(savedWorkout.allFlaggedModes)
+    setQuestions(restoredQuestions)
+    setQuestionIndex(Math.min(savedWorkout.questionIndex, restoredQuestions.length - 1))
+    setScore(savedWorkout.score)
+    setStreak(savedWorkout.streak)
+    setBestRunStreak(savedWorkout.bestRunStreak)
+    setElapsed(savedWorkout.elapsed)
+    setWorkoutTimerEnabled(savedWorkout.timerEnabled ?? savedWorkout.elapsed > 0)
+    setRoundStartedAt(Date.now() - savedWorkout.elapsed * 1000)
+    resetQuestion()
+    setModal(null)
+    setScreen('quiz')
+  }
+
+  function dismissSavedWorkout() {
+    setSavedWorkouts((current) => {
+      const next = { ...current }
+      delete next[activeProfile.id]
+      return next
+    })
   }
 
   function recordAnswer(correct: boolean) {
@@ -583,9 +691,26 @@ function App() {
         bestStreak: Math.max(stats.bestStreak, bestRunStreak),
       }
       updateActiveProfile((profile) => ({ ...profile, stats: nextStats }))
+      dismissSavedWorkout()
       setScreen('results')
       return
     }
+    setSavedWorkouts((current) => ({
+      ...current,
+      [activeProfile.id]: {
+        category,
+        practice,
+        questionIds: questions.map((question) => question.id),
+        questionIndex: questionIndex + 1,
+        score,
+        streak,
+        bestRunStreak,
+        elapsed,
+        timerEnabled: workoutTimerEnabled,
+        onlyFlagged: workoutOnlyFlagged,
+        allFlaggedModes: workoutAllFlaggedModes,
+      },
+    }))
     setQuestionIndex((value) => value + 1)
     resetQuestion()
   }
@@ -635,6 +760,12 @@ function App() {
   }
 
   function selectProfile(profileId: string) {
+    if (screen === 'quiz') {
+      setSavedWorkouts((current) => {
+        const saved = current[activeProfile.id]
+        return saved ? { ...current, [activeProfile.id]: { ...saved, elapsed } } : current
+      })
+    }
     setProfileStore((current) => ({ ...current, activeProfileId: profileId }))
     setScreen('home')
     setModal(null)
@@ -651,6 +782,12 @@ function App() {
       preferences: { ...defaultPreferences },
       tipIndex: 0,
       flaggedQuestionIds: [],
+    }
+    if (screen === 'quiz') {
+      setSavedWorkouts((current) => {
+        const saved = current[activeProfile.id]
+        return saved ? { ...current, [activeProfile.id]: { ...saved, elapsed } } : current
+      })
     }
     setProfileStore((current) => ({
       activeProfileId: profile.id,
@@ -688,6 +825,11 @@ function App() {
         current.activeProfileId === profileId ? profiles[0].id : current.activeProfileId
       return { activeProfileId, profiles }
     })
+    setSavedWorkouts((current) => {
+      const next = { ...current }
+      delete next[profileId]
+      return next
+    })
     setDeleteProfileId(null)
     setEditingProfileId(null)
     setScreen('home')
@@ -713,7 +855,7 @@ function App() {
           >
             <Settings size={20} />
           </button>
-          <button className="brand" type="button" onClick={() => setScreen('home')}>
+          <button className="brand" type="button" onClick={exitWorkout}>
             <span className="brand-mark" aria-hidden="true"><Compass size={25} /></span>
             <strong>Geography Gym</strong>
           </button>
@@ -723,7 +865,7 @@ function App() {
             <button
               className={`header-link ${screen === 'home' ? 'active' : ''}`}
               type="button"
-              onClick={() => setScreen('home')}
+              onClick={exitWorkout}
             >
               Home
             </button>
@@ -787,8 +929,11 @@ function App() {
           stats={stats}
           accuracy={accuracy}
           flaggedCount={flaggedCount}
+          savedWorkout={savedWorkout}
           openWorkoutSetup={openWorkoutSetup}
           openFlaggedReview={openFlaggedReview}
+          onResumeWorkout={resumeWorkout}
+          onDismissWorkout={dismissSavedWorkout}
           onResetStats={() => setModal('reset-stats')}
         />
       )}
@@ -796,7 +941,7 @@ function App() {
       {screen === 'quiz' && currentQuestion && (
         <main className="quiz-shell">
           <div className="quiz-toolbar">
-            <button className="back-button" type="button" onClick={() => setScreen('home')}>
+            <button className="back-button" type="button" onClick={exitWorkout}>
               <ArrowLeft size={18} /> Exit
             </button>
             <div className="progress-copy">
@@ -804,7 +949,7 @@ function App() {
               <strong>{questionIndex + 1} / {questions.length}</strong>
             </div>
             <div className="quiz-status">
-              {preferences.timer && (
+              {workoutTimerEnabled && (
                 <div className="timer-pill" aria-label={`Elapsed time ${formatTime(elapsed)}`}>
                   <Clock3 size={15} /> {formatTime(elapsed)}
                 </div>
@@ -849,7 +994,7 @@ function App() {
           total={questions.length}
           bestStreak={bestRunStreak}
           elapsed={elapsed}
-          timerEnabled={preferences.timer}
+          timerEnabled={workoutTimerEnabled}
           category={category}
           practice={practice}
           onReplay={replayWorkout}
@@ -861,7 +1006,7 @@ function App() {
 
       {modal === 'setup' && (
         <ModalShell
-          title={allFlaggedModes ? 'Set up Flagged Review' : 'Choose how to practice'}
+          title={allFlaggedModes ? 'Set up Flagged Review' : 'Choose how to study'}
           eyebrow={allFlaggedModes ? 'Profile review' : `Step 2 of 2 · ${categoryDetails[pendingCategory].label}`}
           onClose={() => setModal(null)}
         >
@@ -1208,15 +1353,21 @@ function Home({
   stats,
   accuracy,
   flaggedCount,
+  savedWorkout,
   openWorkoutSetup,
   openFlaggedReview,
+  onResumeWorkout,
+  onDismissWorkout,
   onResetStats,
 }: {
   stats: Stats
   accuracy: number
   flaggedCount: number
+  savedWorkout?: SavedWorkout
   openWorkoutSetup: (category: Category) => void
   openFlaggedReview: () => void
+  onResumeWorkout: () => void
+  onDismissWorkout: () => void
   onResetStats: () => void
 }) {
   return (
@@ -1250,6 +1401,34 @@ function Home({
         </div>
       </section>
 
+      {savedWorkout && (
+        <section className="resume-workout" aria-label="Saved workout">
+          <div className="resume-icon"><RotateCcw /></div>
+          <div>
+            <p className="eyebrow">Continue where you stopped</p>
+            <h2>Resume your workout</h2>
+            <p>
+              {categoryDetails[savedWorkout.category].label}
+              {' · '}
+              {practiceDetails[savedWorkout.practice].label}
+              {' · Question '}
+              {savedWorkout.questionIndex + 1} of {savedWorkout.questionIds.length}
+              {savedWorkout.timerEnabled || savedWorkout.elapsed > 0
+                ? ` · ${formatTime(savedWorkout.elapsed)}`
+                : ''}
+            </p>
+          </div>
+          <div className="resume-actions">
+            <button className="primary-button" type="button" onClick={onResumeWorkout}>
+              Resume workout
+            </button>
+            <button className="quiet-button" type="button" onClick={onDismissWorkout}>
+              Dismiss
+            </button>
+          </div>
+        </section>
+      )}
+
       <section className="stats-strip" aria-label="Learning progress">
         <div><strong>{stats.games}</strong><span>Workouts completed</span></div>
         <div><strong>{accuracy}%</strong><span>Lifetime accuracy</span></div>
@@ -1271,10 +1450,20 @@ function Home({
       <section className="tracks-section" id="subjects">
         <div className="section-heading">
           <div>
-            <p className="eyebrow">Step 1 · Choose what to study</p>
-            <h2>Pick a subject</h2>
+            <p className="eyebrow">Build your workout</p>
+            <h2>Choose your workout path</h2>
           </div>
-          <p>After choosing a subject, you’ll choose how you want to practice it.</p>
+          <div className="workout-steps" aria-label="Two steps to build a workout">
+            <div>
+              <span>1</span>
+              <strong>Choose what to study</strong>
+            </div>
+            <b aria-hidden="true">→</b>
+            <div>
+              <span>2</span>
+              <strong>Choose how to study</strong>
+            </div>
+          </div>
         </div>
         <div className="track-grid">
           <TrackCard
@@ -1357,7 +1546,7 @@ function TrackCard({
         {games.map((game) => <li key={game}><Check size={14} /> {game}</li>)}
       </ul>
       <button className="card-button" type="button" onClick={() => onStart(category)}>
-        Choose practice style <span aria-hidden="true">→</span>
+        Choose this workout <span aria-hidden="true">→</span>
       </button>
     </article>
   )
