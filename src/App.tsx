@@ -103,7 +103,7 @@ type SavedWorkout = {
 type SavedWorkoutStore = Record<string, SavedWorkout>
 
 const defaultStats: Stats = { games: 0, correct: 0, answered: 0, bestStreak: 0 }
-const APP_VERSION = 'v11'
+const APP_VERSION = 'v12'
 const PROFILES_KEY = 'geography-gym-profiles-v1'
 const SAVED_WORKOUTS_KEY = 'geography-gym-saved-workouts-v1'
 const defaultPreferences: Preferences = {
@@ -314,6 +314,23 @@ function formatTime(totalSeconds: number) {
   const minutes = Math.floor(totalSeconds / 60)
   const seconds = totalSeconds % 60
   return `${minutes}:${seconds.toString().padStart(2, '0')}`
+}
+
+function SystemThemeIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      width="19"
+      height="19"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+    >
+      <path d="M12 3a9 9 0 0 0 0 18Z" fill="currentColor" stroke="none" />
+      <circle cx="12" cy="12" r="9" />
+    </svg>
+  )
 }
 
 function playFeedbackSound(kind: FeedbackKind, enabled: boolean) {
@@ -856,7 +873,7 @@ function App() {
             <Settings size={20} />
           </button>
           <button className="brand" type="button" onClick={exitWorkout}>
-            <span className="brand-mark" aria-hidden="true"><Compass size={25} /></span>
+            <span className="brand-mark" aria-hidden="true"><Globe2 size={25} /></span>
             <strong>Geography Gym</strong>
           </button>
         </div>
@@ -885,7 +902,7 @@ function App() {
             </a>
           </nav>
           <button
-            className="icon-button"
+            className="icon-button tips-button"
             type="button"
             onClick={() => setModal('tips')}
             aria-label="Open tips"
@@ -909,7 +926,7 @@ function App() {
               ? <Sun size={19} />
               : preferences.theme === 'dark'
                 ? <Moon size={19} />
-                : <Sparkles size={19} />}
+                : <SystemThemeIcon />}
             <span>{themeLabel}</span>
           </button>
           <button

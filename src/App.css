@@ -97,6 +97,13 @@
   cursor: pointer;
 }
 .icon-button { width: 42px; padding: 0; }
+.tips-button {
+  color: var(--cp-warning);
+}
+.tips-button svg {
+  fill: currentColor;
+  stroke: currentColor;
+}
 .quiet-button:hover, .icon-button:hover, .back-button:hover { border-color: var(--cp-border-strong); }
 .primary-button {
   border-color: var(--cp-accent);
