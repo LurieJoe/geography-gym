@@ -1,6 +1,6 @@
 # Geography Gym
 
-Geography Gym is an installable geography learning PWA for teens and adults. It uses short,
+Geography Gym is an installable geography learning PWA for teens and adults. It uses
 varied games to build spatial intuition rather than relying only on memorization.
 
 ## MVP learning tracks
@@ -12,8 +12,21 @@ varied games to build spatial intuition rather than relying only on memorization
 - **Landmarks:** multiple choice, matching pairs, and geographic ordering from north
   to south or west to east.
 
-Progress is stored locally. No account, analytics, or network connection is required
-after the app has been cached.
+The current question banks include:
+
+- 150 U.S. geography questions
+- 120 world geography questions
+- 136 landmark questions
+
+Players can choose 10-, 25-, or 50-question workouts. Multiple-choice, location, and
+ordering questions allow two attempts. Matching Pairs provides immediate animated
+feedback. Optional answer sounds, an elapsed timer, rotating startup tips, and local
+progress are available from Settings.
+
+No account or analytics service is used. Progress and preferences are stored locally,
+and no network connection is required after the app has been cached.
+
+The production site also includes an FAQ, Help Center, feedback link, and privacy policy.
 
 ## Development
 

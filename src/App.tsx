@@ -5,11 +5,16 @@ import {
   Check,
   ChevronDown,
   ChevronUp,
+  Clock3,
   Compass,
-  Flag,
-  Globe2,
   Download,
+  ExternalLink,
+  Flag,
+  Settings,
+  Globe2,
+  HelpCircle,
   Landmark,
+  Lightbulb,
   Map,
   MapPin,
   Moon,
@@ -18,11 +23,14 @@ import {
   Sparkles,
   Sun,
   Trophy,
+  Volume2,
+  VolumeX,
   X,
 } from 'lucide-react'
 import {
   buildQuestions,
   categoryDetails,
+  questionPoolCounts,
   type Category,
   type MatchingQuestion,
   type OrderQuestion,
@@ -32,6 +40,9 @@ import './App.css'
 
 type Screen = 'home' | 'quiz' | 'results'
 type ThemeMode = 'system' | 'light' | 'dark'
+type RoundSize = 10 | 25 | 50
+type Modal = 'settings' | 'tips' | 'setup' | 'startup-tip' | null
+type FeedbackKind = 'correct' | 'incorrect'
 
 type Stats = {
   games: number
@@ -40,14 +51,100 @@ type Stats = {
   bestStreak: number
 }
 
-const defaultStats: Stats = { games: 0, correct: 0, answered: 0, bestStreak: 0 }
+type Preferences = {
+  theme: ThemeMode
+  sound: boolean
+  timer: boolean
+  tipsStartup: boolean
+  roundSize: RoundSize
+}
 
-function shuffle<T>(items: T[]) {
+const defaultStats: Stats = { games: 0, correct: 0, answered: 0, bestStreak: 0 }
+const defaultPreferences: Preferences = {
+  theme: 'system',
+  sound: true,
+  timer: false,
+  tipsStartup: true,
+  roundSize: 10,
+}
+
+const tips = [
+  {
+    title: 'Two chances to find the answer',
+    text: 'A wrong multiple-choice or map answer stays red, but the correct answer is not revealed until your second miss.',
+  },
+  {
+    title: 'Build connections, not lists',
+    text: 'Notice neighboring states, relative directions, and landmark locations. Those connections make facts easier to remember.',
+  },
+  {
+    title: 'Matching Pairs rewards recall',
+    text: 'Choose one tile from each column. Correct pairs turn green and dim; incorrect pairs shake and remain available.',
+  },
+  {
+    title: 'Choose your workout length',
+    text: 'Every route offers 10, 25, or 50 questions. Short rounds are great for daily practice; longer rounds build endurance.',
+  },
+  {
+    title: 'Use the timer only when it helps',
+    text: 'The timer is a simple stopwatch, not a countdown. Turn it on for a challenge or off for pressure-free learning.',
+  },
+  {
+    title: 'Try a Mixed Workout',
+    text: 'Mixed rounds combine U.S. geography, world geography, landmark matching, and geographic ordering.',
+  },
+  {
+    title: 'Install for easy access',
+    text: 'Install Geography Gym from your browser and keep practicing after the app has been cached for offline use.',
+  },
+]
+
+function readJson<T>(key: string, fallback: T): T {
+  try {
+    const saved = localStorage.getItem(key)
+    return saved ? { ...fallback, ...JSON.parse(saved) } : fallback
+  } catch {
+    return fallback
+  }
+}
+
+function shuffle<T>(items: readonly T[]) {
   return [...items].sort(() => Math.random() - 0.5)
+}
+
+function formatTime(totalSeconds: number) {
+  const minutes = Math.floor(totalSeconds / 60)
+  const seconds = totalSeconds % 60
+  return `${minutes}:${seconds.toString().padStart(2, '0')}`
+}
+
+function playFeedbackSound(kind: FeedbackKind, enabled: boolean) {
+  if (!enabled) return
+  const AudioContextClass = window.AudioContext
+  if (!AudioContextClass) return
+  const context = new AudioContextClass()
+  const gain = context.createGain()
+  gain.gain.setValueAtTime(0.0001, context.currentTime)
+  gain.gain.exponentialRampToValueAtTime(0.14, context.currentTime + 0.015)
+  gain.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + 0.32)
+  gain.connect(context.destination)
+
+  const frequencies = kind === 'correct' ? [523.25, 659.25] : [220, 164.81]
+  frequencies.forEach((frequency, index) => {
+    const oscillator = context.createOscillator()
+    oscillator.type = kind === 'correct' ? 'sine' : 'triangle'
+    oscillator.frequency.value = frequency
+    oscillator.connect(gain)
+    oscillator.start(context.currentTime + index * 0.1)
+    oscillator.stop(context.currentTime + 0.22 + index * 0.1)
+  })
+  window.setTimeout(() => context.close().catch(() => undefined), 500)
 }
 
 function App() {
   const [screen, setScreen] = useState<Screen>('home')
+  const [modal, setModal] = useState<Modal>(null)
+  const [pendingCategory, setPendingCategory] = useState<Category>('mixed')
   const [category, setCategory] = useState<Category>('mixed')
   const [questions, setQuestions] = useState<Question[]>([])
   const [questionIndex, setQuestionIndex] = useState(0)
@@ -56,33 +153,48 @@ function App() {
   const [bestRunStreak, setBestRunStreak] = useState(0)
   const [answered, setAnswered] = useState(false)
   const [wasCorrect, setWasCorrect] = useState(false)
-  const [selected, setSelected] = useState<string | null>(null)
-  const [stats, setStats] = useState<Stats>(() => {
-    const saved = localStorage.getItem('geography-gym-stats')
-    return saved ? JSON.parse(saved) : defaultStats
-  })
-  const [themeMode, setThemeMode] = useState<ThemeMode>(() => {
-    return (localStorage.getItem('geography-gym-theme') as ThemeMode | null) ?? 'system'
-  })
+  const [elapsed, setElapsed] = useState(0)
+  const [roundStartedAt, setRoundStartedAt] = useState<number | null>(null)
+  const [stats, setStats] = useState<Stats>(() =>
+    readJson('geography-gym-stats', defaultStats),
+  )
+  const [preferences, setPreferences] = useState<Preferences>(() =>
+    readJson('geography-gym-preferences', defaultPreferences),
+  )
+  const [showStartupOnLaunch] = useState(() =>
+    readJson('geography-gym-preferences', defaultPreferences).tipsStartup,
+  )
+  const [startupTip, setStartupTip] = useState(tips[0])
   const [deferredPrompt, setDeferredPrompt] = useState<Event | null>(null)
 
   useEffect(() => {
-    const applyTheme = () => {
-      const resolved =
-        themeMode === 'system'
+    const resolveTheme = () => {
+      const theme =
+        preferences.theme === 'system'
           ? window.matchMedia('(prefers-color-scheme: dark)').matches
             ? 'dark'
             : 'light'
-          : themeMode
-      document.documentElement.setAttribute('data-theme', resolved)
-      document.documentElement.setAttribute('data-theme-mode', themeMode)
+          : preferences.theme
+      document.documentElement.setAttribute('data-theme', theme)
+      document.documentElement.setAttribute('data-theme-mode', preferences.theme)
     }
-    applyTheme()
-    localStorage.setItem('geography-gym-theme', themeMode)
+    resolveTheme()
+    localStorage.setItem('geography-gym-preferences', JSON.stringify(preferences))
     const media = window.matchMedia('(prefers-color-scheme: dark)')
-    media.addEventListener('change', applyTheme)
-    return () => media.removeEventListener('change', applyTheme)
-  }, [themeMode])
+    media.addEventListener('change', resolveTheme)
+    return () => media.removeEventListener('change', resolveTheme)
+  }, [preferences])
+
+  useEffect(() => {
+    if (!showStartupOnLaunch) return
+    const timer = window.setTimeout(() => {
+      const index = Number.parseInt(localStorage.getItem('geography-gym-tip-index') ?? '0', 10)
+      setStartupTip(tips[index % tips.length])
+      localStorage.setItem('geography-gym-tip-index', String((index + 1) % tips.length))
+      setModal('startup-tip')
+    }, 0)
+    return () => window.clearTimeout(timer)
+  }, [showStartupOnLaunch])
 
   useEffect(() => {
     const handleInstall = (event: Event) => {
@@ -98,29 +210,47 @@ function App() {
     return () => window.removeEventListener('beforeinstallprompt', handleInstall)
   }, [])
 
+  useEffect(() => {
+    if (screen !== 'quiz' || !preferences.timer || !roundStartedAt) return
+    const update = () => setElapsed(Math.floor((Date.now() - roundStartedAt) / 1000))
+    update()
+    const interval = window.setInterval(update, 1000)
+    return () => window.clearInterval(interval)
+  }, [screen, preferences.timer, roundStartedAt])
+
   const currentQuestion = questions[questionIndex]
   const accuracy = stats.answered ? Math.round((stats.correct / stats.answered) * 100) : 0
 
-  function startQuiz(nextCategory: Category) {
-    setCategory(nextCategory)
-    setQuestions(buildQuestions(nextCategory, 7))
+  function updatePreference<K extends keyof Preferences>(key: K, value: Preferences[K]) {
+    setPreferences((current) => ({ ...current, [key]: value }))
+  }
+
+  function openWorkoutSetup(nextCategory: Category) {
+    setPendingCategory(nextCategory)
+    setModal('setup')
+  }
+
+  function startWorkout() {
+    setCategory(pendingCategory)
+    setQuestions(buildQuestions(pendingCategory, preferences.roundSize))
     setQuestionIndex(0)
     setScore(0)
     setStreak(0)
     setBestRunStreak(0)
+    setElapsed(0)
+    setRoundStartedAt(Date.now())
     resetQuestion()
+    setModal(null)
     setScreen('quiz')
   }
 
   function resetQuestion() {
     setAnswered(false)
     setWasCorrect(false)
-    setSelected(null)
   }
 
-  function recordAnswer(correct: boolean, answer?: string) {
+  function recordAnswer(correct: boolean) {
     if (answered) return
-    setSelected(answer ?? null)
     setAnswered(true)
     setWasCorrect(correct)
     if (correct) {
@@ -158,22 +288,48 @@ function App() {
   }
 
   function cycleTheme() {
-    setThemeMode((mode) => (mode === 'system' ? 'light' : mode === 'light' ? 'dark' : 'system'))
+    const next =
+      preferences.theme === 'system'
+        ? 'light'
+        : preferences.theme === 'light'
+          ? 'dark'
+          : 'system'
+    updatePreference('theme', next)
   }
 
   return (
     <div className="app-shell">
       <header className="app-header">
-        <button className="brand" type="button" onClick={() => setScreen('home')}>
-          <span className="brand-mark" aria-hidden="true"><Compass size={25} /></span>
-          <span>
-            <strong>Geography Gym</strong>
-            <small>Give your world knowledge a workout</small>
-          </span>
-        </button>
+        <div className="header-brand-group">
+          <button
+            className="icon-button"
+            type="button"
+            onClick={() => setModal('settings')}
+            aria-label="Open settings"
+            title="Settings"
+          >
+            <Settings size={20} />
+          </button>
+          <button className="brand" type="button" onClick={() => setScreen('home')}>
+            <span className="brand-mark" aria-hidden="true"><Compass size={25} /></span>
+            <span>
+              <strong>Geography Gym</strong>
+              <small>Give your world knowledge a workout</small>
+            </span>
+          </button>
+        </div>
         <div className="header-actions">
+          <button
+            className="icon-button"
+            type="button"
+            onClick={() => setModal('tips')}
+            aria-label="Open tips"
+            title="Tips"
+          >
+            <Lightbulb size={20} />
+          </button>
           {deferredPrompt && (
-            <button className="quiet-button" type="button" onClick={installApp}>
+            <button className="quiet-button install-button" type="button" onClick={installApp}>
               <Download size={17} /> Install
             </button>
           )}
@@ -181,20 +337,20 @@ function App() {
             className="icon-button"
             type="button"
             onClick={cycleTheme}
-            aria-label={`Theme: ${themeMode}. Change theme`}
-            title={`Theme: ${themeMode}`}
+            aria-label={`Theme: ${preferences.theme}. Change theme`}
+            title={`Theme: ${preferences.theme}`}
           >
-            {themeMode === 'light' ? <Sun size={19} /> : themeMode === 'dark' ? <Moon size={19} /> : <Sparkles size={19} />}
+            {preferences.theme === 'light'
+              ? <Sun size={19} />
+              : preferences.theme === 'dark'
+                ? <Moon size={19} />
+                : <Sparkles size={19} />}
           </button>
         </div>
       </header>
 
       {screen === 'home' && (
-        <Home
-          stats={stats}
-          accuracy={accuracy}
-          startQuiz={startQuiz}
-        />
+        <Home stats={stats} accuracy={accuracy} openWorkoutSetup={openWorkoutSetup} />
       )}
 
       {screen === 'quiz' && currentQuestion && (
@@ -207,7 +363,16 @@ function App() {
               <span>{categoryDetails[category].label}</span>
               <strong>{questionIndex + 1} / {questions.length}</strong>
             </div>
-            <div className="streak-pill"><Sparkles size={16} /> {streak}</div>
+            <div className="quiz-status">
+              {preferences.timer && (
+                <div className="timer-pill" aria-label={`Elapsed time ${formatTime(elapsed)}`}>
+                  <Clock3 size={15} /> {formatTime(elapsed)}
+                </div>
+              )}
+              <div className="streak-pill" aria-label={`${streak} answer streak`}>
+                <Sparkles size={16} /> {streak}
+              </div>
+            </div>
           </div>
           <div className="progress-track" aria-label={`Question ${questionIndex + 1} of ${questions.length}`}>
             <span style={{ width: `${((questionIndex + 1) / questions.length) * 100}%` }} />
@@ -217,9 +382,8 @@ function App() {
             key={currentQuestion.id}
             question={currentQuestion}
             answered={answered}
-            selected={selected}
-            wasCorrect={wasCorrect}
             onAnswer={recordAnswer}
+            onFeedback={(kind) => playFeedbackSound(kind, preferences.sound)}
           />
 
           {answered && (
@@ -242,10 +406,133 @@ function App() {
           score={score}
           total={questions.length}
           bestStreak={bestRunStreak}
+          elapsed={elapsed}
+          timerEnabled={preferences.timer}
           category={category}
-          onReplay={() => startQuiz(category)}
+          onReplay={() => openWorkoutSetup(category)}
           onHome={() => setScreen('home')}
         />
+      )}
+
+      {screen === 'home' && <AppFooter />}
+
+      {modal === 'setup' && (
+        <ModalShell title="Set up your workout" eyebrow={categoryDetails[pendingCategory].label} onClose={() => setModal(null)}>
+          <p className="modal-lead">Choose how long you want to practice. Questions are selected from a pool of {questionPoolCounts[pendingCategory].toLocaleString()}.</p>
+          <fieldset className="choice-fieldset">
+            <legend>Questions this round</legend>
+            <div className="segmented-options">
+              {([10, 25, 50] as RoundSize[]).map((size) => (
+                <label key={size} className={preferences.roundSize === size ? 'selected-option' : ''}>
+                  <input
+                    type="radio"
+                    name="round-size"
+                    value={size}
+                    checked={preferences.roundSize === size}
+                    onChange={() => updatePreference('roundSize', size)}
+                  />
+                  <strong>{size}</strong>
+                  <span>questions</span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
+          <ToggleRow
+            checked={preferences.timer}
+            onChange={(checked) => updatePreference('timer', checked)}
+            icon={<Clock3 />}
+            title="Show workout timer"
+            description="Track elapsed time without creating a deadline."
+          />
+          <button className="primary-button modal-primary" type="button" onClick={startWorkout}>
+            Start {preferences.roundSize}-question workout
+          </button>
+        </ModalShell>
+      )}
+
+      {modal === 'settings' && (
+        <ModalShell title="Settings" eyebrow="Your workout" onClose={() => setModal(null)}>
+          <div className="settings-list">
+            <ToggleRow
+              checked={preferences.sound}
+              onChange={(checked) => updatePreference('sound', checked)}
+              icon={preferences.sound ? <Volume2 /> : <VolumeX />}
+              title="Answer sounds"
+              description="Play a short sound for correct and incorrect answers."
+            />
+            <ToggleRow
+              checked={preferences.timer}
+              onChange={(checked) => updatePreference('timer', checked)}
+              icon={<Clock3 />}
+              title="Workout timer"
+              description="Show elapsed time during each round."
+            />
+            <ToggleRow
+              checked={preferences.tipsStartup}
+              onChange={(checked) => updatePreference('tipsStartup', checked)}
+              icon={<Lightbulb />}
+              title="Show tips at startup"
+              description="Display one rotating learning tip when the app opens."
+            />
+          </div>
+          <fieldset className="choice-fieldset compact-fieldset">
+            <legend>Default workout length</legend>
+            <div className="inline-radio-options">
+              {([10, 25, 50] as RoundSize[]).map((size) => (
+                <label key={size}>
+                  <input
+                    type="radio"
+                    name="settings-round-size"
+                    checked={preferences.roundSize === size}
+                    onChange={() => updatePreference('roundSize', size)}
+                  />
+                  {size}
+                </label>
+              ))}
+            </div>
+          </fieldset>
+          <nav className="support-links" aria-label="Help and support">
+            <a href="./faq/"><HelpCircle /> FAQ</a>
+            <a href="./help/"><HelpCircle /> Help Center</a>
+            <a href="https://github.com/LurieJoe/geography-gym/issues/new" target="_blank" rel="noreferrer">
+              <ExternalLink /> Send Feedback
+            </a>
+            <a href="./privacy/"><ExternalLink /> Privacy Policy</a>
+          </nav>
+        </ModalShell>
+      )}
+
+      {modal === 'tips' && (
+        <ModalShell title="Tips" eyebrow="Get more from every workout" onClose={() => setModal(null)}>
+          <div className="tips-list">
+            {tips.map((tip) => <TipCard key={tip.title} tip={tip} />)}
+          </div>
+          <label className="simple-check">
+            <input
+              type="checkbox"
+              checked={preferences.tipsStartup}
+              onChange={(event) => updatePreference('tipsStartup', event.target.checked)}
+            />
+            Show a tip at startup
+          </label>
+        </ModalShell>
+      )}
+
+      {modal === 'startup-tip' && (
+        <ModalShell title="Quick tip" eyebrow="Geography Gym" onClose={() => setModal(null)}>
+          <TipCard tip={startupTip} featured />
+          <button className="quiet-button modal-primary" type="button" onClick={() => setModal('tips')}>
+            See all tips
+          </button>
+          <label className="simple-check">
+            <input
+              type="checkbox"
+              checked={preferences.tipsStartup}
+              onChange={(event) => updatePreference('tipsStartup', event.target.checked)}
+            />
+            Show tips at startup
+          </label>
+        </ModalShell>
       )}
     </div>
   )
@@ -254,11 +541,11 @@ function App() {
 function Home({
   stats,
   accuracy,
-  startQuiz,
+  openWorkoutSetup,
 }: {
   stats: Stats
   accuracy: number
-  startQuiz: (category: Category) => void
+  openWorkoutSetup: (category: Category) => void
 }) {
   return (
     <main>
@@ -271,10 +558,10 @@ function Home({
             countries, distances, directions, and landmarks.
           </p>
           <div className="hero-actions">
-            <button className="primary-button large" type="button" onClick={() => startQuiz('mixed')}>
-              <Sparkles size={19} /> Start a mixed round
+            <button className="primary-button large" type="button" onClick={() => openWorkoutSetup('mixed')}>
+              <Sparkles size={19} /> Start a mixed workout
             </button>
-            <span>7 questions · about 3 minutes</span>
+            <span>Choose 10, 25, or 50 questions</span>
           </div>
         </div>
         <div className="hero-visual" aria-hidden="true">
@@ -288,7 +575,7 @@ function Home({
       </section>
 
       <section className="stats-strip" aria-label="Learning progress">
-        <div><strong>{stats.games}</strong><span>Rounds played</span></div>
+        <div><strong>{stats.games}</strong><span>Workouts completed</span></div>
         <div><strong>{accuracy}%</strong><span>Lifetime accuracy</span></div>
         <div><strong>{stats.bestStreak}</strong><span>Best streak</span></div>
       </section>
@@ -299,32 +586,35 @@ function Home({
             <p className="eyebrow">Choose a route</p>
             <h2>Three ways to explore</h2>
           </div>
-          <p>Each round mixes question styles so you practice recall, placement, and spatial reasoning.</p>
+          <p>Each workout mixes question styles so you practice recall, placement, and spatial reasoning.</p>
         </div>
         <div className="track-grid">
           <TrackCard
             icon={<Map />}
             category="us"
             title="U.S. Geography"
-            description="States, abbreviations, neighbors, landmarks, locations, and distances."
-            games={['Locate it', 'State shorthand', 'Which direction?', 'How far?']}
-            onStart={startQuiz}
+            description="States, abbreviations, capitals, locations, and spatial relationships."
+            games={['Locate it', 'State shorthand', 'State capitals', 'Map practice']}
+            count={questionPoolCounts.us}
+            onStart={openWorkoutSetup}
           />
           <TrackCard
             icon={<Globe2 />}
             category="world"
             title="World Geography"
-            description="Countries, capitals, relative location, global distances, and map placement."
-            games={['Find the country', 'Capital call', 'Near or far', 'Compass check']}
-            onStart={startQuiz}
+            description="Countries, capitals, continents, regions, and world map placement."
+            games={['Find the country', 'Capital call', 'World regions', 'Map practice']}
+            count={questionPoolCounts.world}
+            onStart={openWorkoutSetup}
           />
           <TrackCard
             icon={<Landmark />}
             category="landmarks"
             title="Landmarks"
-            description="Match famous places to locations and put cities in geographic order."
+            description="Match famous places to locations and arrange them geographically."
             games={['Where is it?', 'Matching pairs', 'North to south', 'East to west']}
-            onStart={startQuiz}
+            count={questionPoolCounts.landmarks}
+            onStart={openWorkoutSetup}
           />
         </div>
       </section>
@@ -347,6 +637,7 @@ function TrackCard({
   title,
   description,
   games,
+  count,
   onStart,
 }: {
   icon: React.ReactNode
@@ -354,18 +645,22 @@ function TrackCard({
   title: string
   description: string
   games: string[]
+  count: number
   onStart: (category: Category) => void
 }) {
   return (
     <article className="track-card">
-      <div className="track-icon">{icon}</div>
+      <div className="track-card-top">
+        <div className="track-icon">{icon}</div>
+        <span className="pool-count">{count} questions</span>
+      </div>
       <h3>{title}</h3>
       <p>{description}</p>
       <ul>
         {games.map((game) => <li key={game}><Check size={14} /> {game}</li>)}
       </ul>
       <button className="card-button" type="button" onClick={() => onStart(category)}>
-        Play this track <span aria-hidden="true">→</span>
+        Start this workout <span aria-hidden="true">→</span>
       </button>
     </article>
   )
@@ -374,22 +669,45 @@ function TrackCard({
 function QuestionCard({
   question,
   answered,
-  selected,
-  wasCorrect,
   onAnswer,
+  onFeedback,
 }: {
   question: Question
   answered: boolean
-  selected: string | null
-  wasCorrect: boolean
-  onAnswer: (correct: boolean, answer?: string) => void
+  onAnswer: (correct: boolean) => void
+  onFeedback: (kind: FeedbackKind) => void
 }) {
+  const [wrongAnswers, setWrongAnswers] = useState<string[]>([])
+  const [correctAnswer, setCorrectAnswer] = useState<string | null>(null)
+  const [shakingAnswer, setShakingAnswer] = useState<string | null>(null)
+
+  function attemptAnswer(value: string, answer: string) {
+    if (answered || wrongAnswers.includes(value)) return
+    if (value === answer) {
+      setCorrectAnswer(value)
+      onFeedback('correct')
+      onAnswer(true)
+      return
+    }
+
+    const nextWrong = [...wrongAnswers, value]
+    setWrongAnswers(nextWrong)
+    setShakingAnswer(value)
+    onFeedback('incorrect')
+    window.setTimeout(() => setShakingAnswer(null), 550)
+    if (nextWrong.length >= 2) onAnswer(false)
+  }
+
   return (
     <section className="question-card">
       <div className="question-label">
-        {question.kind === 'locate-us' || question.kind === 'locate-world' ? <MapPin size={17} /> :
-          question.kind === 'matching' ? <Route size={17} /> :
-            question.kind === 'order' ? <Compass size={17} /> : <Flag size={17} />}
+        {question.kind === 'locate-us' || question.kind === 'locate-world'
+          ? <MapPin size={17} />
+          : question.kind === 'matching'
+            ? <Route size={17} />
+            : question.kind === 'order'
+              ? <Compass size={17} />
+              : <Flag size={17} />}
         {question.label}
       </div>
       <h2>{question.prompt}</h2>
@@ -399,51 +717,74 @@ function QuestionCard({
         <div className="answer-grid">
           {question.options.map((option) => {
             const isCorrect = option === question.answer
-            const isSelected = option === selected
-            const className = answered
-              ? isCorrect ? 'answer correct-answer' : isSelected ? 'answer wrong-answer' : 'answer muted-answer'
-              : 'answer'
+            const isWrong = wrongAnswers.includes(option)
+            const classes = [
+              'answer',
+              answered && isCorrect ? 'correct-answer' : '',
+              isWrong ? 'wrong-answer' : '',
+              shakingAnswer === option ? 'shake' : '',
+              answered && !isCorrect && !isWrong ? 'muted-answer' : '',
+            ].join(' ')
             return (
               <button
-                className={className}
+                className={classes}
                 type="button"
                 key={option}
-                disabled={answered}
-                onClick={() => onAnswer(isCorrect, option)}
+                disabled={answered || isWrong}
+                onClick={() => attemptAnswer(option, question.answer)}
               >
                 <span>{option}</span>
                 {answered && isCorrect && <Check size={19} />}
-                {answered && isSelected && !isCorrect && <X size={19} />}
+                {isWrong && <X size={19} />}
               </button>
             )
           })}
         </div>
       )}
+
       {question.kind === 'locate-us' && (
         <UsMap
           answer={question.answer}
-          selected={selected}
+          wrongAnswers={wrongAnswers}
+          correctAnswer={correctAnswer}
+          shakingAnswer={shakingAnswer}
           answered={answered}
-          onSelect={(value) => onAnswer(value === question.answer, value)}
+          onSelect={(value) => attemptAnswer(value, question.answer)}
         />
       )}
+
       {question.kind === 'locate-world' && (
         <WorldMap
           answer={question.answer}
           points={question.points}
-          selected={selected}
+          wrongAnswers={wrongAnswers}
+          correctAnswer={correctAnswer}
+          shakingAnswer={shakingAnswer}
           answered={answered}
-          onSelect={(value) => onAnswer(value === question.answer, value)}
+          onSelect={(value) => attemptAnswer(value, question.answer)}
         />
       )}
+
       {question.kind === 'matching' && (
-        <MatchingGame question={question} answered={answered} onComplete={onAnswer} />
+        <MatchingGame
+          question={question}
+          answered={answered}
+          onComplete={onAnswer}
+          onFeedback={onFeedback}
+        />
       )}
+
       {question.kind === 'order' && (
-        <OrderGame question={question} answered={answered} onComplete={onAnswer} />
+        <OrderGame
+          question={question}
+          answered={answered}
+          onComplete={onAnswer}
+          onFeedback={onFeedback}
+        />
       )}
-      {answered && !wasCorrect && (question.kind === 'locate-us' || question.kind === 'locate-world') && (
-        <p className="map-answer">The correct location is highlighted.</p>
+
+      {!answered && wrongAnswers.length === 1 && (
+        <p className="try-again-message" role="status">Try once more. The correct answer is still hidden.</p>
       )}
     </section>
   )
@@ -460,12 +801,16 @@ const stateMap = [
 
 function UsMap({
   answer,
-  selected,
+  wrongAnswers,
+  correctAnswer,
+  shakingAnswer,
   answered,
   onSelect,
 }: {
   answer: string
-  selected: string | null
+  wrongAnswers: string[]
+  correctAnswer: string | null
+  shakingAnswer: string | null
   answered: boolean
   onSelect: (value: string) => void
 }) {
@@ -477,12 +822,13 @@ function UsMap({
           key={state}
           className={[
             'state-cell',
-            answered && state === answer ? 'map-correct' : '',
-            answered && state === selected && state !== answer ? 'map-wrong' : '',
+            (answered || correctAnswer) && state === answer ? 'map-correct' : '',
+            wrongAnswers.includes(state) ? 'map-wrong' : '',
+            shakingAnswer === state ? 'shake' : '',
           ].join(' ')}
           style={{ gridColumn: column, gridRow: row }}
           onClick={() => onSelect(state)}
-          disabled={answered}
+          disabled={answered || wrongAnswers.includes(state)}
           aria-label={state}
         >
           {state}
@@ -495,13 +841,17 @@ function UsMap({
 function WorldMap({
   answer,
   points,
-  selected,
+  wrongAnswers,
+  correctAnswer,
+  shakingAnswer,
   answered,
   onSelect,
 }: {
   answer: string
   points: { name: string; x: number; y: number }[]
-  selected: string | null
+  wrongAnswers: string[]
+  correctAnswer: string | null
+  shakingAnswer: string | null
   answered: boolean
   onSelect: (value: string) => void
 }) {
@@ -515,17 +865,22 @@ function WorldMap({
         <path className="continent" d="M505 78 L650 58 785 105 820 180 755 215 675 185 625 230 550 190 500 130Z" />
         <path className="continent" d="M700 285 L790 275 835 330 785 380 710 350Z" />
         {points.map((point, index) => {
-          const correct = answered && point.name === answer
-          const wrong = answered && point.name === selected && point.name !== answer
+          const correct = (answered || correctAnswer) && point.name === answer
+          const wrong = wrongAnswers.includes(point.name)
           return (
             <g
-              className={`world-point ${correct ? 'map-correct' : ''} ${wrong ? 'map-wrong' : ''}`}
+              className={[
+                'world-point',
+                correct ? 'map-correct' : '',
+                wrong ? 'map-wrong' : '',
+                shakingAnswer === point.name ? 'shake' : '',
+              ].join(' ')}
               key={point.name}
-              onClick={() => !answered && onSelect(point.name)}
+              onClick={() => !answered && !wrong && onSelect(point.name)}
               role="button"
-              tabIndex={answered ? -1 : 0}
+              tabIndex={answered || wrong ? -1 : 0}
               onKeyDown={(event) => {
-                if (!answered && (event.key === 'Enter' || event.key === ' ')) onSelect(point.name)
+                if (!answered && !wrong && (event.key === 'Enter' || event.key === ' ')) onSelect(point.name)
               }}
               aria-label={`Location ${index + 1}`}
             >
@@ -546,14 +901,17 @@ function MatchingGame({
   question,
   answered,
   onComplete,
+  onFeedback,
 }: {
   question: MatchingQuestion
   answered: boolean
   onComplete: (correct: boolean) => void
+  onFeedback: (kind: FeedbackKind) => void
 }) {
   const [left, setLeft] = useState<string | null>(null)
   const [right, setRight] = useState<string | null>(null)
   const [matched, setMatched] = useState<string[]>([])
+  const [wrongPair, setWrongPair] = useState<{ left: string; right: string } | null>(null)
   const shuffledRight = useMemo(() => shuffle(question.pairs.map((pair) => pair.right)), [question])
 
   function resolveMatch(nextLeft: string, nextRight: string) {
@@ -563,15 +921,19 @@ function MatchingGame({
       setMatched(next)
       setLeft(null)
       setRight(null)
+      onFeedback('correct')
       if (next.length === question.pairs.length) onComplete(true)
       return
     }
+    setWrongPair({ left: nextLeft, right: nextRight })
     setLeft(nextLeft)
     setRight(nextRight)
+    onFeedback('incorrect')
     window.setTimeout(() => {
+      setWrongPair(null)
       setLeft(null)
       setRight(null)
-    }, 500)
+    }, 650)
   }
 
   function selectLeft(value: string) {
@@ -587,28 +949,42 @@ function MatchingGame({
   return (
     <div className="matching-board">
       <div>
-        {question.pairs.map((pair) => (
-          <button
-            type="button"
-            key={pair.left}
-            className={`match-tile ${left === pair.left ? 'selected-tile' : ''} ${matched.includes(pair.left) ? 'matched-tile' : ''}`}
-            disabled={answered || matched.includes(pair.left)}
-            onClick={() => selectLeft(pair.left)}
-          >
-            {pair.left}
-          </button>
-        ))}
+        {question.pairs.map((pair) => {
+          const isWrong = wrongPair?.left === pair.left
+          return (
+            <button
+              type="button"
+              key={pair.left}
+              className={[
+                'match-tile',
+                left === pair.left ? 'selected-tile' : '',
+                matched.includes(pair.left) ? 'matched-tile' : '',
+                isWrong ? 'wrong-match shake' : '',
+              ].join(' ')}
+              disabled={answered || matched.includes(pair.left) || Boolean(wrongPair)}
+              onClick={() => selectLeft(pair.left)}
+            >
+              {pair.left}
+            </button>
+          )
+        })}
       </div>
       <div>
         {shuffledRight.map((place) => {
           const pair = question.pairs.find((item) => item.right === place)
           const isMatched = pair ? matched.includes(pair.left) : false
+          const isWrong = wrongPair?.right === place
           return (
             <button
               type="button"
               key={place}
-              className={`match-tile ${right === place ? 'selected-tile' : ''} ${isMatched ? 'matched-tile' : ''}`}
-              disabled={answered || isMatched}
+              className={[
+                'match-tile',
+                right === place ? 'selected-tile' : '',
+                isMatched ? 'matched-tile' : '',
+                isWrong ? 'wrong-match shake' : '',
+              ].join(' ')}
+              disabled={answered || isMatched || Boolean(wrongPair)}
               onClick={() => selectRight(place)}
             >
               {place}
@@ -624,12 +1000,16 @@ function OrderGame({
   question,
   answered,
   onComplete,
+  onFeedback,
 }: {
   question: OrderQuestion
   answered: boolean
   onComplete: (correct: boolean) => void
+  onFeedback: (kind: FeedbackKind) => void
 }) {
   const [items, setItems] = useState(() => shuffle(question.items))
+  const [attempts, setAttempts] = useState(0)
+  const [shaking, setShaking] = useState(false)
 
   function move(index: number, direction: -1 | 1) {
     const target = index + direction
@@ -639,8 +1019,26 @@ function OrderGame({
     setItems(next)
   }
 
+  function checkOrder() {
+    const correct = items.every((item, index) => item === question.answer[index])
+    if (correct) {
+      onFeedback('correct')
+      onComplete(true)
+      return
+    }
+    const nextAttempts = attempts + 1
+    setAttempts(nextAttempts)
+    setShaking(true)
+    onFeedback('incorrect')
+    window.setTimeout(() => setShaking(false), 550)
+    if (nextAttempts >= 2) {
+      setItems(question.answer)
+      onComplete(false)
+    }
+  }
+
   return (
-    <div className="order-board">
+    <div className={`order-board ${shaking ? 'shake' : ''}`}>
       <div className="order-labels"><span>{question.startLabel}</span><span>{question.endLabel}</span></div>
       {items.map((item, index) => (
         <div className="order-item" key={item}>
@@ -652,12 +1050,8 @@ function OrderGame({
           </div>
         </div>
       ))}
-      <button
-        className="primary-button check-order"
-        type="button"
-        disabled={answered}
-        onClick={() => onComplete(items.every((item, index) => item === question.answer[index]))}
-      >
+      {!answered && attempts === 1 && <p className="try-again-message">That order is not quite right. Try once more.</p>}
+      <button className="primary-button check-order" type="button" disabled={answered} onClick={checkOrder}>
         Check my order
       </button>
     </div>
@@ -668,6 +1062,8 @@ function Results({
   score,
   total,
   bestStreak,
+  elapsed,
+  timerEnabled,
   category,
   onReplay,
   onHome,
@@ -675,6 +1071,8 @@ function Results({
   score: number
   total: number
   bestStreak: number
+  elapsed: number
+  timerEnabled: boolean
   category: Category
   onReplay: () => void
   onHome: () => void
@@ -685,26 +1083,106 @@ function Results({
       <section className="results-card">
         <div className="result-medal">{percent >= 80 ? <Trophy /> : <Award />}</div>
         <p className="eyebrow">{categoryDetails[category].label} complete</p>
-        <h1>{percent >= 80 ? 'Excellent exploring.' : percent >= 55 ? 'You’re finding your way.' : 'A good first pass.'}</h1>
+        <h1>{percent >= 80 ? 'Excellent workout.' : percent >= 55 ? 'You’re building strength.' : 'A good first set.'}</h1>
         <p className="result-copy">
           {percent >= 80
             ? 'Your mental map is taking shape. Try another route to keep the streak going.'
-            : 'Every round strengthens the connections between names, places, and directions.'}
+            : 'Every workout strengthens the connections between names, places, and directions.'}
         </p>
         <div className="result-score">
           <strong>{score}<span>/{total}</span></strong>
           <small>correct answers</small>
         </div>
-        <div className="result-details">
+        <div className={`result-details ${timerEnabled ? 'three-results' : ''}`}>
           <div><strong>{percent}%</strong><span>Accuracy</span></div>
           <div><strong>{bestStreak}</strong><span>Best streak</span></div>
+          {timerEnabled && <div><strong>{formatTime(elapsed)}</strong><span>Time</span></div>}
         </div>
         <div className="result-actions">
           <button className="primary-button" type="button" onClick={onReplay}><RotateCcw size={18} /> Play again</button>
-          <button className="quiet-button" type="button" onClick={onHome}>Choose another track</button>
+          <button className="quiet-button" type="button" onClick={onHome}>Choose another route</button>
         </div>
       </section>
     </main>
+  )
+}
+
+function ModalShell({
+  title,
+  eyebrow,
+  onClose,
+  children,
+}: {
+  title: string
+  eyebrow: string
+  onClose: () => void
+  children: React.ReactNode
+}) {
+  return (
+    <div className="modal-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
+      <section className="modal-card" role="dialog" aria-modal="true" aria-label={title}>
+        <header className="modal-header">
+          <div>
+            <p className="eyebrow">{eyebrow}</p>
+            <h2>{title}</h2>
+          </div>
+          <button className="icon-button" type="button" onClick={onClose} aria-label={`Close ${title}`}>
+            <X />
+          </button>
+        </header>
+        <div className="modal-content">{children}</div>
+      </section>
+    </div>
+  )
+}
+
+function ToggleRow({
+  checked,
+  onChange,
+  icon,
+  title,
+  description,
+}: {
+  checked: boolean
+  onChange: (checked: boolean) => void
+  icon: React.ReactNode
+  title: string
+  description: string
+}) {
+  return (
+    <label className="toggle-row">
+      <span className="setting-icon">{icon}</span>
+      <span className="setting-copy"><strong>{title}</strong><small>{description}</small></span>
+      <span className="switch">
+        <input type="checkbox" checked={checked} onChange={(event) => onChange(event.target.checked)} />
+        <span />
+      </span>
+    </label>
+  )
+}
+
+function TipCard({ tip, featured = false }: { tip: { title: string; text: string }; featured?: boolean }) {
+  return (
+    <article className={`tip-card ${featured ? 'featured-tip' : ''}`}>
+      <Lightbulb aria-hidden="true" />
+      <div><strong>{tip.title}</strong><p>{tip.text}</p></div>
+    </article>
+  )
+}
+
+function AppFooter() {
+  return (
+    <footer className="app-footer">
+      <div>
+        <span>© 2026 Geography Gym</span>
+        <nav aria-label="Footer navigation">
+          <a href="./faq/">FAQ</a>
+          <a href="./help/">Help Center</a>
+          <a href="https://github.com/LurieJoe/geography-gym/issues/new" target="_blank" rel="noreferrer">Send Feedback</a>
+          <a href="./privacy/">Privacy</a>
+        </nav>
+      </div>
+    </footer>
   )
 }
 

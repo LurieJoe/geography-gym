@@ -8,7 +8,7 @@
   "display": "standalone",
   "orientation": "any",
   "background_color": "#f7f4ef",
-  "theme_color": "#b11f4b",
+  "theme_color": "#4338ca",
   "categories": ["education", "games"],
   "icons": [
     {
