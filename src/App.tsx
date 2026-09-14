@@ -80,7 +80,7 @@ type ProfileStore = {
 }
 
 const defaultStats: Stats = { games: 0, correct: 0, answered: 0, bestStreak: 0 }
-const APP_VERSION = 'v7'
+const APP_VERSION = 'v8'
 const PROFILES_KEY = 'geography-gym-profiles-v1'
 const defaultPreferences: Preferences = {
   theme: 'system',
