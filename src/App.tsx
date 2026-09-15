@@ -106,7 +106,7 @@ type SavedWorkout = {
 type SavedWorkoutStore = Record<string, SavedWorkout>
 
 const defaultStats: Stats = { games: 0, correct: 0, answered: 0, bestStreak: 0 }
-const APP_VERSION = 'v15'
+const APP_VERSION = 'v16'
 const PROFILES_KEY = 'geography-gym-profiles-v1'
 const SAVED_WORKOUTS_KEY = 'geography-gym-saved-workouts-v1'
 const defaultPreferences: Preferences = {
@@ -404,11 +404,6 @@ function App() {
   const stats = activeProfile.stats
   const preferences = activeProfile.preferences
   const savedWorkout = savedWorkouts[activeProfile.id]
-  const [startupContext] = useState(() => ({
-    profileId: activeProfile.id,
-    enabled: activeProfile.preferences.tipsStartup,
-    tipIndex: activeProfile.tipIndex,
-  }))
   const [startupTip, setStartupTip] = useState(tips[0])
   const [newProfileName, setNewProfileName] = useState('')
   const [editingProfileId, setEditingProfileId] = useState<string | null>(null)
@@ -418,6 +413,7 @@ function App() {
   const [waitingWorker, setWaitingWorker] = useState<ServiceWorker | null>(null)
   const updateRequested = useRef(false)
   const reloadingForUpdate = useRef(false)
+  const startupTipShown = useRef(false)
 
   useEffect(() => {
     localStorage.setItem(PROFILES_KEY, JSON.stringify(profileStore))
@@ -463,21 +459,26 @@ function App() {
   }, [preferences])
 
   useEffect(() => {
-    if (!startupContext.enabled) return
+    if (!appMode || startupTipShown.current) return
+    startupTipShown.current = true
+    if (!activeProfile.preferences.tipsStartup) return
+
+    const profileId = activeProfile.id
+    const tipIndex = activeProfile.tipIndex
     const timer = window.setTimeout(() => {
-      setStartupTip(tips[startupContext.tipIndex % tips.length])
+      setStartupTip(tips[tipIndex % tips.length])
       setProfileStore((current) => ({
         ...current,
         profiles: current.profiles.map((profile) =>
-          profile.id === startupContext.profileId
-            ? { ...profile, tipIndex: (startupContext.tipIndex + 1) % tips.length }
+          profile.id === profileId
+            ? { ...profile, tipIndex: (tipIndex + 1) % tips.length }
             : profile,
         ),
       }))
       setModal('startup-tip')
     }, 0)
     return () => window.clearTimeout(timer)
-  }, [startupContext])
+  }, [appMode, activeProfile.id, activeProfile.preferences.tipsStartup, activeProfile.tipIndex])
 
   useEffect(() => {
     const handleInstall = (event: Event) => {
