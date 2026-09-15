@@ -37,6 +37,11 @@ styles that do not apply to the selected subject remain visible but disabled so
 their scope is clear. Flagged Review remains available as a profile-specific
 shortcut beside the progress counters.
 
+The public root remains a full product website. **Open app** enters a separate,
+compact app dashboard at `?app=1`, where Step 1 and Step 2 appear together
+inline. Installed PWA shortcuts launch this dashboard directly instead of the
+marketing homepage.
+
 Players can choose 10-, 25-, or 50-question workouts. Multiple-choice, location, and
 ordering questions allow two attempts. Matching Pairs provides immediate animated
 feedback. Optional answer sounds, an elapsed timer, rotating startup tips, and local

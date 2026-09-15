@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react'
 import {
   ArrowLeft,
   Award,
@@ -105,7 +105,7 @@ type SavedWorkout = {
 type SavedWorkoutStore = Record<string, SavedWorkout>
 
 const defaultStats: Stats = { games: 0, correct: 0, answered: 0, bestStreak: 0 }
-const APP_VERSION = 'v13'
+const APP_VERSION = 'v14'
 const PROFILES_KEY = 'geography-gym-profiles-v1'
 const SAVED_WORKOUTS_KEY = 'geography-gym-saved-workouts-v1'
 const defaultPreferences: Preferences = {
@@ -222,6 +222,10 @@ const tips = [
   {
     title: 'Build a workout in two steps',
     text: 'First choose what to study—U.S., World, Landmarks, or Mixed. Then choose the practice style that builds the skill you want.',
+  },
+  {
+    title: 'Use the app dashboard',
+    text: 'Open app—or launch an installed copy—to use the compact exercise builder. Choose a subject in Step 1, then choose a compatible practice style in Step 2.',
   },
   {
     title: 'Resume where you stopped',
@@ -364,6 +368,11 @@ function playFeedbackSound(kind: FeedbackKind, enabled: boolean) {
 
 function App() {
   const [screen, setScreen] = useState<Screen>('home')
+  const [appMode, setAppMode] = useState(() =>
+    new URLSearchParams(window.location.search).get('app') === '1'
+    || window.matchMedia('(display-mode: standalone)').matches,
+  )
+  const [appSelectedCategory, setAppSelectedCategory] = useState<Category | null>(null)
   const [modal, setModal] = useState<Modal>(null)
   const [pendingCategory, setPendingCategory] = useState<Category>('mixed')
   const [pendingPractice, setPendingPractice] = useState<PracticeMode>('variety')
@@ -418,6 +427,19 @@ function App() {
   useEffect(() => {
     localStorage.setItem(SAVED_WORKOUTS_KEY, JSON.stringify(savedWorkouts))
   }, [savedWorkouts])
+
+  useEffect(() => {
+    const handlePopState = () => {
+      setAppMode(
+        new URLSearchParams(window.location.search).get('app') === '1'
+        || window.matchMedia('(display-mode: standalone)').matches,
+      )
+      setScreen('home')
+      setModal(null)
+    }
+    window.addEventListener('popstate', handlePopState)
+    return () => window.removeEventListener('popstate', handlePopState)
+  }, [])
 
   useEffect(() => {
     const resolveTheme = () => {
@@ -578,6 +600,23 @@ function App() {
     setOnlyFlagged(false)
     setAllFlaggedModes(false)
     setModal('setup')
+  }
+
+  function enterApp() {
+    const url = new URL(window.location.href)
+    url.searchParams.set('app', '1')
+    window.history.pushState({}, '', url)
+    setAppMode(true)
+    setScreen('home')
+    setModal(null)
+  }
+
+  function selectAppCategory(nextCategory: Category) {
+    setAppSelectedCategory(nextCategory)
+    setPendingCategory(nextCategory)
+    setPendingPractice('variety')
+    setOnlyFlagged(false)
+    setAllFlaggedModes(false)
   }
 
   function openFlaggedReview() {
@@ -911,8 +950,8 @@ function App() {
         : 'Dark'
 
   return (
-    <div className="app-shell">
-      <header className="app-header">
+    <div className={`app-shell ${appMode ? 'product-mode' : 'website-mode'}`}>
+      <header className={`app-header ${appMode ? 'product-header' : ''}`}>
         <div className="header-brand-group">
           <button
             className="icon-button"
@@ -929,29 +968,31 @@ function App() {
           </button>
         </div>
         <div className="header-actions">
-          <nav className="header-nav" aria-label="Primary navigation">
-            <button
-              className={`header-link ${screen === 'home' ? 'active' : ''}`}
-              type="button"
-              onClick={exitWorkout}
-            >
-              Home
-            </button>
-            <button className="header-link open-app-link" type="button" onClick={() => openWorkoutSetup('mixed')}>
-              Open app
-            </button>
-            <a className="header-support-link" href="./faq/">FAQ</a>
-            <a className="header-support-link" href="./help/">Help Center</a>
-            <a className="header-support-link" href="./privacy/">Privacy</a>
-            <a
-              className="header-support-link"
-              href="https://github.com/LurieJoe/geography-gym/issues/new/choose"
-              target="_blank"
-              rel="noreferrer"
-            >
-              Feedback
-            </a>
-          </nav>
+          {!appMode && (
+            <nav className="header-nav" aria-label="Primary navigation">
+              <button
+                className={`header-link ${screen === 'home' ? 'active' : ''}`}
+                type="button"
+                onClick={exitWorkout}
+              >
+                Home
+              </button>
+              <button className="header-link open-app-link" type="button" onClick={enterApp}>
+                Open app
+              </button>
+              <a className="header-support-link" href="./faq/">FAQ</a>
+              <a className="header-support-link" href="./help/">Help Center</a>
+              <a className="header-support-link" href="./privacy/">Privacy</a>
+              <a
+                className="header-support-link"
+                href="https://github.com/LurieJoe/geography-gym/issues/new/choose"
+                target="_blank"
+                rel="noreferrer"
+              >
+                Feedback
+              </a>
+            </nav>
+          )}
           <button
             className="icon-button tips-button"
             type="button"
@@ -992,7 +1033,7 @@ function App() {
         </div>
       </header>
 
-      {screen === 'home' && (
+      {screen === 'home' && !appMode && (
         <Home
           stats={stats}
           accuracy={accuracy}
@@ -1002,6 +1043,34 @@ function App() {
           openFlaggedReview={openFlaggedReview}
           onResumeWorkout={resumeWorkout}
           onDismissWorkout={dismissSavedWorkout}
+          onResetStats={() => setModal('reset-stats')}
+        />
+      )}
+
+      {screen === 'home' && appMode && (
+        <AppDashboard
+          stats={stats}
+          accuracy={accuracy}
+          flaggedCount={flaggedCount}
+          savedWorkout={savedWorkout}
+          selectedCategory={appSelectedCategory}
+          pendingPractice={pendingPractice}
+          preferences={preferences}
+          setupQuestionCount={appSelectedCategory ? setupQuestionCount : 0}
+          profileName={activeProfile.name}
+          onSelectCategory={selectAppCategory}
+          onSelectPractice={setPendingPractice}
+          onRoundSizeChange={(size) => updatePreference('roundSize', size)}
+          onTimerChange={(checked) => updatePreference('timer', checked)}
+          onlyFlagged={onlyFlagged}
+          onOnlyFlaggedChange={(checked) => {
+            setOnlyFlagged(checked)
+            setAllFlaggedModes(false)
+          }}
+          onStart={startWorkout}
+          onResumeWorkout={resumeWorkout}
+          onDismissWorkout={dismissSavedWorkout}
+          onFlaggedReview={openFlaggedReview}
           onResetStats={() => setModal('reset-stats')}
         />
       )}
@@ -1078,13 +1147,19 @@ function App() {
         />
       )}
 
-      {screen === 'home' && <AppFooter />}
+      {screen === 'home' && !appMode && <AppFooter />}
 
       {modal === 'setup' && (
         <ModalShell
           title={allFlaggedModes ? 'Set up Flagged Review' : 'Choose how to study'}
           eyebrow={allFlaggedModes ? 'Profile review' : `Step 2 of 2 · ${categoryDetails[pendingCategory].label}`}
-          onClose={() => setModal(null)}
+          onClose={() => {
+            setModal(null)
+            if (allFlaggedModes) {
+              setOnlyFlagged(false)
+              setAllFlaggedModes(false)
+            }
+          }}
         >
           <p className="modal-lead">
             {onlyFlagged
@@ -1425,6 +1500,246 @@ function App() {
   )
 }
 
+function AppDashboard({
+  stats,
+  accuracy,
+  flaggedCount,
+  savedWorkout,
+  selectedCategory,
+  pendingPractice,
+  preferences,
+  setupQuestionCount,
+  profileName,
+  onSelectCategory,
+  onSelectPractice,
+  onRoundSizeChange,
+  onTimerChange,
+  onlyFlagged,
+  onOnlyFlaggedChange,
+  onStart,
+  onResumeWorkout,
+  onDismissWorkout,
+  onFlaggedReview,
+  onResetStats,
+}: {
+  stats: Stats
+  accuracy: number
+  flaggedCount: number
+  savedWorkout?: SavedWorkout
+  selectedCategory: Category | null
+  pendingPractice: PracticeMode
+  preferences: Preferences
+  setupQuestionCount: number
+  profileName: string
+  onSelectCategory: (category: Category) => void
+  onSelectPractice: (practice: PracticeMode) => void
+  onRoundSizeChange: (size: RoundSize) => void
+  onTimerChange: (checked: boolean) => void
+  onlyFlagged: boolean
+  onOnlyFlaggedChange: (checked: boolean) => void
+  onStart: () => void
+  onResumeWorkout: () => void
+  onDismissWorkout: () => void
+  onFlaggedReview: () => void
+  onResetStats: () => void
+}) {
+  const subjects: Array<{
+    category: Category
+    icon: ReactNode
+    description: string
+  }> = [
+    { category: 'us', icon: <Map />, description: 'States, capitals, locations, and neighbors' },
+    { category: 'world', icon: <Globe2 />, description: 'Countries, capitals, regions, and maps' },
+    { category: 'landmarks', icon: <Landmark />, description: 'Famous places, distances, and locations' },
+    { category: 'mixed', icon: <Sparkles />, description: 'A combination of all three subjects' },
+  ]
+
+  return (
+    <main className="app-dashboard">
+      <section className="app-welcome">
+        <div className="app-welcome-mark" aria-hidden="true"><Globe2 /></div>
+        <div>
+          <p className="eyebrow">Welcome, {profileName}</p>
+          <h1>What would you like to practice?</h1>
+          <p>Build your geography exercise in two quick steps.</p>
+        </div>
+      </section>
+
+      {savedWorkout && (
+        <section className="resume-workout app-resume" aria-label="Saved workout">
+          <div className="resume-icon"><RotateCcw /></div>
+          <div>
+            <p className="eyebrow">Continue where you stopped</p>
+            <h2>Resume your workout</h2>
+            <p>
+              {categoryDetails[savedWorkout.category].label}
+              {' · '}
+              {practiceDetails[savedWorkout.practice].label}
+              {' · Question '}
+              {savedWorkout.questionIndex + 1} of {savedWorkout.questionIds.length}
+            </p>
+          </div>
+          <div className="resume-actions">
+            <button className="primary-button" type="button" onClick={onResumeWorkout}>Resume</button>
+            <button className="quiet-button" type="button" onClick={onDismissWorkout}>Dismiss</button>
+          </div>
+        </section>
+      )}
+
+      <section className="app-builder" aria-label="Build an exercise">
+        <div className="app-step-heading">
+          <span>1</span>
+          <div>
+            <p className="eyebrow">Step 1</p>
+            <h2>Choose what to study</h2>
+          </div>
+        </div>
+        <div className="app-subject-options">
+          {subjects.map((subject) => (
+            <button
+              key={subject.category}
+              className={selectedCategory === subject.category ? 'selected-option' : ''}
+              type="button"
+              aria-pressed={selectedCategory === subject.category}
+              onClick={() => onSelectCategory(subject.category)}
+            >
+              <span className="app-option-icon">{subject.icon}</span>
+              <span>
+                <strong>{categoryDetails[subject.category].label}</strong>
+                <small>{subject.description}</small>
+              </span>
+              {selectedCategory === subject.category && <Check size={19} />}
+            </button>
+          ))}
+        </div>
+
+        <div className="app-step-divider" />
+
+        <div className="app-step-heading">
+          <span>2</span>
+          <div>
+            <p className="eyebrow">Step 2</p>
+            <h2>Choose how to study</h2>
+          </div>
+        </div>
+        {!selectedCategory && (
+          <p className="app-step-prompt"><MapPin size={18} /> Choose a subject above to see its available exercises.</p>
+        )}
+        <div className="practice-options app-practice-options">
+          {practiceModes.map((mode) => {
+            const available = selectedCategory ? practiceAvailable(selectedCategory, mode) : false
+            return (
+              <label
+                key={mode}
+                className={[
+                  selectedCategory && pendingPractice === mode ? 'selected-option' : '',
+                  !available ? 'disabled-option' : '',
+                ].join(' ')}
+              >
+                <input
+                  type="radio"
+                  name="app-practice-mode"
+                  value={mode}
+                  checked={selectedCategory !== null && pendingPractice === mode}
+                  disabled={!available}
+                  onChange={() => onSelectPractice(mode)}
+                />
+                <span>
+                  <strong>{practiceDetails[mode].label}</strong>
+                  <small>{practiceDetails[mode].description}</small>
+                  <em>
+                    {selectedCategory
+                      ? practiceScope(selectedCategory, mode)
+                      : 'Choose a subject first'}
+                  </em>
+                </span>
+              </label>
+            )
+          })}
+        </div>
+
+        <div className="app-workout-options">
+          <fieldset className="choice-fieldset">
+            <legend>Questions this round</legend>
+            <div className="segmented-options">
+              {([10, 25, 50] as RoundSize[]).map((size) => (
+                <label key={size} className={preferences.roundSize === size ? 'selected-option' : ''}>
+                  <input
+                    type="radio"
+                    name="app-round-size"
+                    value={size}
+                    checked={preferences.roundSize === size}
+                    onChange={() => onRoundSizeChange(size)}
+                  />
+                  <strong>{size}</strong>
+                  <span>questions</span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
+          <div className="app-toggle-options">
+            <ToggleRow
+              checked={preferences.timer}
+              onChange={onTimerChange}
+              icon={<Clock3 />}
+              title="Show workout timer"
+              description="Use a stopwatch without adding a deadline."
+            />
+            <ToggleRow
+              checked={onlyFlagged}
+              onChange={onOnlyFlaggedChange}
+              icon={<Flag />}
+              title="Only use flagged questions"
+              description={
+                flaggedCount > 0
+                  ? `${flaggedCount} flagged ${flaggedCount === 1 ? 'question' : 'questions'} in this profile.`
+                  : 'Flag questions during workouts to build a review list.'
+              }
+              disabled={flaggedCount === 0}
+            />
+          </div>
+        </div>
+
+        <button
+          className="primary-button app-start-button"
+          type="button"
+          onClick={onStart}
+          disabled={!selectedCategory || setupQuestionCount === 0}
+        >
+          {selectedCategory
+            ? `Start ${setupQuestionCount}-question exercise`
+            : 'Choose a subject to continue'}
+        </button>
+      </section>
+
+      <section className="app-progress-card" aria-label="Learning progress">
+        <div className="app-progress-heading">
+          <div>
+            <p className="eyebrow">{profileName}'s progress</p>
+            <h2>Keep building your mental map</h2>
+          </div>
+          <button className="quiet-button" type="button" onClick={onResetStats}>
+            <RotateCcw size={16} /> Reset
+          </button>
+        </div>
+        <div className="app-progress-stats">
+          <div><strong>{stats.games}</strong><span>Workouts</span></div>
+          <div><strong>{accuracy}%</strong><span>Accuracy</span></div>
+          <div><strong>{stats.bestStreak}</strong><span>Best streak</span></div>
+        </div>
+        <button
+          className="quiet-button app-review-button"
+          type="button"
+          onClick={onFlaggedReview}
+          disabled={flaggedCount === 0}
+        >
+          <Flag size={17} /> Review flagged questions ({flaggedCount})
+        </button>
+      </section>
+    </main>
+  )
+}
+
 function Home({
   stats,
   accuracy,
@@ -1526,8 +1841,8 @@ function Home({
       <section className="tracks-section" id="subjects">
         <div className="section-heading">
           <div>
-            <p className="eyebrow">Build your workout</p>
-            <h2>Choose your workout path</h2>
+            <p className="eyebrow">Start your workout</p>
+            <h2>Choose your geography exercise</h2>
           </div>
           <div className="workout-steps" aria-label="Two steps to build a workout">
             <div>
