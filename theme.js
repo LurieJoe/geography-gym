@@ -9,27 +9,37 @@
     }
   }
 
-  const getThemePreference = () => {
+  const getAppearancePreferences = () => {
     const store = readJson('geography-gym-profiles-v1')
     const activeProfile = store?.profiles?.find(
       (profile) => profile.id === store.activeProfileId,
     )
     const profileTheme = activeProfile?.preferences?.theme
-    if (['system', 'light', 'dark'].includes(profileTheme)) return profileTheme
-
     const legacyTheme = readJson('geography-gym-preferences')?.theme
-    return ['system', 'light', 'dark'].includes(legacyTheme) ? legacyTheme : 'system'
+    return {
+      theme: ['system', 'light', 'dark'].includes(profileTheme)
+        ? profileTheme
+        : ['system', 'light', 'dark'].includes(legacyTheme)
+          ? legacyTheme
+          : 'system',
+      highContrast: activeProfile?.preferences?.highContrast === true,
+      fontSize: ['s', 'm', 'l', 'xl'].includes(activeProfile?.preferences?.fontSize)
+        ? activeProfile.preferences.fontSize
+        : 'm',
+    }
   }
 
   const applyTheme = () => {
-    const preference = getThemePreference()
-    const theme = preference === 'system' ? (media.matches ? 'dark' : 'light') : preference
+    const preferences = getAppearancePreferences()
+    const theme = preferences.theme === 'system' ? (media.matches ? 'dark' : 'light') : preferences.theme
     document.documentElement.setAttribute('data-theme', theme)
+    document.documentElement.setAttribute('data-high-contrast', String(preferences.highContrast))
+    document.documentElement.setAttribute('data-font-size', preferences.fontSize)
   }
 
   applyTheme()
   media.addEventListener('change', () => {
-    if (getThemePreference() === 'system') applyTheme()
+    if (getAppearancePreferences().theme === 'system') applyTheme()
   })
   window.addEventListener('storage', (event) => {
     if (
