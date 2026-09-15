@@ -52,6 +52,11 @@ flags, or other profiles.
 An unfinished workout is also saved separately for each profile. Returning to the
 home page or reopening the app displays a Resume workout panel with the saved subject,
 practice style, question position, score, streak, order, and paused elapsed time.
+During a workout, **Previous** returns to an answered question in review-only mode,
+showing the correct answer without changing the score or streak.
+
+Clue Ladder randomizes its three clues for each question instead of consistently
+leading with the broadest location clue.
 
 No account or analytics service is used. Profiles, progress, and preferences are
 stored locally, and no network connection is required after the app has been cached.

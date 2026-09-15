@@ -3,6 +3,7 @@ import {
   ArrowLeft,
   Award,
   Check,
+  ChevronLeft,
   ChevronDown,
   ChevronUp,
   Clock3,
@@ -91,6 +92,7 @@ type SavedWorkout = {
   practice: PracticeMode
   questionIds: string[]
   questionIndex: number
+  answers: Record<string, boolean>
   score: number
   streak: number
   bestRunStreak: number
@@ -103,7 +105,7 @@ type SavedWorkout = {
 type SavedWorkoutStore = Record<string, SavedWorkout>
 
 const defaultStats: Stats = { games: 0, correct: 0, answered: 0, bestStreak: 0 }
-const APP_VERSION = 'v12'
+const APP_VERSION = 'v13'
 const PROFILES_KEY = 'geography-gym-profiles-v1'
 const SAVED_WORKOUTS_KEY = 'geography-gym-saved-workouts-v1'
 const defaultPreferences: Preferences = {
@@ -224,6 +226,10 @@ const tips = [
   {
     title: 'Resume where you stopped',
     text: 'If you leave during a workout, the active profile remembers the question order, position, score, streak, and timer. Choose Resume workout on the home page to continue.',
+  },
+  {
+    title: 'Review a previous question',
+    text: 'Use Previous during a workout to revisit an answered question and its correct answer. Review mode never changes your score or streak.',
   },
 ]
 
@@ -369,11 +375,13 @@ function App() {
   const [workoutAllFlaggedModes, setWorkoutAllFlaggedModes] = useState(false)
   const [questions, setQuestions] = useState<Question[]>([])
   const [questionIndex, setQuestionIndex] = useState(0)
+  const [answerHistory, setAnswerHistory] = useState<Record<string, boolean>>({})
   const [score, setScore] = useState(0)
   const [streak, setStreak] = useState(0)
   const [bestRunStreak, setBestRunStreak] = useState(0)
   const [answered, setAnswered] = useState(false)
   const [wasCorrect, setWasCorrect] = useState(false)
+  const [reviewingAnswer, setReviewingAnswer] = useState(false)
   const [elapsed, setElapsed] = useState(0)
   const [workoutTimerEnabled, setWorkoutTimerEnabled] = useState(false)
   const [roundStartedAt, setRoundStartedAt] = useState<number | null>(null)
@@ -603,6 +611,7 @@ function App() {
     setWorkoutAllFlaggedModes(allFlaggedModes)
     setQuestions(nextQuestions)
     setQuestionIndex(0)
+    setAnswerHistory({})
     setScore(0)
     setStreak(0)
     setBestRunStreak(0)
@@ -616,6 +625,7 @@ function App() {
         practice: pendingPractice,
         questionIds: nextQuestions.map((question) => question.id),
         questionIndex: 0,
+        answers: {},
         score: 0,
         streak: 0,
         bestRunStreak: 0,
@@ -633,6 +643,7 @@ function App() {
   function resetQuestion() {
     setAnswered(false)
     setWasCorrect(false)
+    setReviewingAnswer(false)
   }
 
   function replayWorkout() {
@@ -665,14 +676,20 @@ function App() {
     setWorkoutOnlyFlagged(savedWorkout.onlyFlagged)
     setWorkoutAllFlaggedModes(savedWorkout.allFlaggedModes)
     setQuestions(restoredQuestions)
-    setQuestionIndex(Math.min(savedWorkout.questionIndex, restoredQuestions.length - 1))
+    const restoredIndex = Math.min(savedWorkout.questionIndex, restoredQuestions.length - 1)
+    const restoredAnswers = savedWorkout.answers ?? {}
+    const restoredAnswer = restoredAnswers[restoredQuestions[restoredIndex].id]
+    setQuestionIndex(restoredIndex)
+    setAnswerHistory(restoredAnswers)
     setScore(savedWorkout.score)
     setStreak(savedWorkout.streak)
     setBestRunStreak(savedWorkout.bestRunStreak)
     setElapsed(savedWorkout.elapsed)
     setWorkoutTimerEnabled(savedWorkout.timerEnabled ?? savedWorkout.elapsed > 0)
     setRoundStartedAt(Date.now() - savedWorkout.elapsed * 1000)
-    resetQuestion()
+    setAnswered(restoredAnswer !== undefined)
+    setWasCorrect(restoredAnswer ?? false)
+    setReviewingAnswer(restoredAnswer !== undefined)
     setModal(null)
     setScreen('quiz')
   }
@@ -687,8 +704,10 @@ function App() {
 
   function recordAnswer(correct: boolean) {
     if (answered) return
+    setAnswerHistory((current) => ({ ...current, [questions[questionIndex].id]: correct }))
     setAnswered(true)
     setWasCorrect(correct)
+    setReviewingAnswer(false)
     if (correct) {
       const nextStreak = streak + 1
       setScore((value) => value + 1)
@@ -719,6 +738,7 @@ function App() {
         practice,
         questionIds: questions.map((question) => question.id),
         questionIndex: questionIndex + 1,
+        answers: answerHistory,
         score,
         streak,
         bestRunStreak,
@@ -728,8 +748,39 @@ function App() {
         allFlaggedModes: workoutAllFlaggedModes,
       },
     }))
-    setQuestionIndex((value) => value + 1)
-    resetQuestion()
+    const nextIndex = questionIndex + 1
+    const nextAnswer = answerHistory[questions[nextIndex].id]
+    setQuestionIndex(nextIndex)
+    setAnswered(nextAnswer !== undefined)
+    setWasCorrect(nextAnswer ?? false)
+    setReviewingAnswer(nextAnswer !== undefined)
+  }
+
+  function previousQuestion() {
+    if (questionIndex === 0) return
+    const previousIndex = questionIndex - 1
+    const previousAnswer = answerHistory[questions[previousIndex].id]
+    setSavedWorkouts((current) => ({
+      ...current,
+      [activeProfile.id]: {
+        category,
+        practice,
+        questionIds: questions.map((question) => question.id),
+        questionIndex: previousIndex,
+        answers: answerHistory,
+        score,
+        streak,
+        bestRunStreak,
+        elapsed,
+        timerEnabled: workoutTimerEnabled,
+        onlyFlagged: workoutOnlyFlagged,
+        allFlaggedModes: workoutAllFlaggedModes,
+      },
+    }))
+    setQuestionIndex(previousIndex)
+    setAnswered(previousAnswer !== undefined)
+    setWasCorrect(previousAnswer ?? false)
+    setReviewingAnswer(previousAnswer !== undefined)
   }
 
   async function installApp() {
@@ -958,9 +1009,16 @@ function App() {
       {screen === 'quiz' && currentQuestion && (
         <main className="quiz-shell">
           <div className="quiz-toolbar">
-            <button className="back-button" type="button" onClick={exitWorkout}>
-              <ArrowLeft size={18} /> Exit
-            </button>
+            <div className="quiz-nav-actions">
+              <button className="back-button" type="button" onClick={exitWorkout}>
+                <ArrowLeft size={18} /> Exit
+              </button>
+              {questionIndex > 0 && (
+                <button className="back-button" type="button" onClick={previousQuestion}>
+                  <ChevronLeft size={18} /> Previous
+                </button>
+              )}
+            </div>
             <div className="progress-copy">
               <span>{categoryDetails[category].label}</span>
               <strong>{questionIndex + 1} / {questions.length}</strong>
@@ -984,6 +1042,7 @@ function App() {
             key={currentQuestion.id}
             question={currentQuestion}
             answered={answered}
+            reviewOnly={reviewingAnswer}
             onAnswer={recordAnswer}
             onFeedback={(kind) => playFeedbackSound(kind, preferences.sound)}
             flagged={activeProfile.flaggedQuestionIds.includes(currentQuestion.id)}
@@ -1563,7 +1622,7 @@ function TrackCard({
         {games.map((game) => <li key={game}><Check size={14} /> {game}</li>)}
       </ul>
       <button className="card-button" type="button" onClick={() => onStart(category)}>
-        Choose this workout <span aria-hidden="true">→</span>
+        Choose this exercise <span aria-hidden="true">→</span>
       </button>
     </article>
   )
@@ -1572,6 +1631,7 @@ function TrackCard({
 function QuestionCard({
   question,
   answered,
+  reviewOnly,
   onAnswer,
   onFeedback,
   flagged,
@@ -1579,6 +1639,7 @@ function QuestionCard({
 }: {
   question: Question
   answered: boolean
+  reviewOnly: boolean
   onAnswer: (correct: boolean) => void
   onFeedback: (kind: FeedbackKind) => void
   flagged: boolean
@@ -1622,7 +1683,9 @@ function QuestionCard({
       <h2>{question.prompt}</h2>
       {question.hint && <p className="question-hint">{question.hint}</p>}
 
-      {question.kind === 'choice' && (
+      {reviewOnly && <QuestionReview question={question} />}
+
+      {!reviewOnly && question.kind === 'choice' && (
         <AnswerChoices
           options={question.options}
           answer={question.answer}
@@ -1633,7 +1696,7 @@ function QuestionCard({
         />
       )}
 
-      {question.kind === 'clue' && (
+      {!reviewOnly && question.kind === 'clue' && (
         <ClueLadder
           question={question}
           answered={answered}
@@ -1643,7 +1706,7 @@ function QuestionCard({
         />
       )}
 
-      {question.kind === 'locate-us' && (
+      {!reviewOnly && question.kind === 'locate-us' && (
         <UsMap
           answer={question.answer}
           wrongAnswers={wrongAnswers}
@@ -1654,7 +1717,7 @@ function QuestionCard({
         />
       )}
 
-      {question.kind === 'locate-world' && (
+      {!reviewOnly && question.kind === 'locate-world' && (
         <WorldMap
           answer={question.answer}
           points={question.points}
@@ -1666,7 +1729,7 @@ function QuestionCard({
         />
       )}
 
-      {question.kind === 'matching' && (
+      {!reviewOnly && question.kind === 'matching' && (
         <MatchingGame
           question={question}
           answered={answered}
@@ -1675,7 +1738,7 @@ function QuestionCard({
         />
       )}
 
-      {question.kind === 'order' && (
+      {!reviewOnly && question.kind === 'order' && (
         <OrderGame
           question={question}
           answered={answered}
@@ -1684,7 +1747,7 @@ function QuestionCard({
         />
       )}
 
-      {question.kind === 'pinpoint' && (
+      {!reviewOnly && question.kind === 'pinpoint' && (
         <PinpointMap
           question={question}
           answered={answered}
@@ -1707,6 +1770,25 @@ function QuestionCard({
         <span>Flag this question for review</span>
       </label>
     </section>
+  )
+}
+
+function QuestionReview({ question }: { question: Question }) {
+  return (
+    <div className="question-review" aria-label="Previous answer review">
+      <strong>Correct answer</strong>
+      {question.kind === 'matching' ? (
+        <ul>
+          {question.pairs.map((pair) => (
+            <li key={`${pair.left}-${pair.right}`}>{pair.left} — {pair.right}</li>
+          ))}
+        </ul>
+      ) : question.kind === 'order' ? (
+        <p>{question.answer.join(' → ')}</p>
+      ) : (
+        <p>{question.answer}</p>
+      )}
+    </div>
   )
 }
 
@@ -1769,15 +1851,16 @@ function ClueLadder({
   onSelect: (value: string) => void
 }) {
   const [revealedClues, setRevealedClues] = useState(1)
+  const randomizedClues = useMemo(() => shuffle(question.clues), [question.clues])
 
   return (
     <div className="clue-ladder">
       <ol>
-        {question.clues.slice(0, revealedClues).map((clue, index) => (
+        {randomizedClues.slice(0, revealedClues).map((clue, index) => (
           <li key={clue}><span>{index + 1}</span>{clue}</li>
         ))}
       </ol>
-      {revealedClues < question.clues.length && !answered && (
+      {revealedClues < randomizedClues.length && !answered && (
         <button
           className="quiet-button reveal-clue-button"
           type="button"
