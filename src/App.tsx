@@ -54,6 +54,7 @@ type Screen = 'home' | 'quiz' | 'results'
 type AppPage = 'home' | 'builder'
 type ThemeMode = 'system' | 'light' | 'dark'
 type RoundSize = 10 | 25 | 50
+type DistanceUnit = 'miles' | 'kilometers'
 type AccentColor = 'indigo' | 'blue' | 'teal' | 'green' | 'violet' | 'rose' | 'orange' | 'crimson'
 type Modal = 'settings' | 'tips' | 'setup' | 'startup-tip' | 'reset-stats' | 'profiles' | null
 type FeedbackKind = 'correct' | 'incorrect'
@@ -72,6 +73,7 @@ type Preferences = {
   timer: boolean
   tipsStartup: boolean
   roundSize: RoundSize
+  distanceUnit: DistanceUnit
 }
 
 type Profile = {
@@ -106,7 +108,7 @@ type SavedWorkout = {
 type SavedWorkoutStore = Record<string, SavedWorkout>
 
 const defaultStats: Stats = { games: 0, correct: 0, answered: 0, bestStreak: 0 }
-const APP_VERSION = 'v16'
+const APP_VERSION = 'v17'
 const PROFILES_KEY = 'geography-gym-profiles-v1'
 const SAVED_WORKOUTS_KEY = 'geography-gym-saved-workouts-v1'
 const defaultPreferences: Preferences = {
@@ -116,6 +118,7 @@ const defaultPreferences: Preferences = {
   timer: false,
   tipsStartup: true,
   roundSize: 10,
+  distanceUnit: 'miles',
 }
 const accentColors: { id: AccentColor; label: string }[] = [
   { id: 'indigo', label: 'Indigo' },
@@ -266,6 +269,9 @@ function readProfileStore(): ProfileStore {
               if (!accentColors.some((color) => color.id === preferences.accent)) {
                 preferences.accent = 'indigo'
               }
+              if (!['miles', 'kilometers'].includes(preferences.distanceUnit)) {
+                preferences.distanceUnit = 'miles'
+              }
 
               return {
                 id: profile.id,
@@ -325,6 +331,20 @@ function formatTime(totalSeconds: number) {
   const minutes = Math.floor(totalSeconds / 60)
   const seconds = totalSeconds % 60
   return `${minutes}:${seconds.toString().padStart(2, '0')}`
+}
+
+function formatDistance(distanceKm: number, unit: DistanceUnit) {
+  const distance = unit === 'miles' ? distanceKm * 0.621371 : distanceKm
+  const label = unit === 'miles' ? 'mi' : 'km'
+  return `${Math.round(distance).toLocaleString()} ${label}`
+}
+
+function formatDistanceExplanation(explanation: string, unit: DistanceUnit) {
+  if (unit === 'kilometers') return explanation
+  return explanation.replace(/([\d,]+) km/g, (_, value: string) => {
+    const distanceKm = Number(value.replaceAll(',', ''))
+    return Number.isFinite(distanceKm) ? formatDistance(distanceKm, unit) : `${value} km`
+  })
 }
 
 function SystemThemeIcon() {
@@ -1129,6 +1149,7 @@ function App() {
             onFeedback={(kind) => playFeedbackSound(kind, preferences.sound)}
             flagged={activeProfile.flaggedQuestionIds.includes(currentQuestion.id)}
             onFlagChange={(flagged) => setQuestionFlag(currentQuestion.id, flagged)}
+            distanceUnit={preferences.distanceUnit}
           />
 
           {answered && (
@@ -1136,7 +1157,7 @@ function App() {
               <div className="feedback-icon">{wasCorrect ? <Check /> : <X />}</div>
               <div>
                 <strong>{wasCorrect ? 'Nicely mapped.' : 'Not quite.'}</strong>
-                <p>{currentQuestion.explanation}</p>
+                <p>{formatDistanceExplanation(currentQuestion.explanation, preferences.distanceUnit)}</p>
               </div>
               <button className="primary-button" type="button" onClick={nextQuestion}>
                 {questionIndex === questions.length - 1 ? 'See results' : 'Next question'}
@@ -1339,6 +1360,25 @@ function App() {
             />
           </div>
           <fieldset className="choice-fieldset compact-fieldset">
+            <legend>Distance units</legend>
+            <div className="inline-radio-options">
+              {([
+                ['miles', 'Miles'],
+                ['kilometers', 'Kilometers'],
+              ] as const).map(([unit, label]) => (
+                <label key={unit}>
+                  <input
+                    type="radio"
+                    name="settings-distance-unit"
+                    checked={preferences.distanceUnit === unit}
+                    onChange={() => updatePreference('distanceUnit', unit)}
+                  />
+                  {label}
+                </label>
+              ))}
+            </div>
+          </fieldset>
+          <fieldset className="choice-fieldset compact-fieldset">
             <legend>Default workout length</legend>
             <div className="inline-radio-options">
               {([10, 25, 50] as RoundSize[]).map((size) => (
@@ -1460,8 +1500,8 @@ function App() {
             </button>
           </form>
           <p className="profile-privacy-note">
-            Each profile keeps its own progress, theme, accent color, sounds, timer, tips, and
-            workout defaults on this device. No accounts or passwords are used.
+            Each profile keeps its own progress, theme, accent color, sounds, timer, tips,
+            distance units, and workout defaults on this device. No accounts or passwords are used.
           </p>
         </ModalShell>
       )}
@@ -2072,6 +2112,7 @@ function QuestionCard({
   onFeedback,
   flagged,
   onFlagChange,
+  distanceUnit,
 }: {
   question: Question
   answered: boolean
@@ -2080,6 +2121,7 @@ function QuestionCard({
   onFeedback: (kind: FeedbackKind) => void
   flagged: boolean
   onFlagChange: (flagged: boolean) => void
+  distanceUnit: DistanceUnit
 }) {
   const [wrongAnswers, setWrongAnswers] = useState<string[]>([])
   const [correctAnswer, setCorrectAnswer] = useState<string | null>(null)
@@ -2189,6 +2231,7 @@ function QuestionCard({
           answered={answered}
           onComplete={onAnswer}
           onFeedback={onFeedback}
+          distanceUnit={distanceUnit}
         />
       )}
 
@@ -2586,11 +2629,13 @@ function PinpointMap({
   answered,
   onComplete,
   onFeedback,
+  distanceUnit,
 }: {
   question: PinpointQuestion
   answered: boolean
   onComplete: (correct: boolean) => void
   onFeedback: (kind: FeedbackKind) => void
+  distanceUnit: DistanceUnit
 }) {
   const [attempts, setAttempts] = useState<{ x: number; y: number; distance: number }[]>([])
   const target = mapPoint(question.target.lat, question.target.lon)
@@ -2645,12 +2690,12 @@ function PinpointMap({
       {!answered && attempts.length === 0 && <p className="map-answer">Tap anywhere on the map to place your first marker.</p>}
       {!answered && latestAttempt && (
         <p className="try-again-message" role="status">
-          About {Math.round(latestAttempt.distance).toLocaleString()} km away. Try once more—the exact location is still hidden.
+          About {formatDistance(latestAttempt.distance, distanceUnit)} away. Try once more—the exact location is still hidden.
         </p>
       )}
       {answered && latestAttempt && (
         <p className="map-answer">
-          Your final marker was about {Math.round(latestAttempt.distance).toLocaleString()} km from {question.place}.
+          Your final marker was about {formatDistance(latestAttempt.distance, distanceUnit)} from {question.place}.
         </p>
       )}
     </div>
