@@ -843,6 +843,10 @@
 .map-answer { margin-top: 10px; font-size: 0.84rem; }
 .pinpoint-map svg { cursor: crosshair; }
 .pinpoint-map svg.pinpoint-complete { cursor: default; }
+.pinpoint-map svg:focus-visible {
+  outline: 3px solid var(--cp-accent);
+  outline-offset: 3px;
+}
 .pinpoint-attempt circle { fill: var(--cp-danger); stroke: var(--cp-surface); stroke-width: 4; }
 .pinpoint-attempt text {
   fill: var(--cp-accent-fg);
@@ -858,6 +862,15 @@
   stroke-linecap: round;
   stroke-linejoin: round;
   stroke-width: 4;
+}
+.pinpoint-keyboard-cursor circle,
+.pinpoint-keyboard-cursor path {
+  fill: none;
+  stroke: var(--cp-accent);
+  stroke-dasharray: 7 5;
+  stroke-width: 3;
+  vector-effect: non-scaling-stroke;
+  pointer-events: none;
 }
 .clue-ladder { margin-top: 28px; }
 .clue-ladder ol { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }

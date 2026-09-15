@@ -39,6 +39,7 @@ import {
   getQuestionsByIds,
   practiceDetails,
   questionPoolCounts,
+  shuffled,
   type Category,
   type ClueQuestion,
   type MatchingQuestion,
@@ -108,7 +109,7 @@ type SavedWorkout = {
 type SavedWorkoutStore = Record<string, SavedWorkout>
 
 const defaultStats: Stats = { games: 0, correct: 0, answered: 0, bestStreak: 0 }
-const APP_VERSION = 'v18'
+const APP_VERSION = 'v19'
 const PROFILES_KEY = 'geography-gym-profiles-v1'
 const SAVED_WORKOUTS_KEY = 'geography-gym-saved-workouts-v1'
 const defaultPreferences: Preferences = {
@@ -130,6 +131,7 @@ const accentColors: { id: AccentColor; label: string }[] = [
   { id: 'orange', label: 'Orange' },
   { id: 'crimson', label: 'Crimson' },
 ]
+const categories: Category[] = ['us', 'world', 'landmarks', 'mixed']
 const practiceModes: PracticeMode[] = ['variety', 'clue-ladder', 'neighbors', 'closer', 'pinpoint']
 
 function practiceAvailable(category: Category, practice: PracticeMode) {
@@ -312,12 +314,64 @@ function readProfileStore(): ProfileStore {
   return { activeProfileId: profile.id, profiles: [profile] }
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value)
+}
+
+function nonNegativeInteger(value: unknown, fallback = 0) {
+  return typeof value === 'number' && Number.isFinite(value) && value >= 0
+    ? Math.floor(value)
+    : fallback
+}
+
+function parseSavedWorkout(value: unknown): SavedWorkout | null {
+  if (!isRecord(value)) return null
+  if (!categories.includes(value.category as Category)) return null
+  if (!practiceModes.includes(value.practice as PracticeMode)) return null
+
+  const questionIds = Array.isArray(value.questionIds)
+    ? value.questionIds.filter((id): id is string => typeof id === 'string' && id.length > 0)
+    : []
+  if (questionIds.length === 0) return null
+
+  const answers = isRecord(value.answers)
+    ? Object.fromEntries(
+        Object.entries(value.answers).filter(
+          (entry): entry is [string, boolean] => typeof entry[1] === 'boolean',
+        ),
+      )
+    : {}
+
+  return {
+    category: value.category as Category,
+    practice: value.practice as PracticeMode,
+    questionIds,
+    questionIndex: Math.min(nonNegativeInteger(value.questionIndex), questionIds.length - 1),
+    answers,
+    score: nonNegativeInteger(value.score),
+    streak: nonNegativeInteger(value.streak),
+    bestRunStreak: nonNegativeInteger(value.bestRunStreak),
+    elapsed: nonNegativeInteger(value.elapsed),
+    timerEnabled:
+      typeof value.timerEnabled === 'boolean'
+        ? value.timerEnabled
+        : nonNegativeInteger(value.elapsed) > 0,
+    onlyFlagged: value.onlyFlagged === true,
+    allFlaggedModes: value.allFlaggedModes === true,
+  }
+}
+
 function readSavedWorkouts(): SavedWorkoutStore {
   try {
-    const saved = JSON.parse(localStorage.getItem(SAVED_WORKOUTS_KEY) ?? '{}')
-    return saved && typeof saved === 'object' && !Array.isArray(saved)
-      ? saved as SavedWorkoutStore
-      : {}
+    const saved: unknown = JSON.parse(localStorage.getItem(SAVED_WORKOUTS_KEY) ?? '{}')
+    if (!isRecord(saved)) return {}
+
+    return Object.fromEntries(
+      Object.entries(saved).flatMap(([profileId, value]) => {
+        const workout = parseSavedWorkout(value)
+        return workout ? [[profileId, workout]] : []
+      }),
+    )
   } catch {
     return {}
   }
@@ -325,10 +379,6 @@ function readSavedWorkouts(): SavedWorkoutStore {
 
 function profileInitial(name: string) {
   return name.trim().charAt(0).toUpperCase() || '?'
-}
-
-function shuffle<T>(items: readonly T[]) {
-  return [...items].sort(() => Math.random() - 0.5)
 }
 
 function formatTime(totalSeconds: number) {
@@ -2334,7 +2384,7 @@ function ClueLadder({
   onSelect: (value: string) => void
 }) {
   const [revealedClues, setRevealedClues] = useState(1)
-  const randomizedClues = useMemo(() => shuffle(question.clues), [question.clues])
+  const randomizedClues = useMemo(() => shuffled(question.clues), [question.clues])
 
   return (
     <div className="clue-ladder">
@@ -2642,13 +2692,11 @@ function PinpointMap({
   distanceUnit: DistanceUnit
 }) {
   const [attempts, setAttempts] = useState<{ x: number; y: number; distance: number }[]>([])
+  const [keyboardPoint, setKeyboardPoint] = useState({ x: 450, y: 220 })
   const target = mapPoint(question.target.lat, question.target.lon)
 
-  function choosePoint(event: React.MouseEvent<SVGSVGElement>) {
+  function chooseCoordinates(x: number, y: number) {
     if (answered || attempts.length >= 2) return
-    const bounds = event.currentTarget.getBoundingClientRect()
-    const x = ((event.clientX - bounds.left) / bounds.width) * 900
-    const y = ((event.clientY - bounds.top) / bounds.height) * 440
     const selected = {
       lat: 90 - (y / 440) * 180,
       lon: (x / 900) * 360 - 180,
@@ -2661,6 +2709,43 @@ function PinpointMap({
     if (correct || nextAttempts.length >= 2) onComplete(correct)
   }
 
+  function choosePoint(event: React.MouseEvent<SVGSVGElement>) {
+    const bounds = event.currentTarget.getBoundingClientRect()
+    chooseCoordinates(
+      ((event.clientX - bounds.left) / bounds.width) * 900,
+      ((event.clientY - bounds.top) / bounds.height) * 440,
+    )
+  }
+
+  function handleKeyboard(event: React.KeyboardEvent<SVGSVGElement>) {
+    if (answered || attempts.length >= 2) return
+    const step = event.shiftKey ? 50 : 20
+    const movements: Partial<Record<string, { x: number; y: number }>> = {
+      ArrowLeft: { x: -step, y: 0 },
+      ArrowRight: { x: step, y: 0 },
+      ArrowUp: { x: 0, y: -step },
+      ArrowDown: { x: 0, y: step },
+    }
+    const movement = movements[event.key]
+    if (movement) {
+      event.preventDefault()
+      setKeyboardPoint((point) => ({
+        x: Math.min(900, Math.max(0, point.x + movement.x)),
+        y: Math.min(440, Math.max(0, point.y + movement.y)),
+      }))
+      return
+    }
+    if (event.key === 'Home') {
+      event.preventDefault()
+      setKeyboardPoint({ x: 450, y: 220 })
+      return
+    }
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault()
+      chooseCoordinates(keyboardPoint.x, keyboardPoint.y)
+    }
+  }
+
   const latestAttempt = attempts.at(-1)
 
   return (
@@ -2668,9 +2753,11 @@ function PinpointMap({
       <svg
         viewBox="0 0 900 440"
         role="button"
-        aria-label={`World map. Place ${question.answer}.`}
+        tabIndex={answered ? -1 : 0}
+        aria-label={`World map. Place ${question.answer}. Use arrow keys to move the marker, then press Enter or Space to place it.`}
         className={answered ? 'pinpoint-complete' : ''}
         onClick={choosePoint}
+        onKeyDown={handleKeyboard}
       >
         <path className="continent" d="M70 70 L145 38 250 62 300 118 270 165 218 172 190 220 140 205 110 150 55 125Z" />
         <path className="continent" d="M245 220 L300 245 325 325 292 405 250 360 228 280Z" />
@@ -2684,6 +2771,12 @@ function PinpointMap({
             <text x={attempt.x} y={attempt.y + 5}>{index + 1}</text>
           </g>
         ))}
+        {!answered && attempts.length < 2 && (
+          <g className="pinpoint-keyboard-cursor" aria-hidden="true">
+            <circle cx={keyboardPoint.x} cy={keyboardPoint.y} r="17" />
+            <path d={`M${keyboardPoint.x - 24} ${keyboardPoint.y} H${keyboardPoint.x + 24} M${keyboardPoint.x} ${keyboardPoint.y - 24} V${keyboardPoint.y + 24}`} />
+          </g>
+        )}
         {answered && (
           <g className="pinpoint-target">
             <circle cx={target.x} cy={target.y} r="15" />
@@ -2691,7 +2784,11 @@ function PinpointMap({
           </g>
         )}
       </svg>
-      {!answered && attempts.length === 0 && <p className="map-answer">Tap anywhere on the map to place your first marker.</p>}
+      {!answered && attempts.length === 0 && (
+        <p className="map-answer">
+          Tap the map, or use the arrow keys and press Enter, to place your first marker.
+        </p>
+      )}
       {!answered && latestAttempt && (
         <p className="try-again-message" role="status">
           About {formatDistance(latestAttempt.distance, distanceUnit)} away. Try once more—the exact location is still hidden.
@@ -2721,7 +2818,7 @@ function MatchingGame({
   const [right, setRight] = useState<string | null>(null)
   const [matched, setMatched] = useState<string[]>([])
   const [wrongPair, setWrongPair] = useState<{ left: string; right: string } | null>(null)
-  const shuffledRight = useMemo(() => shuffle(question.pairs.map((pair) => pair.right)), [question])
+  const shuffledRight = useMemo(() => shuffled(question.pairs.map((pair) => pair.right)), [question])
 
   function resolveMatch(nextLeft: string, nextRight: string) {
     const pair = question.pairs.find((item) => item.left === nextLeft)
@@ -2816,7 +2913,7 @@ function OrderGame({
   onComplete: (correct: boolean) => void
   onFeedback: (kind: FeedbackKind) => void
 }) {
-  const [items, setItems] = useState(() => shuffle(question.items))
+  const [items, setItems] = useState(() => shuffled(question.items))
   const [attempts, setAttempts] = useState(0)
   const [shaking, setShaking] = useState(false)
 
@@ -2933,9 +3030,62 @@ function ModalShell({
   onClose: () => void
   children: React.ReactNode
 }) {
+  const modalRef = useRef<HTMLElement>(null)
+  const onCloseRef = useRef(onClose)
+
+  useEffect(() => {
+    onCloseRef.current = onClose
+  }, [onClose])
+
+  useEffect(() => {
+    const modal = modalRef.current
+    if (!modal) return
+    const previousFocus = document.activeElement instanceof HTMLElement
+      ? document.activeElement
+      : null
+    const focusableSelector =
+      'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+    const focusableElements = () =>
+      Array.from(modal.querySelectorAll<HTMLElement>(focusableSelector))
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault()
+        onCloseRef.current()
+        return
+      }
+      if (event.key !== 'Tab') return
+
+      const elements = focusableElements()
+      if (elements.length === 0) {
+        event.preventDefault()
+        modal.focus()
+        return
+      }
+      const first = elements[0]
+      const last = elements[elements.length - 1]
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault()
+        last.focus()
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault()
+        first.focus()
+      }
+    }
+
+    modal.addEventListener('keydown', handleKeyDown)
+    const firstElement = focusableElements()[0]
+    ;(firstElement ?? modal).focus()
+
+    return () => {
+      modal.removeEventListener('keydown', handleKeyDown)
+      previousFocus?.focus()
+    }
+  }, [])
+
   return (
     <div className="modal-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
-      <section className="modal-card" role="dialog" aria-modal="true" aria-label={title}>
+      <section ref={modalRef} className="modal-card" role="dialog" aria-modal="true" aria-label={title} tabIndex={-1}>
         <header className="modal-header">
           <div>
             <p className="eyebrow">{eyebrow}</p>

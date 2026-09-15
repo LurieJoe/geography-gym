@@ -689,8 +689,13 @@ export const questionPoolCounts = {
   mixed: usQuestions.length + worldQuestions.length + landmarkQuestions.length,
 }
 
-function shuffled<T>(items: readonly T[]) {
-  return [...items].sort(() => Math.random() - 0.5)
+export function shuffled<T>(items: readonly T[]) {
+  const result = [...items]
+  for (let index = result.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(Math.random() * (index + 1))
+    ;[result[index], result[swapIndex]] = [result[swapIndex], result[index]]
+  }
+  return result
 }
 
 function questionsFor(category: Category, practice: PracticeMode) {
