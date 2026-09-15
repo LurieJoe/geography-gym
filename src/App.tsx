@@ -51,6 +51,7 @@ import { US_MAP_VIEWBOX, usRegionShapes, usStateShapes } from './usStateShapes'
 import './App.css'
 
 type Screen = 'home' | 'quiz' | 'results'
+type AppPage = 'home' | 'builder'
 type ThemeMode = 'system' | 'light' | 'dark'
 type RoundSize = 10 | 25 | 50
 type AccentColor = 'indigo' | 'blue' | 'teal' | 'green' | 'violet' | 'rose' | 'orange' | 'crimson'
@@ -105,7 +106,7 @@ type SavedWorkout = {
 type SavedWorkoutStore = Record<string, SavedWorkout>
 
 const defaultStats: Stats = { games: 0, correct: 0, answered: 0, bestStreak: 0 }
-const APP_VERSION = 'v14'
+const APP_VERSION = 'v15'
 const PROFILES_KEY = 'geography-gym-profiles-v1'
 const SAVED_WORKOUTS_KEY = 'geography-gym-saved-workouts-v1'
 const defaultPreferences: Preferences = {
@@ -224,8 +225,8 @@ const tips = [
     text: 'First choose what to study—U.S., World, Landmarks, or Mixed. Then choose the practice style that builds the skill you want.',
   },
   {
-    title: 'Use the app dashboard',
-    text: 'Open app—or launch an installed copy—to use the compact exercise builder. Choose a subject in Step 1, then choose a compatible practice style in Step 2.',
+    title: 'Start from the app home',
+    text: 'Open app—or launch an installed copy—to start, resume, or review. Start an exercise opens the two-step builder, and Settings links back to the full website and help pages.',
   },
   {
     title: 'Resume where you stopped',
@@ -368,6 +369,7 @@ function playFeedbackSound(kind: FeedbackKind, enabled: boolean) {
 
 function App() {
   const [screen, setScreen] = useState<Screen>('home')
+  const [appPage, setAppPage] = useState<AppPage>('home')
   const [appMode, setAppMode] = useState(() =>
     new URLSearchParams(window.location.search).get('app') === '1'
     || window.matchMedia('(display-mode: standalone)').matches,
@@ -435,6 +437,7 @@ function App() {
         || window.matchMedia('(display-mode: standalone)').matches,
       )
       setScreen('home')
+      setAppPage('home')
       setModal(null)
     }
     window.addEventListener('popstate', handlePopState)
@@ -608,6 +611,7 @@ function App() {
     window.history.pushState({}, '', url)
     setAppMode(true)
     setScreen('home')
+    setAppPage('home')
     setModal(null)
   }
 
@@ -701,6 +705,7 @@ function App() {
         : current
     })
     setScreen('home')
+    if (appMode) setAppPage('home')
   }
 
   function resumeWorkout() {
@@ -875,6 +880,7 @@ function App() {
     }
     setProfileStore((current) => ({ ...current, activeProfileId: profileId }))
     setScreen('home')
+    setAppPage('home')
     setModal(null)
   }
 
@@ -902,6 +908,7 @@ function App() {
     }))
     setNewProfileName('')
     setScreen('home')
+    setAppPage('home')
     setModal(null)
   }
 
@@ -940,6 +947,7 @@ function App() {
     setDeleteProfileId(null)
     setEditingProfileId(null)
     setScreen('home')
+    setAppPage('home')
   }
 
   const themeLabel =
@@ -1053,12 +1061,15 @@ function App() {
           accuracy={accuracy}
           flaggedCount={flaggedCount}
           savedWorkout={savedWorkout}
+          page={appPage}
           selectedCategory={appSelectedCategory}
           pendingPractice={pendingPractice}
           preferences={preferences}
           setupQuestionCount={appSelectedCategory ? setupQuestionCount : 0}
           profileName={activeProfile.name}
           onSelectCategory={selectAppCategory}
+          onOpenBuilder={() => setAppPage('builder')}
+          onAppHome={() => setAppPage('home')}
           onSelectPractice={setPendingPractice}
           onRoundSizeChange={(size) => updatePreference('roundSize', size)}
           onTimerChange={(checked) => updatePreference('timer', checked)}
@@ -1072,6 +1083,7 @@ function App() {
           onDismissWorkout={dismissSavedWorkout}
           onFlaggedReview={openFlaggedReview}
           onResetStats={() => setModal('reset-stats')}
+          onTipsStartupChange={(checked) => updatePreference('tipsStartup', checked)}
         />
       )}
 
@@ -1143,7 +1155,10 @@ function App() {
           category={category}
           practice={practice}
           onReplay={replayWorkout}
-          onHome={() => setScreen('home')}
+          onHome={() => {
+            setScreen('home')
+            if (appMode) setAppPage('home')
+          }}
         />
       )}
 
@@ -1338,14 +1353,28 @@ function App() {
               ))}
             </div>
           </fieldset>
-          <nav className="support-links" aria-label="Help and support">
-            <a href="./faq/"><HelpCircle /> FAQ</a>
-            <a href="./help/"><HelpCircle /> Help Center</a>
-            <a href="https://github.com/LurieJoe/geography-gym/issues/new/choose" target="_blank" rel="noreferrer">
-              <ExternalLink /> Send Feedback
+          <section className="settings-resource-card">
+            <p className="eyebrow">Feedback</p>
+            <p>Found a problem or have an idea? Share feedback or report an issue on GitHub.</p>
+            <a
+              className="primary-button settings-feedback-button"
+              href="https://github.com/LurieJoe/geography-gym/issues/new/choose"
+              target="_blank"
+              rel="noreferrer"
+            >
+              <ExternalLink size={17} /> Send Feedback
             </a>
-            <a href="./privacy/"><ExternalLink /> Privacy Policy</a>
-          </nav>
+          </section>
+          <section className="settings-resource-card">
+            <p className="eyebrow">Geography Gym website</p>
+            <p>Visit the website for product information, help, and policies.</p>
+            <nav className="support-links" aria-label="Geography Gym website">
+              <a href="./" target="_blank" rel="noreferrer"><Globe2 /> Home</a>
+              <a href="./faq/" target="_blank" rel="noreferrer"><HelpCircle /> FAQ</a>
+              <a href="./help/" target="_blank" rel="noreferrer"><HelpCircle /> Help Center</a>
+              <a href="./privacy/" target="_blank" rel="noreferrer"><ExternalLink /> Privacy</a>
+            </nav>
+          </section>
           <p className="version-label">Geography Gym {APP_VERSION}</p>
         </ModalShell>
       )}
@@ -1505,12 +1534,15 @@ function AppDashboard({
   accuracy,
   flaggedCount,
   savedWorkout,
+  page,
   selectedCategory,
   pendingPractice,
   preferences,
   setupQuestionCount,
   profileName,
   onSelectCategory,
+  onOpenBuilder,
+  onAppHome,
   onSelectPractice,
   onRoundSizeChange,
   onTimerChange,
@@ -1521,17 +1553,21 @@ function AppDashboard({
   onDismissWorkout,
   onFlaggedReview,
   onResetStats,
+  onTipsStartupChange,
 }: {
   stats: Stats
   accuracy: number
   flaggedCount: number
   savedWorkout?: SavedWorkout
+  page: AppPage
   selectedCategory: Category | null
   pendingPractice: PracticeMode
   preferences: Preferences
   setupQuestionCount: number
   profileName: string
   onSelectCategory: (category: Category) => void
+  onOpenBuilder: () => void
+  onAppHome: () => void
   onSelectPractice: (practice: PracticeMode) => void
   onRoundSizeChange: (size: RoundSize) => void
   onTimerChange: (checked: boolean) => void
@@ -1542,6 +1578,7 @@ function AppDashboard({
   onDismissWorkout: () => void
   onFlaggedReview: () => void
   onResetStats: () => void
+  onTipsStartupChange: (checked: boolean) => void
 }) {
   const subjects: Array<{
     category: Category
@@ -1554,14 +1591,70 @@ function AppDashboard({
     { category: 'mixed', icon: <Sparkles />, description: 'A combination of all three subjects' },
   ]
 
+  if (page === 'home') {
+    return (
+      <main className="app-home">
+        <section className="app-home-welcome">
+          <div className="app-home-globe" aria-hidden="true">
+            <span className="app-home-orbit" />
+            <Globe2 />
+          </div>
+          <p className="eyebrow">Learn the world by playing it</p>
+          <h1>Welcome to Geography Gym</h1>
+          <p className="app-home-description">
+            Strengthen your sense of place with quick exercises covering states,
+            countries, capitals, directions, locations, and landmarks.
+          </p>
+          <div className="app-home-actions">
+            <button className="primary-button" type="button" onClick={onOpenBuilder}>
+              <Sparkles size={19} /> Start an exercise
+            </button>
+            {savedWorkout && (
+              <button className="quiet-button" type="button" onClick={onResumeWorkout}>
+                <RotateCcw size={18} /> Resume workout
+              </button>
+            )}
+            <button
+              className="quiet-button"
+              type="button"
+              onClick={onFlaggedReview}
+              disabled={flaggedCount === 0}
+            >
+              <Flag size={18} /> Review flagged questions ({flaggedCount})
+            </button>
+          </div>
+          <label className="simple-check app-startup-tip-check">
+            <input
+              type="checkbox"
+              checked={preferences.tipsStartup}
+              onChange={(event) => onTipsStartupChange(event.target.checked)}
+            />
+            Show tips at startup
+          </label>
+        </section>
+
+        <AppProgressCard
+          stats={stats}
+          accuracy={accuracy}
+          flaggedCount={flaggedCount}
+          profileName={profileName}
+          onFlaggedReview={onFlaggedReview}
+          onResetStats={onResetStats}
+        />
+      </main>
+    )
+  }
+
   return (
     <main className="app-dashboard">
       <section className="app-welcome">
         <div className="app-welcome-mark" aria-hidden="true"><Globe2 /></div>
         <div>
-          <p className="eyebrow">Welcome, {profileName}</p>
-          <h1>What would you like to practice?</h1>
-          <p>Build your geography exercise in two quick steps.</p>
+          <button className="app-back-link" type="button" onClick={onAppHome}>
+            <ChevronLeft size={17} /> App home
+          </button>
+          <h1>Build an exercise</h1>
+          <p>Choose what to study, then choose how to study it.</p>
         </div>
       </section>
 
@@ -1712,31 +1805,58 @@ function AppDashboard({
         </button>
       </section>
 
-      <section className="app-progress-card" aria-label="Learning progress">
-        <div className="app-progress-heading">
-          <div>
-            <p className="eyebrow">{profileName}'s progress</p>
-            <h2>Keep building your mental map</h2>
-          </div>
-          <button className="quiet-button" type="button" onClick={onResetStats}>
-            <RotateCcw size={16} /> Reset
-          </button>
-        </div>
-        <div className="app-progress-stats">
-          <div><strong>{stats.games}</strong><span>Workouts</span></div>
-          <div><strong>{accuracy}%</strong><span>Accuracy</span></div>
-          <div><strong>{stats.bestStreak}</strong><span>Best streak</span></div>
-        </div>
-        <button
-          className="quiet-button app-review-button"
-          type="button"
-          onClick={onFlaggedReview}
-          disabled={flaggedCount === 0}
-        >
-          <Flag size={17} /> Review flagged questions ({flaggedCount})
-        </button>
-      </section>
+      <AppProgressCard
+        stats={stats}
+        accuracy={accuracy}
+        flaggedCount={flaggedCount}
+        profileName={profileName}
+        onFlaggedReview={onFlaggedReview}
+        onResetStats={onResetStats}
+      />
     </main>
+  )
+}
+
+function AppProgressCard({
+  stats,
+  accuracy,
+  flaggedCount,
+  profileName,
+  onFlaggedReview,
+  onResetStats,
+}: {
+  stats: Stats
+  accuracy: number
+  flaggedCount: number
+  profileName: string
+  onFlaggedReview: () => void
+  onResetStats: () => void
+}) {
+  return (
+    <section className="app-progress-card" aria-label="Learning progress">
+      <div className="app-progress-heading">
+        <div>
+          <p className="eyebrow">{profileName}'s progress</p>
+          <h2>Keep building your mental map</h2>
+        </div>
+        <button className="quiet-button" type="button" onClick={onResetStats}>
+          <RotateCcw size={16} /> Reset
+        </button>
+      </div>
+      <div className="app-progress-stats">
+        <div><strong>{stats.games}</strong><span>Workouts</span></div>
+        <div><strong>{accuracy}%</strong><span>Accuracy</span></div>
+        <div><strong>{stats.bestStreak}</strong><span>Best streak</span></div>
+      </div>
+      <button
+        className="quiet-button app-review-button"
+        type="button"
+        onClick={onFlaggedReview}
+        disabled={flaggedCount === 0}
+      >
+        <Flag size={17} /> Review flagged questions ({flaggedCount})
+      </button>
+    </section>
   )
 }
 

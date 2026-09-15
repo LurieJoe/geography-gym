@@ -37,10 +37,15 @@ styles that do not apply to the selected subject remain visible but disabled so
 their scope is clear. Flagged Review remains available as a profile-specific
 shortcut beside the progress counters.
 
-The public root remains a full product website. **Open app** enters a separate,
-compact app dashboard at `?app=1`, where Step 1 and Step 2 appear together
-inline. Installed PWA shortcuts launch this dashboard directly instead of the
-marketing homepage.
+The public root remains a full product website. **Open app** and installed PWA
+shortcuts launch a separate app home at `?app=1`. The app home welcomes the
+active profile with a large globe and clear actions to start, resume, or review.
+**Start an exercise** opens the compact builder, where Step 1 and Step 2 appear
+together inline.
+
+Settings and Tips remain available throughout the app. Settings includes
+prominent feedback controls and links that open the public Geography Gym
+website, FAQ, Help Center, and Privacy Policy in the browser.
 
 Players can choose 10-, 25-, or 50-question workouts. Multiple-choice, location, and
 ordering questions allow two attempts. Matching Pairs provides immediate animated
