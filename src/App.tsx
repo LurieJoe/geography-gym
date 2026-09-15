@@ -108,7 +108,7 @@ type SavedWorkout = {
 type SavedWorkoutStore = Record<string, SavedWorkout>
 
 const defaultStats: Stats = { games: 0, correct: 0, answered: 0, bestStreak: 0 }
-const APP_VERSION = 'v17'
+const APP_VERSION = 'v18'
 const PROFILES_KEY = 'geography-gym-profiles-v1'
 const SAVED_WORKOUTS_KEY = 'geography-gym-saved-workouts-v1'
 const defaultPreferences: Preferences = {
@@ -161,7 +161,7 @@ const tips = [
   },
   {
     title: 'Choose your workout length',
-    text: 'Every workout offers 10, 25, or 50 questions. Short rounds are great for daily practice; longer rounds provide more variety.',
+    text: 'Standard exercises offer 10, 25, or 50 questions. Short rounds are great for daily practice; longer rounds provide more variety. Flagged Review uses the questions available in your list.',
   },
   {
     title: 'Use the timer only when it helps',
@@ -169,7 +169,7 @@ const tips = [
   },
   {
     title: 'Try a Mixed Workout',
-    text: 'Mixed rounds combine U.S. geography, world geography, landmark matching, and geographic ordering.',
+    text: 'Choose Mixed to blend U.S., world, and landmark questions in Variety or Clue Ladder. Neighbor Challenge uses the U.S. and world questions available in Mixed.',
   },
   {
     title: 'Install for easy access',
@@ -185,7 +185,7 @@ const tips = [
   },
   {
     title: 'Personalize every profile',
-    text: 'Theme, accent color, answer sounds, timer, startup tips, and default workout length are saved separately for each profile.',
+    text: 'Theme, accent color, answer sounds, timer, startup tips, distance units, and default workout length are saved separately for each profile.',
   },
   {
     title: 'Reset only the active profile',
@@ -205,7 +205,7 @@ const tips = [
   },
   {
     title: 'Climb the Clue Ladder',
-    text: 'Start with a broad clue, reveal more when needed, and identify the state, country, or landmark before the answer is shown.',
+    text: 'Clues appear in a different order each time. Reveal more when needed, then identify the state, country, or landmark before the answer is shown.',
   },
   {
     title: 'Learn what touches what',
@@ -213,11 +213,15 @@ const tips = [
   },
   {
     title: 'Compare straight-line distances',
-    text: 'Which Is Closer? uses landmark coordinates to compare direct distances across the globe, not driving or travel routes.',
+    text: 'Which Is Closer? uses landmark coordinates to compare direct distances across the globe, not driving or travel routes. Explanations use your selected distance units.',
   },
   {
     title: 'Pinpoint a landmark in two tries',
-    text: 'Your first Map Pinpoint miss reports the distance but hides the target. A second try reveals the landmark’s location.',
+    text: 'Your first Map Pinpoint miss reports the distance in your selected units but hides the target. A second try reveals the landmark’s location.',
+  },
+  {
+    title: 'Choose miles or kilometers',
+    text: 'Open Settings to display distances in miles or kilometers. The choice is saved separately for each profile and updates distance activities immediately.',
   },
   {
     title: 'Build your own review list',
