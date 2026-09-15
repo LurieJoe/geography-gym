@@ -1056,6 +1056,24 @@
 }
 .theme-options label.selected-option { background: var(--cp-accent); color: var(--cp-accent-fg); }
 .theme-options input { position: absolute; opacity: 0; pointer-events: none; }
+.font-size-options label { min-width: 64px; }
+.font-size-setting {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--cp-border);
+  border-radius: 16px;
+  background: var(--cp-bg-elevated);
+}
+.font-size-preview {
+  width: fit-content;
+  margin: 0;
+  padding: 9px 12px;
+  border: 1px solid var(--cp-border);
+  border-radius: 0.625rem;
+  color: var(--cp-text-muted);
+  font-size: 0.9rem;
+}
 .accent-options { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 9px; }
 .accent-option {
   width: 36px;

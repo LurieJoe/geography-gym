@@ -56,6 +56,7 @@ type AppPage = 'home' | 'builder'
 type ThemeMode = 'system' | 'light' | 'dark'
 type RoundSize = 10 | 25 | 50
 type DistanceUnit = 'miles' | 'kilometers'
+type FontSize = 's' | 'm' | 'l' | 'xl'
 type AccentColor = 'indigo' | 'blue' | 'teal' | 'green' | 'violet' | 'rose' | 'orange' | 'crimson'
 type Modal = 'settings' | 'tips' | 'setup' | 'startup-tip' | 'reset-stats' | 'profiles' | null
 type FeedbackKind = 'correct' | 'incorrect'
@@ -75,6 +76,8 @@ type Preferences = {
   tipsStartup: boolean
   roundSize: RoundSize
   distanceUnit: DistanceUnit
+  highContrast: boolean
+  fontSize: FontSize
 }
 
 type Profile = {
@@ -109,7 +112,7 @@ type SavedWorkout = {
 type SavedWorkoutStore = Record<string, SavedWorkout>
 
 const defaultStats: Stats = { games: 0, correct: 0, answered: 0, bestStreak: 0 }
-const APP_VERSION = 'v19'
+const APP_VERSION = 'v20'
 const PROFILES_KEY = 'geography-gym-profiles-v1'
 const SAVED_WORKOUTS_KEY = 'geography-gym-saved-workouts-v1'
 const defaultPreferences: Preferences = {
@@ -120,6 +123,8 @@ const defaultPreferences: Preferences = {
   tipsStartup: true,
   roundSize: 10,
   distanceUnit: 'miles',
+  highContrast: false,
+  fontSize: 'm',
 }
 const accentColors: { id: AccentColor; label: string }[] = [
   { id: 'indigo', label: 'Indigo' },
@@ -187,7 +192,11 @@ const tips = [
   },
   {
     title: 'Personalize every profile',
-    text: 'Theme, accent color, answer sounds, timer, startup tips, distance units, and default workout length are saved separately for each profile.',
+    text: 'Theme, contrast, font size, accent color, answer sounds, timer, startup tips, distance units, and default workout length are saved separately for each profile.',
+  },
+  {
+    title: 'Make Geography Gym easier to read',
+    text: 'Open Settings to choose S, M, L, or XL text and turn on High Contrast. Both appearance choices are saved separately for each profile.',
   },
   {
     title: 'Reset only the active profile',
@@ -277,6 +286,12 @@ function readProfileStore(): ProfileStore {
               }
               if (!['miles', 'kilometers'].includes(preferences.distanceUnit)) {
                 preferences.distanceUnit = 'miles'
+              }
+              if (typeof preferences.highContrast !== 'boolean') {
+                preferences.highContrast = false
+              }
+              if (!['s', 'm', 'l', 'xl'].includes(preferences.fontSize)) {
+                preferences.fontSize = 'm'
               }
 
               return {
@@ -525,6 +540,8 @@ function App() {
       document.documentElement.setAttribute('data-theme', theme)
       document.documentElement.setAttribute('data-theme-mode', preferences.theme)
       document.documentElement.setAttribute('data-accent', preferences.accent)
+      document.documentElement.setAttribute('data-high-contrast', String(preferences.highContrast))
+      document.documentElement.setAttribute('data-font-size', preferences.fontSize)
     }
     resolveTheme()
     const media = window.matchMedia('(prefers-color-scheme: dark)')
@@ -1370,6 +1387,28 @@ function App() {
                 ))}
               </div>
             </div>
+            <div className="appearance-row">
+              <span>Contrast</span>
+              <div className="theme-options">
+                {([
+                  [false, 'Standard'],
+                  [true, 'High contrast'],
+                ] as const).map(([highContrast, label]) => (
+                  <label
+                    key={label}
+                    className={preferences.highContrast === highContrast ? 'selected-option' : ''}
+                  >
+                    <input
+                      type="radio"
+                      name="profile-contrast"
+                      checked={preferences.highContrast === highContrast}
+                      onChange={() => updatePreference('highContrast', highContrast)}
+                    />
+                    {label}
+                  </label>
+                ))}
+              </div>
+            </div>
             <div className="appearance-row accent-row">
               <span>Accent color</span>
               <div className="accent-options">
@@ -1412,6 +1451,31 @@ function App() {
               title="Show tips at startup"
               description="Display one rotating learning tip when the app opens."
             />
+          </div>
+          <div className="font-size-setting">
+            <div className="appearance-row">
+              <strong>Font size</strong>
+              <div className="theme-options font-size-options">
+                {([
+                  ['s', 'Small'],
+                  ['m', 'Default'],
+                  ['l', 'Large'],
+                  ['xl', 'XL'],
+                ] as const).map(([size, label]) => (
+                  <label key={size} className={preferences.fontSize === size ? 'selected-option' : ''}>
+                    <input
+                      type="radio"
+                      name="profile-font-size"
+                      aria-label={`${label} font size`}
+                      checked={preferences.fontSize === size}
+                      onChange={() => updatePreference('fontSize', size)}
+                    />
+                    {label}
+                  </label>
+                ))}
+              </div>
+            </div>
+            <p className="font-size-preview">Preview: cards and text scale to this size.</p>
           </div>
           <fieldset className="choice-fieldset compact-fieldset">
             <legend>Distance units</legend>
@@ -1554,8 +1618,8 @@ function App() {
             </button>
           </form>
           <p className="profile-privacy-note">
-            Each profile keeps its own progress, theme, accent color, sounds, timer, tips,
-            distance units, and workout defaults on this device. No accounts or passwords are used.
+            Each profile keeps its own progress, theme, contrast, font size, accent color, sounds,
+            timer, tips, distance units, and workout defaults on this device. No accounts or passwords are used.
           </p>
         </ModalShell>
       )}

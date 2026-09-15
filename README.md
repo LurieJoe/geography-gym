@@ -49,12 +49,13 @@ website, FAQ, Help Center, and Privacy Policy in the browser.
 
 Players can choose 10-, 25-, or 50-question workouts. Multiple-choice, location, and
 ordering questions allow two attempts. Matching Pairs provides immediate animated
-feedback. Optional answer sounds, an elapsed timer, rotating startup tips, Miles or
-Kilometers for distance activities, and local progress are available from Settings.
+feedback. Optional answer sounds, an elapsed timer, rotating startup tips, High Contrast,
+Small/Default/Large/XL font sizes, Miles or Kilometers for distance activities, and local
+progress are available from Settings.
 
 Multiple local profiles can share one device without accounts or passwords. Each
-profile has independent progress, theme, accent color, sounds, timer, startup tips,
-tip rotation, distance units, default workout length, and flagged-question review list. Existing
+profile has independent progress, theme, contrast, font size, accent color, sounds, timer,
+startup tips, tip rotation, distance units, default workout length, and flagged-question review list. Existing
 single-profile progress and preferences migrate into an initial **Me** profile. A
 profile's home-page progress counters can be reset without changing its preferences,
 flags, or other profiles.

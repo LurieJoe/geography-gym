@@ -50,6 +50,51 @@ html[data-theme="dark"] {
   --cp-sheen: rgba(255, 255, 255, 0.04);
   --cp-highlight: rgba(165, 180, 252, 0.12);
 }
+html[data-font-size="s"] { font-size: 87.5%; }
+html[data-font-size="m"] { font-size: 100%; }
+html[data-font-size="l"] { font-size: 112.5%; }
+html[data-font-size="xl"] { font-size: 125%; }
+html[data-high-contrast="true"][data-theme="light"] {
+  --cp-bg: #ffffff;
+  --cp-bg-elevated: #ffffff;
+  --cp-surface: #ffffff;
+  --cp-surface-soft: #ffffff;
+  --cp-border: #000000;
+  --cp-border-strong: #000000;
+  --cp-text: #000000;
+  --cp-text-muted: #000000;
+  --cp-text-soft: #000000;
+  --cp-accent: #000000;
+  --cp-accent-hover: #000000;
+  --cp-accent-soft: #ffffff;
+  --cp-accent-fg: #ffffff;
+  --cp-link: #000000;
+  --cp-panel: #ffffff;
+  --cp-panel-strong: #ffffff;
+}
+html[data-high-contrast="true"][data-theme="dark"] {
+  --cp-bg: #000000;
+  --cp-bg-elevated: #000000;
+  --cp-surface: #000000;
+  --cp-surface-soft: #000000;
+  --cp-border: #ffffff;
+  --cp-border-strong: #ffffff;
+  --cp-text: #ffffff;
+  --cp-text-muted: #ffffff;
+  --cp-text-soft: #ffffff;
+  --cp-accent: #ffffff;
+  --cp-accent-hover: #ffffff;
+  --cp-accent-soft: #000000;
+  --cp-accent-fg: #000000;
+  --cp-link: #ffffff;
+  --cp-panel: #000000;
+  --cp-panel-strong: #000000;
+}
+html[data-high-contrast="true"] a { text-decoration: underline; text-decoration-thickness: 2px; }
+html[data-high-contrast="true"] :focus-visible {
+  outline: 4px solid var(--cp-accent);
+  outline-offset: 4px;
+}
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
 body {
