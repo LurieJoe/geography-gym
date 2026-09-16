@@ -113,7 +113,7 @@ type SavedWorkout = {
 type SavedWorkoutStore = Record<string, SavedWorkout>
 
 const defaultStats: Stats = { games: 0, correct: 0, answered: 0, bestStreak: 0 }
-const APP_VERSION = 'v26'
+const APP_VERSION = 'v27'
 const PROFILES_KEY = 'geography-gym-profiles-v1'
 const SAVED_WORKOUTS_KEY = 'geography-gym-saved-workouts-v1'
 const defaultPreferences: Preferences = {
@@ -1785,8 +1785,8 @@ function AppDashboard({
     icon: ReactNode
     description: string
   }> = [
-    { category: 'us', icon: <Map />, description: 'States, capitals, locations, and neighbors' },
-    { category: 'world', icon: <Globe2 />, description: 'Countries, capitals, regions, and maps' },
+    { category: 'us', icon: <Map />, description: 'The 50 states: capitals, abbreviations, locations, and neighbors' },
+    { category: 'world', icon: <Globe2 />, description: 'Countries and places outside the U.S.: capitals, regions, and maps' },
     { category: 'landmarks', icon: <Landmark />, description: 'Famous places, distances, and locations' },
     { category: 'waterways', icon: <Waves />, description: 'Oceans, seas, rivers, straits, lakes, falls, and canals' },
   ]
@@ -2186,7 +2186,7 @@ function Home({
             icon={<Map />}
             category="us"
             title="U.S. Geography"
-            description="States, abbreviations, capitals, locations, and spatial relationships."
+            description="The 50 states: abbreviations, capitals, locations, and spatial relationships."
             games={['Locate it', 'State shorthand', 'State capitals', 'Map practice']}
             count={questionPoolCounts.us}
             onStart={openWorkoutSetup}
@@ -2195,7 +2195,7 @@ function Home({
             icon={<Globe2 />}
             category="world"
             title="World Geography"
-            description="Countries, capitals, continents, regions, and world map placement."
+            description="Countries and places outside the United States: capitals, regions, and map placement."
             games={['Find the country', 'Capital call', 'World regions', 'Map practice']}
             count={questionPoolCounts.world}
             onStart={openWorkoutSetup}

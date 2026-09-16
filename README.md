@@ -6,12 +6,14 @@ on memorization.
 
 ## Learning paths
 
-- **U.S. Geography:** state abbreviations, capitals, and two-stage location
-  practice. Players choose a map section, then tap the state's approximate
-  location on a zoomed silhouette. State boundaries appear after the answer,
-  using U.S. Census Bureau geometry.
-- **World Geography:** countries, capitals, map locations, directions, continents,
-  latitude, and distance comparisons.
+- **U.S. Geography:** the 50 states, including abbreviations, capitals, and
+  two-stage location practice. Players choose a map section, then tap the
+  state's approximate location on a zoomed silhouette. State boundaries appear
+  after the answer, using U.S. Census Bureau geometry. U.S. territories are not
+  currently included.
+- **World Geography:** countries and places outside the United States, including
+  capitals, map locations, directions, continents, latitude, and distance
+  comparisons.
 - **Landmarks:** multiple choice, matching pairs, and geographic ordering from north
   to south or west to east.
 - **Waterways:** oceans, seas, rivers, straits, lakes, waterfalls, and canals through
