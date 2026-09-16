@@ -2,7 +2,7 @@
   "id": "./",
   "name": "Geography Gym",
   "short_name": "Geo Gym",
-  "description": "Give your world knowledge a workout with geography games that build real spatial intuition.",
+  "description": "Build spatial intuition with games about states, countries, landmarks, waterways, distances, and directions.",
   "start_url": "./app/?app=1",
   "scope": "./app/",
   "display": "standalone",
