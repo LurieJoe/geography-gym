@@ -112,7 +112,7 @@ type SavedWorkout = {
 type SavedWorkoutStore = Record<string, SavedWorkout>
 
 const defaultStats: Stats = { games: 0, correct: 0, answered: 0, bestStreak: 0 }
-const APP_VERSION = 'v22'
+const APP_VERSION = 'v23'
 const PROFILES_KEY = 'geography-gym-profiles-v1'
 const SAVED_WORKOUTS_KEY = 'geography-gym-saved-workouts-v1'
 const defaultPreferences: Preferences = {
@@ -463,12 +463,10 @@ function shouldUseAppMode() {
     || window.matchMedia('(display-mode: standalone)').matches
 }
 
-function websiteHomeHref() {
-  const websiteUrl = new URL('./?website=1', window.location.href).href
-  const isInstalledWindowsApp =
-    window.matchMedia('(display-mode: standalone)').matches
-    && navigator.userAgent.includes('Windows')
-  return isInstalledWindowsApp ? `microsoft-edge:${websiteUrl}` : websiteUrl
+function websiteHref(path: string) {
+  const manifestLink = document.querySelector<HTMLLinkElement>('link[rel="manifest"]')
+  const manifestUrl = new URL(manifestLink?.href ?? './manifest.webmanifest', window.location.href)
+  return new URL(path, manifestUrl).href
 }
 
 function App() {
@@ -619,7 +617,9 @@ function App() {
 
     const registerServiceWorker = async () => {
       try {
-        registration = await navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' })
+        registration = await navigator.serviceWorker.register(websiteHref('./sw.js'), {
+          updateViaCache: 'none',
+        })
         if (registration.waiting && navigator.serviceWorker.controller) {
           setWaitingWorker(registration.waiting)
         }
@@ -707,14 +707,7 @@ function App() {
   }
 
   function enterApp() {
-    const url = new URL(window.location.href)
-    url.searchParams.delete('website')
-    url.searchParams.set('app', '1')
-    window.history.pushState({}, '', url)
-    setAppMode(true)
-    setScreen('home')
-    setAppPage('home')
-    setModal(null)
+    window.location.assign(websiteHref('./app/?app=1'))
   }
 
   function selectAppCategory(nextCategory: Category) {
@@ -1538,10 +1531,10 @@ function App() {
             <p className="eyebrow">Geography Gym website</p>
             <p>Visit the website for product information, help, and policies.</p>
             <nav className="support-links" aria-label="Geography Gym website">
-              <a href={websiteHomeHref()} target="_blank" rel="noreferrer"><Globe2 /> Home</a>
-              <a href="./faq/" target="_blank" rel="noreferrer"><HelpCircle /> FAQ</a>
-              <a href="./help/" target="_blank" rel="noreferrer"><HelpCircle /> Help Center</a>
-              <a href="./privacy/" target="_blank" rel="noreferrer"><ExternalLink /> Privacy</a>
+              <a href={websiteHref('./?website=1')} target="_blank" rel="noreferrer"><Globe2 /> Home</a>
+              <a href={websiteHref('./faq/')} target="_blank" rel="noreferrer"><HelpCircle /> FAQ</a>
+              <a href={websiteHref('./help/')} target="_blank" rel="noreferrer"><HelpCircle /> Help Center</a>
+              <a href={websiteHref('./privacy/')} target="_blank" rel="noreferrer"><ExternalLink /> Privacy</a>
             </nav>
           </section>
           <p className="version-label">Geography Gym {APP_VERSION}</p>

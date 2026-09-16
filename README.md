@@ -38,8 +38,10 @@ their scope is clear. Flagged Review remains available as a profile-specific
 shortcut beside the progress counters.
 
 The public root remains a full product website. **Open app** and installed PWA
-shortcuts launch a separate app home at `?app=1`. The app home welcomes the
-active profile with a large globe and clear actions to start, resume, or review.
+shortcuts launch a separate app home under `/app/?app=1`. The installed PWA's
+navigation scope is limited to `/app/`, keeping the website, FAQ, Help Center,
+and Privacy Policy outside the app window. The app home welcomes the active
+profile with a large globe and clear actions to start, resume, or review.
 **Start an exercise** opens the compact builder, where Step 1 and Step 2 appear
 together inline.
 
