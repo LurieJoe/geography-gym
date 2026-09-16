@@ -1,9 +1,9 @@
-export type Category = 'us' | 'world' | 'landmarks' | 'waterways' | 'mixed'
+export type Category = 'us' | 'world' | 'landmarks' | 'waterways'
 export type PracticeMode = 'variety' | 'clue-ladder' | 'neighbors' | 'closer' | 'pinpoint'
 
 type BaseQuestion = {
   id: string
-  category: Exclude<Category, 'mixed'>
+  category: Category
   practice?: PracticeMode
   label: string
   prompt: string
@@ -69,7 +69,6 @@ export const categoryDetails: Record<Category, { label: string }> = {
   world: { label: 'World Geography' },
   landmarks: { label: 'Landmarks' },
   waterways: { label: 'Waterways' },
-  mixed: { label: 'Mixed Workout' },
 }
 
 export const practiceDetails: Record<PracticeMode, { label: string; description: string }> = {
@@ -852,7 +851,7 @@ const pinpointBanks = {
 }
 const practiceBanks: Record<
   PracticeMode,
-  Record<Exclude<Category, 'mixed'>, Question[]>
+  Record<Category, Question[]>
 > = {
   variety: varietyBanks,
   'clue-ladder': clueBanks,
@@ -874,7 +873,6 @@ export const questionPoolCounts = {
   world: worldQuestions.length,
   landmarks: landmarkQuestions.length,
   waterways: waterwayQuestions.length,
-  mixed: usQuestions.length + worldQuestions.length + landmarkQuestions.length + waterwayQuestions.length,
 }
 
 export function shuffled<T>(items: readonly T[]) {
@@ -886,23 +884,22 @@ export function shuffled<T>(items: readonly T[]) {
   return result
 }
 
-function questionsFor(category: Category, practice: PracticeMode) {
+function questionsFor(categories: readonly Category[], practice: PracticeMode) {
   const bank = practiceBanks[practice]
-  return category === 'mixed'
-    ? [...bank.us, ...bank.world, ...bank.landmarks, ...bank.waterways]
-    : bank[category]
+  return categories.flatMap((category) => bank[category])
 }
 
 export function getQuestionPoolCount(
-  category: Category,
+  categories: readonly Category[],
   practice: PracticeMode,
   flaggedIds: string[] = [],
   onlyFlagged = false,
   allFlaggedModes = false,
 ) {
+  const selected = new Set(categories)
   const source = allFlaggedModes
-    ? allQuestions.filter((question) => category === 'mixed' || question.category === category)
-    : questionsFor(category, practice)
+    ? allQuestions.filter((question) => selected.has(question.category))
+    : questionsFor(categories, practice)
   if (!onlyFlagged) return source.length
   const flagged = new Set(flaggedIds)
   return source.filter((question) => flagged.has(question.id)).length
@@ -915,7 +912,7 @@ export function getQuestionsByIds(ids: string[]) {
 }
 
 export function buildQuestions(
-  category: Category,
+  categories: readonly Category[],
   count: number,
   practice: PracticeMode = 'variety',
   flaggedIds: string[] = [],
@@ -923,9 +920,10 @@ export function buildQuestions(
   allFlaggedModes = false,
 ) {
   const flagged = new Set(flaggedIds)
+  const selected = new Set(categories)
   const completeSource = allFlaggedModes
-    ? allQuestions.filter((question) => category === 'mixed' || question.category === category)
-    : questionsFor(category, practice)
+    ? allQuestions.filter((question) => selected.has(question.category))
+    : questionsFor(categories, practice)
   const source = onlyFlagged
     ? completeSource.filter((question) => flagged.has(question.id))
     : completeSource
@@ -934,30 +932,14 @@ export function buildQuestions(
     return shuffled(source).slice(0, count)
   }
 
-  if (category !== 'mixed') {
-    const guaranteed = category === 'landmarks'
-      ? [
-          shuffled(landmarkMatchingQuestions)[0],
-          shuffled(landmarkOrderQuestions)[0],
-        ]
-      : category === 'waterways'
-        ? [
-            shuffled(waterwayMatchingQuestions)[0],
-            shuffled(waterwayOrderQuestions)[0],
-          ]
-      : []
-    const rest = shuffled(source).filter((question) => !guaranteed.some((item) => item.id === question.id))
-    return shuffled([...guaranteed, ...rest.slice(0, Math.max(0, count - guaranteed.length))])
-  }
-
-  const guaranteed = [
-    shuffled(usQuestions)[0],
-    shuffled(worldQuestions)[0],
-    shuffled(landmarkMatchingQuestions)[0],
-    shuffled(landmarkOrderQuestions)[0],
-    shuffled(waterwayMatchingQuestions)[0],
-    shuffled(waterwayOrderQuestions)[0],
-  ]
+  const guaranteed = categories.flatMap((category) => {
+    if (category === 'us') return [shuffled(usQuestions)[0]]
+    if (category === 'world') return [shuffled(worldQuestions)[0]]
+    if (category === 'landmarks') {
+      return [shuffled(landmarkMatchingQuestions)[0], shuffled(landmarkOrderQuestions)[0]]
+    }
+    return [shuffled(waterwayMatchingQuestions)[0], shuffled(waterwayOrderQuestions)[0]]
+  })
   const rest = shuffled(source).filter((question) => !guaranteed.some((item) => item.id === question.id))
   return shuffled([...guaranteed, ...rest.slice(0, Math.max(0, count - guaranteed.length))])
 }

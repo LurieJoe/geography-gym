@@ -476,7 +476,12 @@
   grid-template-columns: repeat(2, 1fr);
   gap: 10px;
 }
-.app-subject-options button {
+.app-subject-guidance {
+  margin: 0 0 12px;
+  color: var(--cp-text-muted);
+  font-size: 0.86rem;
+}
+.app-subject-options label {
   min-height: 92px;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
@@ -491,15 +496,19 @@
   text-align: left;
   cursor: pointer;
 }
-.app-subject-options button:hover { border-color: var(--cp-accent); }
-.app-subject-options button.selected-option {
+.app-subject-options label:hover { border-color: var(--cp-accent); }
+.app-subject-options label.selected-option {
   border-color: var(--cp-accent);
   background: var(--cp-accent-soft);
 }
-.app-subject-options button > span:nth-child(2) { display: grid; gap: 4px; }
+.app-subject-options label > span:nth-child(2) { display: grid; gap: 4px; }
 .app-subject-options strong { font-size: 0.95rem; }
 .app-subject-options small { color: var(--cp-text-muted); font-size: 0.76rem; line-height: 1.35; }
-.app-subject-options button > svg { color: var(--cp-success); }
+.app-subject-options input {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--cp-accent);
+}
 .app-option-icon {
   width: 42px;
   height: 42px;
@@ -1424,7 +1433,7 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
   .app-builder,
   .app-progress-card { padding: 18px 14px; }
   .app-subject-options { grid-template-columns: 1fr; }
-  .app-subject-options button { min-height: 80px; }
+  .app-subject-options label { min-height: 80px; }
   .app-workout-options { grid-template-columns: 1fr; }
   .app-progress-heading { align-items: flex-start; }
   .quiz-shell { width: calc(100% - 20px); padding-top: 16px; }

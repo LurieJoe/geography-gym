@@ -96,7 +96,7 @@ type ProfileStore = {
 }
 
 type SavedWorkout = {
-  category: Category
+  categories: Category[]
   practice: PracticeMode
   questionIds: string[]
   questionIndex: number
@@ -113,7 +113,7 @@ type SavedWorkout = {
 type SavedWorkoutStore = Record<string, SavedWorkout>
 
 const defaultStats: Stats = { games: 0, correct: 0, answered: 0, bestStreak: 0 }
-const APP_VERSION = 'v24'
+const APP_VERSION = 'v25'
 const PROFILES_KEY = 'geography-gym-profiles-v1'
 const SAVED_WORKOUTS_KEY = 'geography-gym-saved-workouts-v1'
 const defaultPreferences: Preferences = {
@@ -137,26 +137,36 @@ const accentColors: { id: AccentColor; label: string }[] = [
   { id: 'orange', label: 'Orange' },
   { id: 'crimson', label: 'Crimson' },
 ]
-const categories: Category[] = ['us', 'world', 'landmarks', 'waterways', 'mixed']
+const categories: Category[] = ['us', 'world', 'landmarks', 'waterways']
 const practiceModes: PracticeMode[] = ['variety', 'clue-ladder', 'neighbors', 'closer', 'pinpoint']
 
-function practiceAvailable(category: Category, practice: PracticeMode) {
-  if (practice === 'variety' || practice === 'clue-ladder') return true
-  if (practice === 'neighbors') return category === 'us' || category === 'world' || category === 'mixed'
-  return category === 'landmarks' || category === 'waterways' || category === 'mixed'
+function compatibleCategories(selectedCategories: readonly Category[], practice: PracticeMode) {
+  if (practice === 'variety' || practice === 'clue-ladder') return [...selectedCategories]
+  if (practice === 'neighbors') {
+    return selectedCategories.filter((category) => category === 'us' || category === 'world')
+  }
+  return selectedCategories.filter((category) => category === 'landmarks' || category === 'waterways')
 }
 
-function practiceScope(category: Category, practice: PracticeMode) {
-  if (practice === 'neighbors' && category === 'mixed') return 'Uses U.S. and World questions'
-  if ((practice === 'closer' || practice === 'pinpoint') && category === 'mixed') {
-    return 'Uses Landmarks and Waterways questions'
-  }
-  if (!practiceAvailable(category, practice)) {
+function practiceAvailable(selectedCategories: readonly Category[], practice: PracticeMode) {
+  return compatibleCategories(selectedCategories, practice).length > 0
+}
+
+function studyLabel(selectedCategories: readonly Category[]) {
+  if (selectedCategories.length === 0) return 'No subjects selected'
+  if (selectedCategories.length === categories.length) return 'All subjects'
+  return selectedCategories.map((category) => categoryDetails[category].label).join(' + ')
+}
+
+function practiceScope(selectedCategories: readonly Category[], practice: PracticeMode) {
+  const compatible = compatibleCategories(selectedCategories, practice)
+  if (compatible.length === 0) {
     return practice === 'neighbors'
-      ? 'Available for U.S., World, or Mixed'
-      : 'Available for Landmarks, Waterways, or Mixed'
+      ? 'Select U.S. Geography or World Geography'
+      : 'Select Landmarks or Waterways'
   }
-  return `${getQuestionPoolCount(category, practice).toLocaleString()} questions available`
+  if (compatible.length < selectedCategories.length) return `Uses ${studyLabel(compatible)}`
+  return `${getQuestionPoolCount(compatible, practice).toLocaleString()} questions available`
 }
 
 const tips = [
@@ -185,8 +195,8 @@ const tips = [
     text: 'The timer is a simple stopwatch, not a countdown. Turn it on for a challenge or off for pressure-free learning.',
   },
   {
-    title: 'Try a Mixed Workout',
-    text: 'Choose Mixed to blend U.S., world, and landmark questions in Variety or Clue Ladder. Neighbor Challenge uses the U.S. and world questions available in Mixed.',
+    title: 'Mix your own workout',
+    text: 'Select two or more subjects to study them together. Each practice style uses the compatible questions from your selected subjects.',
   },
   {
     title: 'Install for easy access',
@@ -250,7 +260,7 @@ const tips = [
   },
   {
     title: 'Build a workout in two steps',
-    text: 'First choose what to study—U.S., World, Landmarks, or Mixed. Then choose the practice style that builds the skill you want.',
+    text: 'First select one or more subjects—U.S., World, Landmarks, or Waterways. Then choose the practice style that builds the skill you want.',
   },
   {
     title: 'Start from the app home',
@@ -351,8 +361,19 @@ function nonNegativeInteger(value: unknown, fallback = 0) {
 
 function parseSavedWorkout(value: unknown): SavedWorkout | null {
   if (!isRecord(value)) return null
-  if (!categories.includes(value.category as Category)) return null
   if (!practiceModes.includes(value.practice as PracticeMode)) return null
+  const savedCategories = Array.isArray(value.categories)
+    ? value.categories.filter(
+        (category): category is Category =>
+          typeof category === 'string' && categories.includes(category as Category),
+      )
+    : value.category === 'mixed'
+      ? [...categories]
+      : categories.includes(value.category as Category)
+        ? [value.category as Category]
+        : []
+  const uniqueCategories = [...new Set(savedCategories)]
+  if (uniqueCategories.length === 0) return null
 
   const questionIds = Array.isArray(value.questionIds)
     ? value.questionIds.filter((id): id is string => typeof id === 'string' && id.length > 0)
@@ -368,7 +389,7 @@ function parseSavedWorkout(value: unknown): SavedWorkout | null {
     : {}
 
   return {
-    category: value.category as Category,
+    categories: uniqueCategories,
     practice: value.practice as PracticeMode,
     questionIds,
     questionIndex: Math.min(nonNegativeInteger(value.questionIndex), questionIds.length - 1),
@@ -483,13 +504,13 @@ function App() {
   const [screen, setScreen] = useState<Screen>('home')
   const [appPage, setAppPage] = useState<AppPage>('home')
   const [appMode, setAppMode] = useState(shouldUseAppMode)
-  const [appSelectedCategory, setAppSelectedCategory] = useState<Category | null>(null)
+  const [appSelectedCategories, setAppSelectedCategories] = useState<Category[]>([])
   const [modal, setModal] = useState<Modal>(null)
-  const [pendingCategory, setPendingCategory] = useState<Category>('mixed')
+  const [pendingCategories, setPendingCategories] = useState<Category[]>([])
   const [pendingPractice, setPendingPractice] = useState<PracticeMode>('variety')
   const [onlyFlagged, setOnlyFlagged] = useState(false)
   const [allFlaggedModes, setAllFlaggedModes] = useState(false)
-  const [category, setCategory] = useState<Category>('mixed')
+  const [workoutCategories, setWorkoutCategories] = useState<Category[]>([...categories])
   const [practice, setPractice] = useState<PracticeMode>('variety')
   const [workoutOnlyFlagged, setWorkoutOnlyFlagged] = useState(false)
   const [workoutAllFlaggedModes, setWorkoutAllFlaggedModes] = useState(false)
@@ -677,14 +698,14 @@ function App() {
   const currentQuestion = questions[questionIndex]
   const accuracy = stats.answered ? Math.round((stats.correct / stats.answered) * 100) : 0
   const flaggedCount = getQuestionPoolCount(
-    'mixed',
+    categories,
     'variety',
     activeProfile.flaggedQuestionIds,
     true,
     true,
   )
   const setupPoolCount = getQuestionPoolCount(
-    pendingCategory,
+    pendingCategories,
     pendingPractice,
     activeProfile.flaggedQuestionIds,
     onlyFlagged,
@@ -709,7 +730,7 @@ function App() {
   }
 
   function openWorkoutSetup(nextCategory: Category) {
-    setPendingCategory(nextCategory)
+    setPendingCategories([nextCategory])
     setPendingPractice('variety')
     setOnlyFlagged(false)
     setAllFlaggedModes(false)
@@ -720,16 +741,19 @@ function App() {
     window.location.assign(websiteHref('./app/?app=1'))
   }
 
-  function selectAppCategory(nextCategory: Category) {
-    setAppSelectedCategory(nextCategory)
-    setPendingCategory(nextCategory)
+  function toggleAppCategory(nextCategory: Category) {
+    const nextCategories = appSelectedCategories.includes(nextCategory)
+      ? appSelectedCategories.filter((category) => category !== nextCategory)
+      : categories.filter((category) => [...appSelectedCategories, nextCategory].includes(category))
+    setAppSelectedCategories(nextCategories)
+    setPendingCategories(nextCategories)
     setPendingPractice('variety')
     setOnlyFlagged(false)
     setAllFlaggedModes(false)
   }
 
   function openFlaggedReview() {
-    setPendingCategory('mixed')
+    setPendingCategories([...categories])
     setPendingPractice('variety')
     setOnlyFlagged(true)
     setAllFlaggedModes(true)
@@ -738,7 +762,7 @@ function App() {
 
   function startWorkout() {
     const available = getQuestionPoolCount(
-      pendingCategory,
+      pendingCategories,
       pendingPractice,
       activeProfile.flaggedQuestionIds,
       onlyFlagged,
@@ -746,14 +770,14 @@ function App() {
     )
     if (available === 0) return
     const nextQuestions = buildQuestions(
-      pendingCategory,
+      pendingCategories,
       Math.min(preferences.roundSize, available),
       pendingPractice,
       activeProfile.flaggedQuestionIds,
       onlyFlagged,
       allFlaggedModes,
     )
-    setCategory(pendingCategory)
+    setWorkoutCategories(pendingCategories)
     setPractice(pendingPractice)
     setWorkoutOnlyFlagged(onlyFlagged)
     setWorkoutAllFlaggedModes(allFlaggedModes)
@@ -769,7 +793,7 @@ function App() {
     setSavedWorkouts((current) => ({
       ...current,
       [activeProfile.id]: {
-        category: pendingCategory,
+        categories: pendingCategories,
         practice: pendingPractice,
         questionIds: nextQuestions.map((question) => question.id),
         questionIndex: 0,
@@ -795,7 +819,7 @@ function App() {
   }
 
   function replayWorkout() {
-    setPendingCategory(category)
+    setPendingCategories(workoutCategories)
     setPendingPractice(practice)
     setOnlyFlagged(workoutOnlyFlagged)
     setAllFlaggedModes(workoutAllFlaggedModes)
@@ -820,7 +844,7 @@ function App() {
       dismissSavedWorkout()
       return
     }
-    setCategory(savedWorkout.category)
+    setWorkoutCategories(savedWorkout.categories)
     setPractice(savedWorkout.practice)
     setWorkoutOnlyFlagged(savedWorkout.onlyFlagged)
     setWorkoutAllFlaggedModes(savedWorkout.allFlaggedModes)
@@ -883,7 +907,7 @@ function App() {
     setSavedWorkouts((current) => ({
       ...current,
       [activeProfile.id]: {
-        category,
+        categories: workoutCategories,
         practice,
         questionIds: questions.map((question) => question.id),
         questionIndex: questionIndex + 1,
@@ -912,7 +936,7 @@ function App() {
     setSavedWorkouts((current) => ({
       ...current,
       [activeProfile.id]: {
-        category,
+        categories: workoutCategories,
         practice,
         questionIds: questions.map((question) => question.id),
         questionIndex: previousIndex,
@@ -1167,12 +1191,12 @@ function App() {
           flaggedCount={flaggedCount}
           savedWorkout={savedWorkout}
           page={appPage}
-          selectedCategory={appSelectedCategory}
+          selectedCategories={appSelectedCategories}
           pendingPractice={pendingPractice}
           preferences={preferences}
-          setupQuestionCount={appSelectedCategory ? setupQuestionCount : 0}
+          setupQuestionCount={appSelectedCategories.length > 0 ? setupQuestionCount : 0}
           profileName={activeProfile.name}
-          onSelectCategory={selectAppCategory}
+          onToggleCategory={toggleAppCategory}
           onOpenBuilder={() => setAppPage('builder')}
           onAppHome={() => setAppPage('home')}
           onSelectPractice={setPendingPractice}
@@ -1206,7 +1230,7 @@ function App() {
               )}
             </div>
             <div className="progress-copy">
-              <span>{categoryDetails[category].label}</span>
+              <span>{studyLabel(workoutCategories)}</span>
               <strong>{questionIndex + 1} / {questions.length}</strong>
             </div>
             <div className="quiz-status">
@@ -1258,7 +1282,7 @@ function App() {
           bestStreak={bestRunStreak}
           elapsed={elapsed}
           timerEnabled={workoutTimerEnabled}
-          category={category}
+          categories={workoutCategories}
           practice={practice}
           onReplay={replayWorkout}
           onHome={() => {
@@ -1273,7 +1297,7 @@ function App() {
       {modal === 'setup' && (
         <ModalShell
           title={allFlaggedModes ? 'Set up Flagged Review' : 'Choose how to study'}
-          eyebrow={allFlaggedModes ? 'Profile review' : `Step 2 of 2 · ${categoryDetails[pendingCategory].label}`}
+          eyebrow={allFlaggedModes ? 'Profile review' : `Step 2 of 2 · ${studyLabel(pendingCategories)}`}
           onClose={() => {
             setModal(null)
             if (allFlaggedModes) {
@@ -1285,14 +1309,14 @@ function App() {
           <p className="modal-lead">
             {onlyFlagged
               ? `${setupPoolCount.toLocaleString()} flagged ${setupPoolCount === 1 ? 'question is' : 'questions are'} available for this workout.`
-              : `You chose ${categoryDetails[pendingCategory].label}. Select a practice style, then choose your workout length.`}
+              : `You chose ${studyLabel(pendingCategories)}. Select a practice style, then choose your workout length.`}
           </p>
           {!allFlaggedModes && (
             <fieldset className="choice-fieldset">
               <legend>Practice style</legend>
               <div className="practice-options">
                 {practiceModes.map((mode) => {
-                  const available = practiceAvailable(pendingCategory, mode)
+                  const available = practiceAvailable(pendingCategories, mode)
                   return (
                     <label
                       key={mode}
@@ -1312,7 +1336,7 @@ function App() {
                       <span>
                         <strong>{practiceDetails[mode].label}</strong>
                         <small>{practiceDetails[mode].description}</small>
-                        <em>{practiceScope(pendingCategory, mode)}</em>
+                        <em>{practiceScope(pendingCategories, mode)}</em>
                       </span>
                     </label>
                   )
@@ -1707,12 +1731,12 @@ function AppDashboard({
   flaggedCount,
   savedWorkout,
   page,
-  selectedCategory,
+  selectedCategories,
   pendingPractice,
   preferences,
   setupQuestionCount,
   profileName,
-  onSelectCategory,
+  onToggleCategory,
   onOpenBuilder,
   onAppHome,
   onSelectPractice,
@@ -1732,12 +1756,12 @@ function AppDashboard({
   flaggedCount: number
   savedWorkout?: SavedWorkout
   page: AppPage
-  selectedCategory: Category | null
+  selectedCategories: Category[]
   pendingPractice: PracticeMode
   preferences: Preferences
   setupQuestionCount: number
   profileName: string
-  onSelectCategory: (category: Category) => void
+  onToggleCategory: (category: Category) => void
   onOpenBuilder: () => void
   onAppHome: () => void
   onSelectPractice: (practice: PracticeMode) => void
@@ -1761,7 +1785,6 @@ function AppDashboard({
     { category: 'world', icon: <Globe2 />, description: 'Countries, capitals, regions, and maps' },
     { category: 'landmarks', icon: <Landmark />, description: 'Famous places, distances, and locations' },
     { category: 'waterways', icon: <Waves />, description: 'Oceans, seas, rivers, straits, lakes, falls, and canals' },
-    { category: 'mixed', icon: <Sparkles />, description: 'A combination of every subject' },
   ]
 
   if (page === 'home') {
@@ -1838,7 +1861,7 @@ function AppDashboard({
             <p className="eyebrow">Continue where you stopped</p>
             <h2>Resume your workout</h2>
             <p>
-              {categoryDetails[savedWorkout.category].label}
+              {studyLabel(savedWorkout.categories)}
               {' · '}
               {practiceDetails[savedWorkout.practice].label}
               {' · Question '}
@@ -1860,23 +1883,28 @@ function AppDashboard({
             <h2>Choose what to study</h2>
           </div>
         </div>
+        <p className="app-subject-guidance">Select one or more subjects. Multiple subjects are studied together.</p>
         <div className="app-subject-options">
-          {subjects.map((subject) => (
-            <button
+          {subjects.map((subject) => {
+            const selected = selectedCategories.includes(subject.category)
+            return (
+            <label
               key={subject.category}
-              className={selectedCategory === subject.category ? 'selected-option' : ''}
-              type="button"
-              aria-pressed={selectedCategory === subject.category}
-              onClick={() => onSelectCategory(subject.category)}
+              className={selected ? 'selected-option' : ''}
             >
               <span className="app-option-icon">{subject.icon}</span>
               <span>
                 <strong>{categoryDetails[subject.category].label}</strong>
                 <small>{subject.description}</small>
               </span>
-              {selectedCategory === subject.category && <Check size={19} />}
-            </button>
-          ))}
+              <input
+                type="checkbox"
+                checked={selected}
+                onChange={() => onToggleCategory(subject.category)}
+                aria-label={`Include ${categoryDetails[subject.category].label}`}
+              />
+            </label>
+          )})}
         </div>
 
         <div className="app-step-divider" />
@@ -1888,17 +1916,17 @@ function AppDashboard({
             <h2>Choose how to study</h2>
           </div>
         </div>
-        {!selectedCategory && (
-          <p className="app-step-prompt"><MapPin size={18} /> Choose a subject above to see its available exercises.</p>
+        {selectedCategories.length === 0 && (
+          <p className="app-step-prompt"><MapPin size={18} /> Choose one or more subjects above to see the available exercises.</p>
         )}
         <div className="practice-options app-practice-options">
           {practiceModes.map((mode) => {
-            const available = selectedCategory ? practiceAvailable(selectedCategory, mode) : false
+            const available = practiceAvailable(selectedCategories, mode)
             return (
               <label
                 key={mode}
                 className={[
-                  selectedCategory && pendingPractice === mode ? 'selected-option' : '',
+                  selectedCategories.length > 0 && pendingPractice === mode ? 'selected-option' : '',
                   !available ? 'disabled-option' : '',
                 ].join(' ')}
               >
@@ -1906,7 +1934,7 @@ function AppDashboard({
                   type="radio"
                   name="app-practice-mode"
                   value={mode}
-                  checked={selectedCategory !== null && pendingPractice === mode}
+                  checked={selectedCategories.length > 0 && pendingPractice === mode}
                   disabled={!available}
                   onChange={() => onSelectPractice(mode)}
                 />
@@ -1914,8 +1942,8 @@ function AppDashboard({
                   <strong>{practiceDetails[mode].label}</strong>
                   <small>{practiceDetails[mode].description}</small>
                   <em>
-                    {selectedCategory
-                      ? practiceScope(selectedCategory, mode)
+                    {selectedCategories.length > 0
+                      ? practiceScope(selectedCategories, mode)
                       : 'Choose a subject first'}
                   </em>
                 </span>
@@ -1970,11 +1998,11 @@ function AppDashboard({
           className="primary-button app-start-button"
           type="button"
           onClick={onStart}
-          disabled={!selectedCategory || setupQuestionCount === 0}
+          disabled={selectedCategories.length === 0 || setupQuestionCount === 0}
         >
-          {selectedCategory
+          {selectedCategories.length > 0
             ? `Start ${setupQuestionCount}-question exercise`
-            : 'Choose a subject to continue'}
+            : 'Choose one or more subjects to continue'}
         </button>
       </section>
 
@@ -2092,7 +2120,7 @@ function Home({
             <p className="eyebrow">Continue where you stopped</p>
             <h2>Resume your workout</h2>
             <p>
-              {categoryDetails[savedWorkout.category].label}
+              {studyLabel(savedWorkout.categories)}
               {' · '}
               {practiceDetails[savedWorkout.practice].label}
               {' · Question '}
@@ -2184,15 +2212,6 @@ function Home({
             description="Explore major oceans, seas, rivers, straits, lakes, waterfalls, and canals."
             games={['Where is it?', 'Matching pairs', 'Map Pinpoint', 'Which Is Closer?']}
             count={questionPoolCounts.waterways}
-            onStart={openWorkoutSetup}
-          />
-          <TrackCard
-            icon={<Sparkles />}
-            category="mixed"
-            title="Mixed Geography"
-            description="Combine U.S. geography, world geography, landmarks, and waterways."
-            games={['Every subject', 'Varied question styles', 'Clue practice', 'Broader review']}
-            count={questionPoolCounts.mixed}
             onStart={openWorkoutSetup}
           />
         </div>
@@ -3057,7 +3076,7 @@ function Results({
   bestStreak,
   elapsed,
   timerEnabled,
-  category,
+  categories: completedCategories,
   practice,
   onReplay,
   onHome,
@@ -3067,7 +3086,7 @@ function Results({
   bestStreak: number
   elapsed: number
   timerEnabled: boolean
-  category: Category
+  categories: Category[]
   practice: PracticeMode
   onReplay: () => void
   onHome: () => void
@@ -3079,7 +3098,7 @@ function Results({
         <div className="result-medal">{percent >= 80 ? <Trophy /> : <Award />}</div>
         <p className="eyebrow">
           {practice === 'variety'
-            ? `${categoryDetails[category].label} complete`
+            ? `${studyLabel(completedCategories)} complete`
             : `${practiceDetails[practice].label} complete`}
         </p>
         <h1>{percent >= 80 ? 'Excellent workout.' : percent >= 55 ? 'You’re making progress.' : 'A good first round.'}</h1>

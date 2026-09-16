@@ -33,12 +33,13 @@ Additional practice modes reuse and extend those subjects:
 - **Flagged Review:** a profile-specific workout assembled from questions the learner
   flags during any activity
 
-The home page uses a two-step workout path: first choose what to study (U.S.,
-World, Landmarks, Waterways, or Mixed), then choose how to study it with a compatible
-practice style. Practice
-styles that do not apply to the selected subject remain visible but disabled so
-their scope is clear. Flagged Review remains available as a profile-specific
-shortcut beside the progress counters.
+The home page uses a two-step workout path: first select one or more subjects
+(U.S., World, Landmarks, or Waterways), then choose how to study them with a
+compatible practice style. Selecting multiple subjects creates a custom mixed
+workout from exactly those choices. Practice styles use the compatible portion
+of the selection and remain disabled when none of the selected subjects apply.
+Flagged Review remains available as a profile-specific shortcut beside the
+progress counters.
 
 The public root remains a full product website. **Open app** and installed PWA
 shortcuts launch a separate app home under `/app/?app=1`. The installed PWA's
