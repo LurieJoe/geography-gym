@@ -14,24 +14,27 @@ on memorization.
   latitude, and distance comparisons.
 - **Landmarks:** multiple choice, matching pairs, and geographic ordering from north
   to south or west to east.
+- **Waterways:** oceans, seas, rivers, straits, lakes, waterfalls, and canals through
+  multiple choice, matching, ordering, clues, distance comparisons, and map placement.
 
 The current question banks include:
 
 - 150 U.S. geography questions
 - 120 world geography questions
 - 136 landmark questions
+- 110 waterway questions and activities
 
 Additional practice modes reuse and extend those subjects:
 
-- **Clue Ladder:** 150 state, country, and landmark identification questions
+- **Clue Ladder:** 190 state, country, landmark, and waterway identification questions
 - **Neighbor Challenge:** 344 U.S. state and world-country border questions
-- **Which Is Closer?:** 50 straight-line landmark distance comparisons
-- **Map Pinpoint:** 50 two-attempt landmark placement challenges
+- **Which Is Closer?:** 90 straight-line landmark and waterway distance comparisons
+- **Map Pinpoint:** 90 two-attempt landmark and waterway placement challenges
 - **Flagged Review:** a profile-specific workout assembled from questions the learner
   flags during any activity
 
 The home page uses a two-step workout path: first choose what to study (U.S.,
-World, Landmarks, or Mixed), then choose how to study it with a compatible
+World, Landmarks, Waterways, or Mixed), then choose how to study it with a compatible
 practice style. Practice
 styles that do not apply to the selected subject remain visible but disabled so
 their scope is clear. Flagged Review remains available as a profile-specific

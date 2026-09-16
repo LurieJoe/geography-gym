@@ -30,6 +30,7 @@ import {
   UserRound,
   Volume2,
   VolumeX,
+  Waves,
   X,
 } from 'lucide-react'
 import {
@@ -112,7 +113,7 @@ type SavedWorkout = {
 type SavedWorkoutStore = Record<string, SavedWorkout>
 
 const defaultStats: Stats = { games: 0, correct: 0, answered: 0, bestStreak: 0 }
-const APP_VERSION = 'v23'
+const APP_VERSION = 'v24'
 const PROFILES_KEY = 'geography-gym-profiles-v1'
 const SAVED_WORKOUTS_KEY = 'geography-gym-saved-workouts-v1'
 const defaultPreferences: Preferences = {
@@ -136,19 +137,24 @@ const accentColors: { id: AccentColor; label: string }[] = [
   { id: 'orange', label: 'Orange' },
   { id: 'crimson', label: 'Crimson' },
 ]
-const categories: Category[] = ['us', 'world', 'landmarks', 'mixed']
+const categories: Category[] = ['us', 'world', 'landmarks', 'waterways', 'mixed']
 const practiceModes: PracticeMode[] = ['variety', 'clue-ladder', 'neighbors', 'closer', 'pinpoint']
 
 function practiceAvailable(category: Category, practice: PracticeMode) {
   if (practice === 'variety' || practice === 'clue-ladder') return true
   if (practice === 'neighbors') return category === 'us' || category === 'world' || category === 'mixed'
-  return category === 'landmarks'
+  return category === 'landmarks' || category === 'waterways' || category === 'mixed'
 }
 
 function practiceScope(category: Category, practice: PracticeMode) {
   if (practice === 'neighbors' && category === 'mixed') return 'Uses U.S. and World questions'
+  if ((practice === 'closer' || practice === 'pinpoint') && category === 'mixed') {
+    return 'Uses Landmarks and Waterways questions'
+  }
   if (!practiceAvailable(category, practice)) {
-    return practice === 'neighbors' ? 'Available for U.S., World, or Mixed' : 'Available for Landmarks'
+    return practice === 'neighbors'
+      ? 'Available for U.S., World, or Mixed'
+      : 'Available for Landmarks, Waterways, or Mixed'
   }
   return `${getQuestionPoolCount(category, practice).toLocaleString()} questions available`
 }
@@ -160,7 +166,11 @@ const tips = [
   },
   {
     title: 'Build connections, not lists',
-    text: 'Notice neighboring states, relative directions, and landmark locations. Those connections make facts easier to remember.',
+    text: 'Notice neighboring states, relative directions, landmark locations, and the waterways connecting regions. Those relationships make facts easier to remember.',
+  },
+  {
+    title: 'Follow the water',
+    text: 'Use Waterways to connect oceans, seas, rivers, straits, lakes, waterfalls, and canals to the countries and regions around them.',
   },
   {
     title: 'Matching Pairs rewards recall',
@@ -216,7 +226,7 @@ const tips = [
   },
   {
     title: 'Climb the Clue Ladder',
-    text: 'Clues appear in a different order each time. Reveal more when needed, then identify the state, country, or landmark before the answer is shown.',
+    text: 'Clues appear in a different order each time. Reveal more when needed, then identify the state, country, landmark, or waterway before the answer is shown.',
   },
   {
     title: 'Learn what touches what',
@@ -1750,7 +1760,8 @@ function AppDashboard({
     { category: 'us', icon: <Map />, description: 'States, capitals, locations, and neighbors' },
     { category: 'world', icon: <Globe2 />, description: 'Countries, capitals, regions, and maps' },
     { category: 'landmarks', icon: <Landmark />, description: 'Famous places, distances, and locations' },
-    { category: 'mixed', icon: <Sparkles />, description: 'A combination of all three subjects' },
+    { category: 'waterways', icon: <Waves />, description: 'Oceans, seas, rivers, straits, lakes, falls, and canals' },
+    { category: 'mixed', icon: <Sparkles />, description: 'A combination of every subject' },
   ]
 
   if (page === 'home') {
@@ -2167,11 +2178,20 @@ function Home({
             onStart={openWorkoutSetup}
           />
           <TrackCard
+            icon={<Waves />}
+            category="waterways"
+            title="Waterways"
+            description="Explore major oceans, seas, rivers, straits, lakes, waterfalls, and canals."
+            games={['Where is it?', 'Matching pairs', 'Map Pinpoint', 'Which Is Closer?']}
+            count={questionPoolCounts.waterways}
+            onStart={openWorkoutSetup}
+          />
+          <TrackCard
             icon={<Sparkles />}
             category="mixed"
             title="Mixed Geography"
-            description="Combine U.S. geography, world geography, and landmarks in one workout."
-            games={['All three subjects', 'Varied question styles', 'Clue practice', 'Broader review']}
+            description="Combine U.S. geography, world geography, landmarks, and waterways."
+            games={['Every subject', 'Varied question styles', 'Clue practice', 'Broader review']}
             count={questionPoolCounts.mixed}
             onStart={openWorkoutSetup}
           />

@@ -284,7 +284,7 @@
 }
 .workout-steps strong { font-size: 0.86rem; line-height: 1.25; }
 .workout-steps > b { color: var(--cp-accent); font-size: 1.25rem; }
-.track-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+.track-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 16px; }
 .track-card {
   display: flex;
   flex-direction: column;

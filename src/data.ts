@@ -1,4 +1,4 @@
-export type Category = 'us' | 'world' | 'landmarks' | 'mixed'
+export type Category = 'us' | 'world' | 'landmarks' | 'waterways' | 'mixed'
 export type PracticeMode = 'variety' | 'clue-ladder' | 'neighbors' | 'closer' | 'pinpoint'
 
 type BaseQuestion = {
@@ -68,6 +68,7 @@ export const categoryDetails: Record<Category, { label: string }> = {
   us: { label: 'U.S. Geography' },
   world: { label: 'World Geography' },
   landmarks: { label: 'Landmarks' },
+  waterways: { label: 'Waterways' },
   mixed: { label: 'Mixed Workout' },
 }
 
@@ -86,11 +87,11 @@ export const practiceDetails: Record<PracticeMode, { label: string; description:
   },
   closer: {
     label: 'Which Is Closer?',
-    description: 'Compare real distances between famous landmarks.',
+    description: 'Compare real distances between landmarks and waterways.',
   },
   pinpoint: {
     label: 'Map Pinpoint',
-    description: 'Place a landmark on the world map and see how close you were.',
+    description: 'Place a landmark or waterway on the world map and see how close you were.',
   },
 }
 
@@ -232,6 +233,57 @@ const landmarks: LandmarkRecord[] = [
   { name: 'Hallgrímskirkja', place: 'Reykjavík', region: 'Iceland', lat: 64.14, lon: -21.93 },
   { name: 'Palace of Westminster', place: 'London', region: 'United Kingdom', lat: 51.50, lon: -0.12 },
   { name: 'Atomium', place: 'Brussels', region: 'Belgium', lat: 50.89, lon: 4.34 },
+]
+
+type WaterwayRecord = {
+  name: string
+  type: 'Ocean' | 'Sea' | 'River' | 'Strait' | 'Lake' | 'Waterfall' | 'Canal'
+  place: string
+  lat: number
+  lon: number
+}
+
+const waterways: WaterwayRecord[] = [
+  { name: 'Pacific Ocean', type: 'Ocean', place: 'between Asia, Oceania, and the Americas', lat: 0, lon: -160 },
+  { name: 'Atlantic Ocean', type: 'Ocean', place: 'between the Americas and Europe and Africa', lat: 0, lon: -30 },
+  { name: 'Indian Ocean', type: 'Ocean', place: 'between Africa, Asia, Australia, and Antarctica', lat: -20, lon: 80 },
+  { name: 'Southern Ocean', type: 'Ocean', place: 'around Antarctica', lat: -65, lon: 0 },
+  { name: 'Arctic Ocean', type: 'Ocean', place: 'around the North Pole', lat: 80, lon: 0 },
+  { name: 'Mediterranean Sea', type: 'Sea', place: 'between southern Europe, northern Africa, and western Asia', lat: 35, lon: 18 },
+  { name: 'Caribbean Sea', type: 'Sea', place: 'between Central America, northern South America, and the Antilles', lat: 15, lon: -75 },
+  { name: 'Red Sea', type: 'Sea', place: 'between northeastern Africa and the Arabian Peninsula', lat: 20, lon: 38 },
+  { name: 'Black Sea', type: 'Sea', place: 'between southeastern Europe and western Asia', lat: 43, lon: 35 },
+  { name: 'Baltic Sea', type: 'Sea', place: 'between Scandinavia and mainland northern Europe', lat: 58, lon: 20 },
+  { name: 'Arabian Sea', type: 'Sea', place: 'between the Arabian Peninsula and India', lat: 15, lon: 65 },
+  { name: 'South China Sea', type: 'Sea', place: 'between Southeast Asia, China, and the Philippines', lat: 15, lon: 115 },
+  { name: 'Nile River', type: 'River', place: 'in northeastern Africa, flowing north through Egypt', lat: 30, lon: 31 },
+  { name: 'Amazon River', type: 'River', place: 'across northern South America, chiefly Brazil', lat: -3, lon: -60 },
+  { name: 'Mississippi River', type: 'River', place: 'in the central United States', lat: 35, lon: -90 },
+  { name: 'Yangtze River', type: 'River', place: 'across central China', lat: 30, lon: 112 },
+  { name: 'Danube River', type: 'River', place: 'across central and southeastern Europe', lat: 47, lon: 19 },
+  { name: 'Ganges River', type: 'River', place: 'across northern India and Bangladesh', lat: 25, lon: 88 },
+  { name: 'Mekong River', type: 'River', place: 'across mainland Southeast Asia', lat: 15, lon: 105 },
+  { name: 'Congo River', type: 'River', place: 'in central Africa', lat: -3, lon: 18 },
+  { name: 'Rhine River', type: 'River', place: 'from the Swiss Alps through western Europe to the North Sea', lat: 50, lon: 7 },
+  { name: 'Strait of Gibraltar', type: 'Strait', place: 'between Spain and Morocco', lat: 36, lon: -5.5 },
+  { name: 'Bering Strait', type: 'Strait', place: 'between Alaska and eastern Russia', lat: 66, lon: -169 },
+  { name: 'Bosporus', type: 'Strait', place: 'through Istanbul between European and Asian Türkiye', lat: 41, lon: 29 },
+  { name: 'Strait of Malacca', type: 'Strait', place: 'between the Malay Peninsula and Sumatra', lat: 3, lon: 101 },
+  { name: 'Strait of Hormuz', type: 'Strait', place: 'between Iran and the Musandam Peninsula', lat: 26.5, lon: 56.5 },
+  { name: 'Strait of Dover', type: 'Strait', place: 'between England and France', lat: 51, lon: 1.5 },
+  { name: 'Lake Superior', type: 'Lake', place: 'between the United States and Canada', lat: 47.7, lon: -87.5 },
+  { name: 'Lake Victoria', type: 'Lake', place: 'between Tanzania, Uganda, and Kenya', lat: -1, lon: 33 },
+  { name: 'Lake Baikal', type: 'Lake', place: 'in southern Siberia, Russia', lat: 53, lon: 108 },
+  { name: 'Lake Tanganyika', type: 'Lake', place: 'in East Africa along four national borders', lat: -6.3, lon: 29.5 },
+  { name: 'Lake Titicaca', type: 'Lake', place: 'between Peru and Bolivia', lat: -15.8, lon: -69.4 },
+  { name: 'Great Bear Lake', type: 'Lake', place: 'in the Northwest Territories of Canada', lat: 66, lon: -121 },
+  { name: 'Niagara Falls', type: 'Waterfall', place: 'between New York and Ontario', lat: 43.08, lon: -79.07 },
+  { name: 'Victoria Falls', type: 'Waterfall', place: 'between Zambia and Zimbabwe', lat: -17.92, lon: 25.86 },
+  { name: 'Angel Falls', type: 'Waterfall', place: 'in southeastern Venezuela', lat: 5.97, lon: -62.54 },
+  { name: 'Iguazu Falls', type: 'Waterfall', place: 'between Argentina and Brazil', lat: -25.69, lon: -54.44 },
+  { name: 'Panama Canal', type: 'Canal', place: 'across Panama between the Atlantic and Pacific oceans', lat: 9.08, lon: -79.68 },
+  { name: 'Suez Canal', type: 'Canal', place: 'in Egypt between the Mediterranean and Red seas', lat: 30.5, lon: 32.3 },
+  { name: 'Kiel Canal', type: 'Canal', place: 'across northern Germany between the North and Baltic seas', lat: 54.3, lon: 9.9 },
 ]
 
 function uniqueOptions(answer: string, pool: readonly string[], seed: number) {
@@ -400,6 +452,81 @@ const landmarkQuestions: Question[] = [
   ...landmarkOrderQuestions,
 ]
 
+const waterwayNames = waterways.map((waterway) => waterway.name)
+const waterwayTypes = [...new Set(waterways.map((waterway) => waterway.type))]
+const waterwayPlaces = waterways.map((waterway) => waterway.place)
+
+const waterwayChoiceQuestions: ChoiceQuestion[] = waterways.flatMap((waterway, index) => [
+  {
+    id: `waterway-type-${index}`,
+    category: 'waterways',
+    kind: 'choice',
+    label: 'Name that feature',
+    prompt: `What type of water feature is ${waterway.name}?`,
+    options: uniqueOptions(waterway.type, waterwayTypes, index),
+    answer: waterway.type,
+    explanation: `${waterway.name} is a ${waterway.type.toLowerCase()}.`,
+  },
+  {
+    id: `waterway-place-${index}`,
+    category: 'waterways',
+    kind: 'choice',
+    label: 'Where is it?',
+    prompt: `Where would you find ${waterway.name}?`,
+    options: uniqueOptions(waterway.place, waterwayPlaces, index + 17),
+    answer: waterway.place,
+    explanation: `${waterway.name} is ${waterway.place}.`,
+  },
+])
+
+const waterwayMatchingQuestions: MatchingQuestion[] = []
+const waterwayOrderQuestions: OrderQuestion[] = []
+for (let index = 0; index + 3 < waterways.length; index += 4) {
+  const group = waterways.slice(index, index + 4)
+  const northSouth = [...group].sort((a, b) => b.lat - a.lat)
+  const westEast = [...group].sort((a, b) => a.lon - b.lon)
+  waterwayMatchingQuestions.push({
+    id: `waterway-match-${index / 4}`,
+    category: 'waterways',
+    kind: 'matching',
+    label: 'Matching pairs',
+    prompt: 'Match each waterway to its location.',
+    hint: 'Choose one item from each column.',
+    pairs: group.map((waterway) => ({ left: waterway.name, right: waterway.place })),
+    explanation: 'Each waterway is now connected to its place on your mental map.',
+  })
+  waterwayOrderQuestions.push({
+    id: `waterway-north-south-${index / 4}`,
+    category: 'waterways',
+    kind: 'order',
+    label: 'North to south',
+    prompt: 'Put these waterways in order from north to south.',
+    items: group.map((waterway) => waterway.name),
+    answer: northSouth.map((waterway) => waterway.name),
+    startLabel: 'North',
+    endLabel: 'South',
+    explanation: `From north to south: ${northSouth.map((waterway) => waterway.name).join(', ')}.`,
+  })
+  waterwayOrderQuestions.push({
+    id: `waterway-west-east-${index / 4}`,
+    category: 'waterways',
+    kind: 'order',
+    label: 'West to east',
+    prompt: 'Put these waterways in order from west to east.',
+    items: group.map((waterway) => waterway.name),
+    answer: westEast.map((waterway) => waterway.name),
+    startLabel: 'West',
+    endLabel: 'East',
+    explanation: `From west to east: ${westEast.map((waterway) => waterway.name).join(', ')}.`,
+  })
+}
+
+const waterwayQuestions: Question[] = [
+  ...waterwayChoiceQuestions,
+  ...waterwayMatchingQuestions,
+  ...waterwayOrderQuestions,
+]
+
 const stateNeighbors: Record<string, string[]> = {
   AL: ['FL', 'GA', 'MS', 'TN'],
   AZ: ['CA', 'NV', 'NM', 'UT'],
@@ -546,6 +673,23 @@ const landmarkClueQuestions: ClueQuestion[] = landmarks.map((landmark, index) =>
   explanation: `${landmark.name} is in ${landmark.place}, ${landmark.region}.`,
 }))
 
+const waterwayClueQuestions: ClueQuestion[] = waterways.map((waterway, index) => ({
+  id: `clue-waterway-${index}`,
+  category: 'waterways',
+  practice: 'clue-ladder',
+  kind: 'clue',
+  label: 'Clue Ladder',
+  prompt: 'Which waterway matches these clues?',
+  clues: [
+    hemisphereClue(waterway.lat, waterway.lon),
+    `It is a ${waterway.type.toLowerCase()}.`,
+    `It is located ${waterway.place}.`,
+  ],
+  options: uniqueOptions(waterway.name, waterwayNames, index + 71),
+  answer: waterway.name,
+  explanation: `${waterway.name} is a ${waterway.type.toLowerCase()} located ${waterway.place}.`,
+}))
+
 const usNeighborQuestions: ChoiceQuestion[] = Object.entries(stateNeighbors).flatMap(
   ([abbreviation, neighbors], stateIndex) =>
     neighbors.map((answerAbbreviation, neighborIndex) => {
@@ -629,6 +773,25 @@ const closerQuestions: ChoiceQuestion[] = landmarks.map((anchor, index) => {
   }
 })
 
+const waterwayCloserQuestions: ChoiceQuestion[] = waterways.map((anchor, index) => {
+  const first = waterways[(index + 7) % waterways.length]
+  const second = waterways[(index + 17) % waterways.length]
+  const firstDistance = distanceKm(anchor, first)
+  const secondDistance = distanceKm(anchor, second)
+  const answer = firstDistance < secondDistance ? first.name : second.name
+  return {
+    id: `closer-waterway-${index}`,
+    category: 'waterways',
+    practice: 'closer',
+    kind: 'choice',
+    label: 'Which Is Closer?',
+    prompt: `Which waterway is closer to ${anchor.name}?`,
+    options: [first.name, second.name],
+    answer,
+    explanation: `Using representative map points, ${first.name} is about ${Math.round(firstDistance).toLocaleString()} km away; ${second.name} is about ${Math.round(secondDistance).toLocaleString()} km away.`,
+  }
+})
+
 const pinpointQuestions: PinpointQuestion[] = landmarks.map((landmark, index) => ({
   id: `pinpoint-landmark-${index}`,
   category: 'landmarks',
@@ -643,26 +806,49 @@ const pinpointQuestions: PinpointQuestion[] = landmarks.map((landmark, index) =>
   explanation: `${landmark.name} is in ${landmark.place}, ${landmark.region}.`,
 }))
 
-const varietyBanks = { us: usQuestions, world: worldQuestions, landmarks: landmarkQuestions }
+const waterwayPinpointQuestions: PinpointQuestion[] = waterways.map((waterway, index) => ({
+  id: `pinpoint-waterway-${index}`,
+  category: 'waterways',
+  practice: 'pinpoint',
+  kind: 'pinpoint',
+  label: 'Map Pinpoint',
+  prompt: `Place ${waterway.name} on the world map.`,
+  hint: `It is ${waterway.place}. Tap as close as you can.`,
+  answer: waterway.name,
+  target: { lat: waterway.lat, lon: waterway.lon },
+  place: waterway.place,
+  explanation: `${waterway.name} is ${waterway.place}.`,
+}))
+
+const varietyBanks = {
+  us: usQuestions,
+  world: worldQuestions,
+  landmarks: landmarkQuestions,
+  waterways: waterwayQuestions,
+}
 const clueBanks = {
   us: usClueQuestions,
   world: worldClueQuestions,
   landmarks: landmarkClueQuestions,
+  waterways: waterwayClueQuestions,
 }
 const neighborBanks = {
   us: usNeighborQuestions,
   world: worldNeighborQuestions,
   landmarks: [] as Question[],
+  waterways: [] as Question[],
 }
 const closerBanks = {
   us: [] as Question[],
   world: [] as Question[],
   landmarks: closerQuestions,
+  waterways: waterwayCloserQuestions,
 }
 const pinpointBanks = {
   us: [] as Question[],
   world: [] as Question[],
   landmarks: pinpointQuestions,
+  waterways: waterwayPinpointQuestions,
 }
 const practiceBanks: Record<
   PracticeMode,
@@ -679,6 +865,7 @@ const allQuestions = Object.values(practiceBanks).flatMap((bank) => [
   ...bank.us,
   ...bank.world,
   ...bank.landmarks,
+  ...bank.waterways,
 ])
 const questionsById = new Map(allQuestions.map((question) => [question.id, question]))
 
@@ -686,7 +873,8 @@ export const questionPoolCounts = {
   us: usQuestions.length,
   world: worldQuestions.length,
   landmarks: landmarkQuestions.length,
-  mixed: usQuestions.length + worldQuestions.length + landmarkQuestions.length,
+  waterways: waterwayQuestions.length,
+  mixed: usQuestions.length + worldQuestions.length + landmarkQuestions.length + waterwayQuestions.length,
 }
 
 export function shuffled<T>(items: readonly T[]) {
@@ -701,7 +889,7 @@ export function shuffled<T>(items: readonly T[]) {
 function questionsFor(category: Category, practice: PracticeMode) {
   const bank = practiceBanks[practice]
   return category === 'mixed'
-    ? [...bank.us, ...bank.world, ...bank.landmarks]
+    ? [...bank.us, ...bank.world, ...bank.landmarks, ...bank.waterways]
     : bank[category]
 }
 
@@ -752,6 +940,11 @@ export function buildQuestions(
           shuffled(landmarkMatchingQuestions)[0],
           shuffled(landmarkOrderQuestions)[0],
         ]
+      : category === 'waterways'
+        ? [
+            shuffled(waterwayMatchingQuestions)[0],
+            shuffled(waterwayOrderQuestions)[0],
+          ]
       : []
     const rest = shuffled(source).filter((question) => !guaranteed.some((item) => item.id === question.id))
     return shuffled([...guaranteed, ...rest.slice(0, Math.max(0, count - guaranteed.length))])
@@ -762,6 +955,8 @@ export function buildQuestions(
     shuffled(worldQuestions)[0],
     shuffled(landmarkMatchingQuestions)[0],
     shuffled(landmarkOrderQuestions)[0],
+    shuffled(waterwayMatchingQuestions)[0],
+    shuffled(waterwayOrderQuestions)[0],
   ]
   const rest = shuffled(source).filter((question) => !guaranteed.some((item) => item.id === question.id))
   return shuffled([...guaranteed, ...rest.slice(0, Math.max(0, count - guaranteed.length))])
