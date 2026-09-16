@@ -112,7 +112,7 @@ type SavedWorkout = {
 type SavedWorkoutStore = Record<string, SavedWorkout>
 
 const defaultStats: Stats = { games: 0, correct: 0, answered: 0, bestStreak: 0 }
-const APP_VERSION = 'v20'
+const APP_VERSION = 'v21'
 const PROFILES_KEY = 'geography-gym-profiles-v1'
 const SAVED_WORKOUTS_KEY = 'geography-gym-saved-workouts-v1'
 const defaultPreferences: Preferences = {
@@ -456,13 +456,17 @@ function playFeedbackSound(kind: FeedbackKind, enabled: boolean) {
   window.setTimeout(() => context.close().catch(() => undefined), 500)
 }
 
+function shouldUseAppMode() {
+  const searchParams = new URLSearchParams(window.location.search)
+  if (searchParams.get('website') === '1') return false
+  return searchParams.get('app') === '1'
+    || window.matchMedia('(display-mode: standalone)').matches
+}
+
 function App() {
   const [screen, setScreen] = useState<Screen>('home')
   const [appPage, setAppPage] = useState<AppPage>('home')
-  const [appMode, setAppMode] = useState(() =>
-    new URLSearchParams(window.location.search).get('app') === '1'
-    || window.matchMedia('(display-mode: standalone)').matches,
-  )
+  const [appMode, setAppMode] = useState(shouldUseAppMode)
   const [appSelectedCategory, setAppSelectedCategory] = useState<Category | null>(null)
   const [modal, setModal] = useState<Modal>(null)
   const [pendingCategory, setPendingCategory] = useState<Category>('mixed')
@@ -517,10 +521,7 @@ function App() {
 
   useEffect(() => {
     const handlePopState = () => {
-      setAppMode(
-        new URLSearchParams(window.location.search).get('app') === '1'
-        || window.matchMedia('(display-mode: standalone)').matches,
-      )
+      setAppMode(shouldUseAppMode())
       setScreen('home')
       setAppPage('home')
       setModal(null)
@@ -699,6 +700,7 @@ function App() {
 
   function enterApp() {
     const url = new URL(window.location.href)
+    url.searchParams.delete('website')
     url.searchParams.set('app', '1')
     window.history.pushState({}, '', url)
     setAppMode(true)
@@ -1528,7 +1530,7 @@ function App() {
             <p className="eyebrow">Geography Gym website</p>
             <p>Visit the website for product information, help, and policies.</p>
             <nav className="support-links" aria-label="Geography Gym website">
-              <a href="./" target="_blank" rel="noreferrer"><Globe2 /> Home</a>
+              <a href="./?website=1" target="_blank" rel="noreferrer"><Globe2 /> Home</a>
               <a href="./faq/" target="_blank" rel="noreferrer"><HelpCircle /> FAQ</a>
               <a href="./help/" target="_blank" rel="noreferrer"><HelpCircle /> Help Center</a>
               <a href="./privacy/" target="_blank" rel="noreferrer"><ExternalLink /> Privacy</a>
