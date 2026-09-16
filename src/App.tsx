@@ -112,7 +112,7 @@ type SavedWorkout = {
 type SavedWorkoutStore = Record<string, SavedWorkout>
 
 const defaultStats: Stats = { games: 0, correct: 0, answered: 0, bestStreak: 0 }
-const APP_VERSION = 'v21'
+const APP_VERSION = 'v22'
 const PROFILES_KEY = 'geography-gym-profiles-v1'
 const SAVED_WORKOUTS_KEY = 'geography-gym-saved-workouts-v1'
 const defaultPreferences: Preferences = {
@@ -461,6 +461,14 @@ function shouldUseAppMode() {
   if (searchParams.get('website') === '1') return false
   return searchParams.get('app') === '1'
     || window.matchMedia('(display-mode: standalone)').matches
+}
+
+function websiteHomeHref() {
+  const websiteUrl = new URL('./?website=1', window.location.href).href
+  const isInstalledWindowsApp =
+    window.matchMedia('(display-mode: standalone)').matches
+    && navigator.userAgent.includes('Windows')
+  return isInstalledWindowsApp ? `microsoft-edge:${websiteUrl}` : websiteUrl
 }
 
 function App() {
@@ -1530,7 +1538,7 @@ function App() {
             <p className="eyebrow">Geography Gym website</p>
             <p>Visit the website for product information, help, and policies.</p>
             <nav className="support-links" aria-label="Geography Gym website">
-              <a href="./?website=1" target="_blank" rel="noreferrer"><Globe2 /> Home</a>
+              <a href={websiteHomeHref()} target="_blank" rel="noreferrer"><Globe2 /> Home</a>
               <a href="./faq/" target="_blank" rel="noreferrer"><HelpCircle /> FAQ</a>
               <a href="./help/" target="_blank" rel="noreferrer"><HelpCircle /> Help Center</a>
               <a href="./privacy/" target="_blank" rel="noreferrer"><ExternalLink /> Privacy</a>
