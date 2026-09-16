@@ -91,7 +91,7 @@ export const practiceDetails: Record<PracticeMode, { label: string; description:
   },
   pinpoint: {
     label: 'Map Pinpoint',
-    description: 'Place a landmark or waterway on the world map and see how close you were.',
+    description: 'Place a U.S. jurisdiction, landmark, or waterway on the world map and see how close you were.',
   },
 }
 
@@ -122,6 +122,108 @@ const states = [
   ['Washington', 'WA', 'Olympia'], ['West Virginia', 'WV', 'Charleston'],
   ['Wisconsin', 'WI', 'Madison'], ['Wyoming', 'WY', 'Cheyenne'],
 ] as const
+
+type UsJurisdictionRecord = {
+  name: string
+  abbreviation: string
+  capital: string
+  region: 'Continental United States' | 'Caribbean' | 'Western Pacific' | 'South Pacific'
+  type: 'Federal district' | 'U.S. territory'
+  lat: number
+  lon: number
+  geographyPrompt: string
+  geographyAnswer: string
+  nearbyPrompt: string
+  nearbyAnswer: string
+  flagDescription: string
+}
+
+const usJurisdictions: UsJurisdictionRecord[] = [
+  {
+    name: 'Washington, D.C.',
+    abbreviation: 'DC',
+    capital: 'Washington, D.C.',
+    region: 'Continental United States',
+    type: 'Federal district',
+    lat: 38.91,
+    lon: -77.04,
+    geographyPrompt: 'Which river borders much of Washington, D.C.?',
+    geographyAnswer: 'Potomac River',
+    nearbyPrompt: 'Which Virginia community lies directly across the Potomac River from central Washington, D.C.?',
+    nearbyAnswer: 'Arlington',
+    flagDescription: 'Three red stars above two red bars on a white field',
+  },
+  {
+    name: 'Puerto Rico',
+    abbreviation: 'PR',
+    capital: 'San Juan',
+    region: 'Caribbean',
+    type: 'U.S. territory',
+    lat: 18.22,
+    lon: -66.41,
+    geographyPrompt: 'Which main island shares its name with the territory of Puerto Rico?',
+    geographyAnswer: 'Puerto Rico',
+    nearbyPrompt: 'Which country lies west of Puerto Rico across the Mona Passage?',
+    nearbyAnswer: 'Dominican Republic',
+    flagDescription: 'Five red-and-white stripes with a blue triangle and white star',
+  },
+  {
+    name: 'U.S. Virgin Islands',
+    abbreviation: 'VI',
+    capital: 'Charlotte Amalie',
+    region: 'Caribbean',
+    type: 'U.S. territory',
+    lat: 18.33,
+    lon: -64.97,
+    geographyPrompt: 'Which is the largest of the main U.S. Virgin Islands?',
+    geographyAnswer: 'Saint Croix',
+    nearbyPrompt: 'Which island group lies immediately east of the U.S. Virgin Islands?',
+    nearbyAnswer: 'British Virgin Islands',
+    flagDescription: 'A golden eagle between the letters V and I on a white field',
+  },
+  {
+    name: 'Guam',
+    abbreviation: 'GU',
+    capital: 'Hagåtña',
+    region: 'Western Pacific',
+    type: 'U.S. territory',
+    lat: 13.44,
+    lon: 144.77,
+    geographyPrompt: 'Which island makes up the U.S. territory of Guam?',
+    geographyAnswer: 'Guam',
+    nearbyPrompt: 'Which U.S. territory lies north of Guam?',
+    nearbyAnswer: 'Northern Mariana Islands',
+    flagDescription: 'A dark blue field with a red border and a central seal',
+  },
+  {
+    name: 'Northern Mariana Islands',
+    abbreviation: 'MP',
+    capital: 'Saipan',
+    region: 'Western Pacific',
+    type: 'U.S. territory',
+    lat: 14.94,
+    lon: 145.60,
+    geographyPrompt: 'Which are the three principal inhabited islands of the Northern Mariana Islands?',
+    geographyAnswer: 'Saipan, Tinian, and Rota',
+    nearbyPrompt: 'Which U.S. territory lies south of the Northern Mariana Islands?',
+    nearbyAnswer: 'Guam',
+    flagDescription: 'A blue field with a white star, latte stone, and floral wreath',
+  },
+  {
+    name: 'American Samoa',
+    abbreviation: 'AS',
+    capital: 'Pago Pago',
+    region: 'South Pacific',
+    type: 'U.S. territory',
+    lat: -14.26,
+    lon: -170.66,
+    geographyPrompt: 'Which largest island of American Samoa contains Pago Pago Harbor?',
+    geographyAnswer: 'Tutuila',
+    nearbyPrompt: 'Which independent country lies west of American Samoa?',
+    nearbyAnswer: 'Samoa',
+    flagDescription: 'A bald eagle on a white triangle with red and blue fields',
+  },
+]
 
 const countries = [
   ['Argentina', 'Buenos Aires', 'South America'], ['Australia', 'Canberra', 'Oceania'],
@@ -237,10 +339,11 @@ const landmarks: LandmarkRecord[] = [
 
 type WaterwayRecord = {
   name: string
-  type: 'Ocean' | 'Sea' | 'River' | 'Strait' | 'Lake' | 'Waterfall' | 'Canal'
+  type: 'Ocean' | 'Sea' | 'Gulf' | 'River' | 'Strait' | 'Lake' | 'Waterfall' | 'Canal'
   place: string
   lat: number
   lon: number
+  note?: string
 }
 
 const waterways: WaterwayRecord[] = [
@@ -256,6 +359,14 @@ const waterways: WaterwayRecord[] = [
   { name: 'Baltic Sea', type: 'Sea', place: 'between Scandinavia and mainland northern Europe', lat: 58, lon: 20 },
   { name: 'Arabian Sea', type: 'Sea', place: 'between the Arabian Peninsula and India', lat: 15, lon: 65 },
   { name: 'South China Sea', type: 'Sea', place: 'between Southeast Asia, China, and the Philippines', lat: 15, lon: 115 },
+  {
+    name: 'Gulf of Mexico',
+    type: 'Gulf',
+    place: 'between the southern United States, eastern Mexico, and Cuba',
+    lat: 25,
+    lon: -90,
+    note: 'The U.S. federal government currently calls this body of water the Gulf of America.',
+  },
   { name: 'Nile River', type: 'River', place: 'in northeastern Africa, flowing north through Egypt', lat: 30, lon: 31 },
   { name: 'Amazon River', type: 'River', place: 'across northern South America, chiefly Brazil', lat: -3, lon: -60 },
   { name: 'Mississippi River', type: 'River', place: 'in the central United States', lat: 35, lon: -90 },
@@ -272,6 +383,7 @@ const waterways: WaterwayRecord[] = [
   { name: 'Strait of Hormuz', type: 'Strait', place: 'between Iran and the Musandam Peninsula', lat: 26.5, lon: 56.5 },
   { name: 'Strait of Dover', type: 'Strait', place: 'between England and France', lat: 51, lon: 1.5 },
   { name: 'Lake Superior', type: 'Lake', place: 'between the United States and Canada', lat: 47.7, lon: -87.5 },
+  { name: 'Lake Ontario', type: 'Lake', place: 'between New York and Ontario', lat: 43.7, lon: -77.9 },
   { name: 'Lake Victoria', type: 'Lake', place: 'between Tanzania, Uganda, and Kenya', lat: -1, lon: 33 },
   { name: 'Lake Baikal', type: 'Lake', place: 'in southern Siberia, Russia', lat: 53, lon: 108 },
   { name: 'Lake Tanganyika', type: 'Lake', place: 'in East Africa along four national borders', lat: -6.3, lon: 29.5 },
@@ -294,11 +406,18 @@ const usWaterwayNames = new Set([
   'Mississippi River',
   'Bering Strait',
   'Lake Superior',
+  'Lake Ontario',
   'Niagara Falls',
+  'Gulf of Mexico',
 ])
 
 function waterwayScope(waterway: WaterwayRecord) {
   return usWaterwayNames.has(waterway.name) ? 'us' as const : 'world' as const
+}
+
+function waterwayExplanation(waterway: WaterwayRecord) {
+  const base = `${waterway.name} is a ${waterway.type.toLowerCase()} located ${waterway.place}.`
+  return waterway.note ? `${base} ${waterway.note}` : base
 }
 
 function uniqueOptions(answer: string, pool: readonly string[], seed: number) {
@@ -317,7 +436,7 @@ function uniqueOptions(answer: string, pool: readonly string[], seed: number) {
 const stateNames = states.map(([name]) => name)
 const stateCapitals = states.map(([, , capital]) => capital)
 
-const usQuestions: Question[] = states.flatMap(([name, abbreviation, capital], index) => [
+const stateQuestions: Question[] = states.flatMap(([name, abbreviation, capital], index) => [
   {
     id: `us-abbreviation-${abbreviation}`,
     category: 'us',
@@ -348,6 +467,166 @@ const usQuestions: Question[] = states.flatMap(([name, abbreviation, capital], i
     explanation: `${name} is outlined on the map and labeled ${abbreviation}.`,
   },
 ])
+
+const jurisdictionNames = usJurisdictions.map((jurisdiction) => jurisdiction.name)
+const territoryCapitals = usJurisdictions
+  .filter((jurisdiction) => jurisdiction.type === 'U.S. territory')
+  .map((jurisdiction) => jurisdiction.capital)
+const jurisdictionRegions = [
+  'Continental United States',
+  'Caribbean',
+  'Western Pacific',
+  'South Pacific',
+]
+const jurisdictionGeographyAnswers = usJurisdictions.map((jurisdiction) => jurisdiction.geographyAnswer)
+const jurisdictionNearbyAnswers = usJurisdictions.map((jurisdiction) => jurisdiction.nearbyAnswer)
+const jurisdictionFlagDescriptions = usJurisdictions.map((jurisdiction) => jurisdiction.flagDescription)
+
+const jurisdictionChoiceQuestions: Question[] = usJurisdictions.flatMap((jurisdiction, index) => {
+  const identityQuestion: ChoiceQuestion = jurisdiction.type === 'Federal district'
+    ? {
+        id: 'us-jurisdiction-type-dc',
+        category: 'us',
+        kind: 'choice',
+        label: 'District or territory?',
+        prompt: 'What kind of U.S. jurisdiction is Washington, D.C.?',
+        options: ['Federal district', 'State', 'U.S. territory', 'Freely associated state'],
+        answer: 'Federal district',
+        explanation: 'Washington, D.C. is a federal district, not a state or territory.',
+      }
+    : {
+        id: `us-jurisdiction-capital-${jurisdiction.abbreviation}`,
+        category: 'us',
+        kind: 'choice',
+        label: 'Territorial capitals',
+        prompt: `What is the capital of ${jurisdiction.name}?`,
+        options: uniqueOptions(jurisdiction.capital, territoryCapitals, index + 83),
+        answer: jurisdiction.capital,
+        explanation: `${jurisdiction.capital} is the capital of ${jurisdiction.name}.`,
+      }
+  return [
+    {
+      id: `us-jurisdiction-abbreviation-${jurisdiction.abbreviation}`,
+      category: 'us',
+      kind: 'choice',
+      label: 'Postal shorthand',
+      prompt: `Which U.S. jurisdiction uses the abbreviation ${jurisdiction.abbreviation}?`,
+      options: uniqueOptions(jurisdiction.name, jurisdictionNames, index + 79),
+      answer: jurisdiction.name,
+      explanation: `${jurisdiction.abbreviation} is the postal abbreviation for ${jurisdiction.name}.`,
+    },
+    identityQuestion,
+    {
+      id: `us-jurisdiction-region-${jurisdiction.abbreviation}`,
+      category: 'us',
+      kind: 'choice',
+      label: 'U.S. regions',
+      prompt: `In which region is ${jurisdiction.name}?`,
+      options: [...jurisdictionRegions],
+      answer: jurisdiction.region,
+      explanation: `${jurisdiction.name} is in the ${jurisdiction.region}.`,
+    },
+  ]
+})
+
+const jurisdictionCultureQuestions: ChoiceQuestion[] = usJurisdictions.flatMap(
+  (jurisdiction, index) => [
+    {
+      id: `us-jurisdiction-geography-${jurisdiction.abbreviation}`,
+      category: 'us',
+      kind: 'choice',
+      label: 'Islands and rivers',
+      prompt: jurisdiction.geographyPrompt,
+      options: uniqueOptions(jurisdiction.geographyAnswer, jurisdictionGeographyAnswers, index + 113),
+      answer: jurisdiction.geographyAnswer,
+      explanation: `${jurisdiction.geographyAnswer} is an important geographic feature of ${jurisdiction.name}.`,
+    },
+    {
+      id: `us-jurisdiction-nearby-${jurisdiction.abbreviation}`,
+      category: 'us',
+      kind: 'choice',
+      label: 'Nearby places',
+      prompt: jurisdiction.nearbyPrompt,
+      options: uniqueOptions(jurisdiction.nearbyAnswer, jurisdictionNearbyAnswers, index + 127),
+      answer: jurisdiction.nearbyAnswer,
+      explanation: `${jurisdiction.nearbyAnswer} is the nearby place described in relation to ${jurisdiction.name}.`,
+    },
+    {
+      id: `us-jurisdiction-flag-${jurisdiction.abbreviation}`,
+      category: 'us',
+      kind: 'choice',
+      label: 'Flags',
+      prompt: `Which description matches the flag of ${jurisdiction.name}?`,
+      options: uniqueOptions(jurisdiction.flagDescription, jurisdictionFlagDescriptions, index + 139),
+      answer: jurisdiction.flagDescription,
+      explanation: `The flag of ${jurisdiction.name} features ${jurisdiction.flagDescription.toLowerCase()}.`,
+    },
+  ],
+)
+
+const jurisdictionPinpointQuestions: PinpointQuestion[] = usJurisdictions.map((jurisdiction) => ({
+  id: `us-jurisdiction-pinpoint-${jurisdiction.abbreviation}`,
+  category: 'us',
+  practice: 'pinpoint',
+  kind: 'pinpoint',
+  label: 'Map Pinpoint',
+  prompt: `Place ${jurisdiction.name} on the world map.`,
+  hint: `Look in the ${jurisdiction.region}. Tap as close as you can.`,
+  answer: jurisdiction.name,
+  target: { lat: jurisdiction.lat, lon: jurisdiction.lon },
+  place: jurisdiction.region,
+  explanation: `${jurisdiction.name} is in the ${jurisdiction.region}.`,
+}))
+
+const territoryCapitalMatchingQuestion: MatchingQuestion = {
+  id: 'us-territory-capital-match',
+  category: 'us',
+  kind: 'matching',
+  label: 'Territory capitals',
+  prompt: 'Match each inhabited U.S. territory to its capital.',
+  hint: 'Choose one item from each column.',
+  pairs: usJurisdictions
+    .filter((jurisdiction) => jurisdiction.type === 'U.S. territory')
+    .map((jurisdiction) => ({ left: jurisdiction.name, right: jurisdiction.capital })),
+  explanation: 'Each inhabited U.S. territory is now paired with its capital.',
+}
+
+const jurisdictionNorthSouth = [...usJurisdictions].sort((a, b) => b.lat - a.lat)
+const jurisdictionWestEast = [...usJurisdictions].sort((a, b) => a.lon - b.lon)
+const jurisdictionOrderQuestions: OrderQuestion[] = [
+  {
+    id: 'us-jurisdiction-north-south',
+    category: 'us',
+    kind: 'order',
+    label: 'North to south',
+    prompt: 'Put these U.S. jurisdictions in order from north to south.',
+    items: usJurisdictions.map((jurisdiction) => jurisdiction.name),
+    answer: jurisdictionNorthSouth.map((jurisdiction) => jurisdiction.name),
+    startLabel: 'North',
+    endLabel: 'South',
+    explanation: `From north to south: ${jurisdictionNorthSouth.map((jurisdiction) => jurisdiction.name).join(', ')}.`,
+  },
+  {
+    id: 'us-jurisdiction-west-east',
+    category: 'us',
+    kind: 'order',
+    label: 'West to east',
+    prompt: 'Put these U.S. jurisdictions in order from west to east.',
+    items: usJurisdictions.map((jurisdiction) => jurisdiction.name),
+    answer: jurisdictionWestEast.map((jurisdiction) => jurisdiction.name),
+    startLabel: 'West',
+    endLabel: 'East',
+    explanation: `From west to east: ${jurisdictionWestEast.map((jurisdiction) => jurisdiction.name).join(', ')}.`,
+  },
+]
+
+const usQuestions: Question[] = [
+  ...stateQuestions,
+  ...jurisdictionChoiceQuestions,
+  ...jurisdictionCultureQuestions,
+  territoryCapitalMatchingQuestion,
+  ...jurisdictionOrderQuestions,
+]
 
 const capitals = countries.map(([, capital]) => capital)
 const continents = ['Africa', 'Asia', 'Europe', 'North America', 'Oceania', 'South America']
@@ -503,7 +782,7 @@ const waterwayChoiceQuestions: ChoiceQuestion[] = waterways.flatMap((waterway, i
     prompt: `What type of water feature is ${waterway.name}?`,
     options: uniqueOptions(waterway.type, waterwayTypes, index),
     answer: waterway.type,
-    explanation: `${waterway.name} is a ${waterway.type.toLowerCase()}.`,
+    explanation: waterwayExplanation(waterway),
   },
   {
     id: `waterway-place-${index}`,
@@ -520,7 +799,7 @@ const waterwayChoiceQuestions: ChoiceQuestion[] = waterways.flatMap((waterway, i
       index + 17,
     ),
     answer: waterway.place,
-    explanation: `${waterway.name} is ${waterway.place}.`,
+    explanation: waterwayExplanation(waterway),
   },
 ])
 
@@ -670,7 +949,7 @@ function hemisphereClue(lat: number, lon: number) {
   return `It is in the ${northSouth} and ${eastWest} Hemispheres.`
 }
 
-const usClueQuestions: ClueQuestion[] = states.map(([name, abbreviation, capital], index) => ({
+const stateClueQuestions: ClueQuestion[] = states.map(([name, abbreviation, capital], index) => ({
   id: `clue-us-${abbreviation}`,
   category: 'us',
   practice: 'clue-ladder',
@@ -688,6 +967,30 @@ const usClueQuestions: ClueQuestion[] = states.map(([name, abbreviation, capital
   answer: name,
   explanation: `${name} has the capital ${capital} and uses the abbreviation ${abbreviation}.`,
 }))
+
+const jurisdictionClueQuestions: ClueQuestion[] = usJurisdictions.map((jurisdiction, index) => ({
+  id: `clue-us-jurisdiction-${jurisdiction.abbreviation}`,
+  category: 'us',
+  practice: 'clue-ladder',
+  kind: 'clue',
+  label: 'Clue Ladder',
+  prompt: 'Which U.S. jurisdiction matches these clues?',
+  clues: [
+    `It is a ${jurisdiction.type.toLowerCase()}.`,
+    `It is in the ${jurisdiction.region}.`,
+    jurisdiction.type === 'Federal district'
+      ? `Its postal abbreviation is ${jurisdiction.abbreviation}.`
+      : `Its capital is ${jurisdiction.capital}.`,
+  ],
+  options: uniqueOptions(jurisdiction.name, jurisdictionNames, index + 97),
+  answer: jurisdiction.name,
+  explanation: `${jurisdiction.name} is a ${jurisdiction.type.toLowerCase()} in the ${jurisdiction.region}.`,
+}))
+
+const usClueQuestions: ClueQuestion[] = [
+  ...stateClueQuestions,
+  ...jurisdictionClueQuestions,
+]
 
 const worldClueQuestions: ClueQuestion[] = countries.map(([country, capital, continent], index) => ({
   id: `clue-world-${index}`,
@@ -751,10 +1054,10 @@ const waterwayClueQuestions: ClueQuestion[] = waterways.map((waterway, index) =>
     index + 71,
   ),
   answer: waterway.name,
-  explanation: `${waterway.name} is a ${waterway.type.toLowerCase()} located ${waterway.place}.`,
+  explanation: waterwayExplanation(waterway),
 }))
 
-const usNeighborQuestions: ChoiceQuestion[] = Object.entries(stateNeighbors).flatMap(
+const stateNeighborQuestions: ChoiceQuestion[] = Object.entries(stateNeighbors).flatMap(
   ([abbreviation, neighbors], stateIndex) =>
     neighbors.map((answerAbbreviation, neighborIndex) => {
       const answer = stateByAbbreviation[answerAbbreviation]
@@ -784,6 +1087,28 @@ const worldNeighborDistractors = [
     ...Object.values(worldNeighbors).flat(),
   ]),
 ]
+
+const dcNeighborQuestions: ChoiceQuestion[] = ['Maryland', 'Virginia'].map((answer, index) => ({
+  id: `neighbor-us-dc-${index}`,
+  category: 'us',
+  practice: 'neighbors',
+  kind: 'choice',
+  label: 'Neighbor Challenge',
+  prompt: 'Which state borders Washington, D.C.?',
+  options: uniqueOptions(
+    answer,
+    stateNames.filter((state) => state !== 'Maryland' && state !== 'Virginia'),
+    index + 109,
+  ),
+  answer,
+  explanation: 'Washington, D.C. borders Maryland and Virginia.',
+}))
+
+const usNeighborQuestions: ChoiceQuestion[] = [
+  ...stateNeighborQuestions,
+  ...dcNeighborQuestions,
+]
+
 const worldNeighborQuestions: ChoiceQuestion[] = Object.entries(worldNeighbors).flatMap(
   ([target, neighbors], countryIndex) =>
     neighbors.map((answer, neighborIndex) => ({
@@ -891,7 +1216,7 @@ const waterwayPinpointQuestions: PinpointQuestion[] = waterways.map((waterway, i
   answer: waterway.name,
   target: { lat: waterway.lat, lon: waterway.lon },
   place: waterway.place,
-  explanation: `${waterway.name} is ${waterway.place}.`,
+  explanation: waterwayExplanation(waterway),
 }))
 
 const varietyBanks = {
@@ -919,7 +1244,7 @@ const closerBanks = {
   waterways: waterwayCloserQuestions,
 }
 const pinpointBanks = {
-  us: [] as Question[],
+  us: jurisdictionPinpointQuestions,
   world: [] as Question[],
   landmarks: pinpointQuestions,
   waterways: waterwayPinpointQuestions,

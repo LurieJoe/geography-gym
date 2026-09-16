@@ -113,7 +113,7 @@ type SavedWorkout = {
 type SavedWorkoutStore = Record<string, SavedWorkout>
 
 const defaultStats: Stats = { games: 0, correct: 0, answered: 0, bestStreak: 0 }
-const APP_VERSION = 'v27'
+const APP_VERSION = 'v28'
 const PROFILES_KEY = 'geography-gym-profiles-v1'
 const SAVED_WORKOUTS_KEY = 'geography-gym-saved-workouts-v1'
 const defaultPreferences: Preferences = {
@@ -145,7 +145,12 @@ function compatibleCategories(selectedCategories: readonly Category[], practice:
   if (practice === 'neighbors') {
     return selectedCategories.filter((category) => category === 'us' || category === 'world')
   }
-  return selectedCategories.filter((category) => category === 'landmarks' || category === 'waterways')
+  if (practice === 'closer') {
+    return selectedCategories.filter((category) => category === 'landmarks' || category === 'waterways')
+  }
+  return selectedCategories.filter(
+    (category) => category === 'us' || category === 'landmarks' || category === 'waterways',
+  )
 }
 
 function practiceAvailable(selectedCategories: readonly Category[], practice: PracticeMode) {
@@ -161,9 +166,9 @@ function studyLabel(selectedCategories: readonly Category[]) {
 function practiceScope(selectedCategories: readonly Category[], practice: PracticeMode) {
   const compatible = compatibleCategories(selectedCategories, practice)
   if (compatible.length === 0) {
-    return practice === 'neighbors'
-      ? 'Select U.S. Geography or World Geography'
-      : 'Select Landmarks or Waterways'
+    if (practice === 'neighbors') return 'Select U.S. Geography or World Geography'
+    if (practice === 'closer') return 'Select Landmarks or Waterways'
+    return 'Select U.S. Geography, Landmarks, or Waterways'
   }
   if (compatible.length < selectedCategories.length) return `Uses ${studyLabel(compatible)}`
   return `${getQuestionPoolCount(compatible, practice).toLocaleString()} questions available`
@@ -201,6 +206,10 @@ const tips = [
   {
     title: 'Use U.S. or World as a filter',
     text: 'Combine U.S. Geography or World Geography with Landmarks or Waterways to keep every question and answer choice within that geographic scope.',
+  },
+  {
+    title: 'Explore every part of the U.S.',
+    text: 'U.S. Geography includes the 50 states, Washington, D.C., Puerto Rico, the U.S. Virgin Islands, Guam, the Northern Mariana Islands, and American Samoa.',
   },
   {
     title: 'Install for easy access',
@@ -251,8 +260,8 @@ const tips = [
     text: 'Which Is Closer? uses landmark coordinates to compare direct distances across the globe, not driving or travel routes. Explanations use your selected distance units.',
   },
   {
-    title: 'Pinpoint a landmark in two tries',
-    text: 'Your first Map Pinpoint miss reports the distance in your selected units but hides the target. A second try reveals the landmark’s location.',
+    title: 'Pinpoint a place in two tries',
+    text: 'Your first Map Pinpoint miss reports the distance in your selected units but hides the target. A second try reveals the target’s location.',
   },
   {
     title: 'Choose miles or kilometers',
@@ -1785,10 +1794,10 @@ function AppDashboard({
     icon: ReactNode
     description: string
   }> = [
-    { category: 'us', icon: <Map />, description: 'The 50 states: capitals, abbreviations, locations, and neighbors' },
+    { category: 'us', icon: <Map />, description: 'The 50 states, D.C., and inhabited territories' },
     { category: 'world', icon: <Globe2 />, description: 'Countries and places outside the U.S.: capitals, regions, and maps' },
     { category: 'landmarks', icon: <Landmark />, description: 'Famous places, distances, and locations' },
-    { category: 'waterways', icon: <Waves />, description: 'Oceans, seas, rivers, straits, lakes, falls, and canals' },
+    { category: 'waterways', icon: <Waves />, description: 'Oceans, seas, gulfs, rivers, straits, lakes, falls, and canals' },
   ]
 
   if (page === 'home') {
@@ -2186,8 +2195,8 @@ function Home({
             icon={<Map />}
             category="us"
             title="U.S. Geography"
-            description="The 50 states: abbreviations, capitals, locations, and spatial relationships."
-            games={['Locate it', 'State shorthand', 'State capitals', 'Map practice']}
+            description="The 50 states, Washington, D.C., and the five inhabited U.S. territories."
+            games={['Capitals & shorthand', 'Flags & nearby places', 'Matching & ordering', 'Map Pinpoint']}
             count={questionPoolCounts.us}
             onStart={openWorkoutSetup}
           />
@@ -2213,7 +2222,7 @@ function Home({
             icon={<Waves />}
             category="waterways"
             title="Waterways"
-            description="Explore major oceans, seas, rivers, straits, lakes, waterfalls, and canals."
+            description="Explore major oceans, seas, gulfs, rivers, straits, lakes, waterfalls, and canals."
             games={['Where is it?', 'Matching pairs', 'Map Pinpoint', 'Which Is Closer?']}
             count={questionPoolCounts.waterways}
             onStart={openWorkoutSetup}

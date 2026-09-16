@@ -6,34 +6,41 @@ on memorization.
 
 ## Learning paths
 
-- **U.S. Geography:** the 50 states, including abbreviations, capitals, and
-  two-stage location practice. Players choose a map section, then tap the
-  state's approximate location on a zoomed silhouette. State boundaries appear
-  after the answer, using U.S. Census Bureau geometry. U.S. territories are not
-  currently included.
+- **U.S. Geography:** the 50 states, Washington, D.C., and the five inhabited
+  U.S. territories: Puerto Rico, the U.S. Virgin Islands, Guam, the Northern
+  Mariana Islands, and American Samoa. Activities cover place type, postal
+  abbreviation, capital, region, flags, major islands and rivers, nearby places,
+  clues, matching, geographic ordering, and map placement. State location
+  practice uses U.S. Census Bureau geometry.
 - **World Geography:** countries and places outside the United States, including
   capitals, map locations, directions, continents, latitude, and distance
   comparisons.
 - **Landmarks:** multiple choice, matching pairs, and geographic ordering from north
   to south or west to east.
-- **Waterways:** oceans, seas, rivers, straits, lakes, waterfalls, and canals through
-  multiple choice, matching, ordering, clues, distance comparisons, and map placement.
+- **Waterways:** oceans, seas, gulfs, rivers, straits, lakes, waterfalls, and canals
+  through multiple choice, matching, ordering, clues, distance comparisons, and
+  map placement.
 
 The current question banks include:
 
-- 150 U.S. geography questions
+- 189 U.S. geography questions and activities
 - 120 world geography questions
 - 136 landmark questions
-- 110 waterway questions and activities
+- 114 waterway questions and activities
+
+Together, these four core banks provide 559 questions and activities.
 
 Additional practice modes reuse and extend those subjects:
 
-- **Clue Ladder:** 190 state, country, landmark, and waterway identification questions
-- **Neighbor Challenge:** 344 U.S. state and world-country border questions
-- **Which Is Closer?:** 90 straight-line landmark and waterway distance comparisons
-- **Map Pinpoint:** 90 two-attempt landmark and waterway placement challenges
+- **Clue Ladder:** 198 U.S. jurisdiction, country, landmark, and waterway identification questions
+- **Neighbor Challenge:** 346 U.S. and world-country border questions
+- **Which Is Closer?:** 92 straight-line landmark and waterway distance comparisons
+- **Map Pinpoint:** 98 two-attempt U.S. jurisdiction, landmark, and waterway placement challenges
 - **Flagged Review:** a profile-specific workout assembled from questions the learner
   flags during any activity
+
+Across the core banks and additional practice modes, Geography Gym provides
+1,293 unique questions and activities.
 
 The home page uses a two-step workout path: first select one or more subjects
 (U.S., World, Landmarks, or Waterways), then choose how to study them with a
