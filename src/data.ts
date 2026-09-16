@@ -4,6 +4,7 @@ export type PracticeMode = 'variety' | 'clue-ladder' | 'neighbors' | 'closer' | 
 type BaseQuestion = {
   id: string
   category: Category
+  scope?: 'us' | 'world'
   practice?: PracticeMode
   label: string
   prompt: string
@@ -285,6 +286,21 @@ const waterways: WaterwayRecord[] = [
   { name: 'Kiel Canal', type: 'Canal', place: 'across northern Germany between the North and Baltic seas', lat: 54.3, lon: 9.9 },
 ]
 
+function landmarkScope(landmark: LandmarkRecord) {
+  return landmark.region === 'United States' ? 'us' as const : 'world' as const
+}
+
+const usWaterwayNames = new Set([
+  'Mississippi River',
+  'Bering Strait',
+  'Lake Superior',
+  'Niagara Falls',
+])
+
+function waterwayScope(waterway: WaterwayRecord) {
+  return usWaterwayNames.has(waterway.name) ? 'us' as const : 'world' as const
+}
+
 function uniqueOptions(answer: string, pool: readonly string[], seed: number) {
   const others = [...new Set(pool)].filter((item) => item !== answer)
   const options = [answer]
@@ -373,76 +389,101 @@ const worldLocateQuestions: Question[] = worldLocateGroups.flatMap((points, grou
 )
 
 const worldQuestions = [...worldKnowledgeQuestions, ...worldLocateQuestions]
-const landmarkPlaces = landmarks.map((landmark) => landmark.place)
-const landmarkRegions = landmarks.map((landmark) => landmark.region)
-
-const landmarkChoiceQuestions: Question[] = landmarks.flatMap((landmark, index) => [
-  {
+const landmarkChoiceQuestions: Question[] = landmarks.flatMap((landmark, index) => {
+  const scope = landmarkScope(landmark)
+  const scopedLandmarks = landmarks.filter((candidate) => landmarkScope(candidate) === scope)
+  const placeQuestion: ChoiceQuestion = {
     id: `landmark-place-${index}`,
     category: 'landmarks',
+    scope,
     kind: 'choice',
     label: 'Where is it?',
     prompt: `Where would you find ${landmark.name}?`,
-    options: uniqueOptions(landmark.place, landmarkPlaces, index),
+    options: uniqueOptions(landmark.place, scopedLandmarks.map((candidate) => candidate.place), index),
     answer: landmark.place,
     explanation: `${landmark.name} is in ${landmark.place}, ${landmark.region}.`,
-  },
-  {
-    id: `landmark-region-${index}`,
-    category: 'landmarks',
-    kind: 'choice',
-    label: 'Country or region',
-    prompt: `Which country or region is home to ${landmark.name}?`,
-    options: uniqueOptions(landmark.region, landmarkRegions, index + 9),
-    answer: landmark.region,
-    explanation: `${landmark.name} is located in ${landmark.region}.`,
-  },
-])
+  }
+  const regionQuestion: ChoiceQuestion = scope === 'us'
+    ? {
+        id: `landmark-region-${index}`,
+        category: 'landmarks',
+        scope,
+        kind: 'choice',
+        label: 'Map position',
+        prompt: `Which hemispheres contain ${landmark.name}?`,
+        options: [
+          'Northern and Western Hemispheres',
+          'Northern and Eastern Hemispheres',
+          'Southern and Western Hemispheres',
+          'Southern and Eastern Hemispheres',
+        ],
+        answer: 'Northern and Western Hemispheres',
+        explanation: `${landmark.name} is in the Northern and Western Hemispheres.`,
+      }
+    : {
+        id: `landmark-region-${index}`,
+        category: 'landmarks',
+        scope,
+        kind: 'choice',
+        label: 'Country or region',
+        prompt: `Which country or region is home to ${landmark.name}?`,
+        options: uniqueOptions(
+          landmark.region,
+          scopedLandmarks.map((candidate) => candidate.region),
+          index + 9,
+        ),
+        answer: landmark.region,
+        explanation: `${landmark.name} is located in ${landmark.region}.`,
+      }
+  return [placeQuestion, regionQuestion]
+})
 
 const landmarkMatchingQuestions: MatchingQuestion[] = []
-for (let index = 0; index + 3 < landmarks.length; index += 4) {
-  const group = landmarks.slice(index, index + 4)
-  landmarkMatchingQuestions.push({
-    id: `landmark-match-${index / 4}`,
-    category: 'landmarks',
-    kind: 'matching',
-    label: 'Matching pairs',
-    prompt: 'Match each landmark to its location.',
-    hint: 'Choose one item from each column.',
-    pairs: group.map((landmark) => ({ left: landmark.name, right: landmark.place })),
-    explanation: 'Each landmark is now connected to its place on your mental map.',
-  })
-}
-
 const landmarkOrderQuestions: OrderQuestion[] = []
-for (let index = 0; index + 3 < landmarks.length; index += 4) {
-  const group = landmarks.slice(index, index + 4)
-  const northSouth = [...group].sort((a, b) => b.lat - a.lat)
-  const westEast = [...group].sort((a, b) => a.lon - b.lon)
-  landmarkOrderQuestions.push({
-    id: `landmark-north-south-${index / 4}`,
-    category: 'landmarks',
-    kind: 'order',
-    label: 'North to south',
-    prompt: 'Put these landmarks in order from north to south.',
-    items: group.map((landmark) => landmark.name),
-    answer: northSouth.map((landmark) => landmark.name),
-    startLabel: 'North',
-    endLabel: 'South',
-    explanation: `From north to south: ${northSouth.map((landmark) => landmark.name).join(', ')}.`,
-  })
-  landmarkOrderQuestions.push({
-    id: `landmark-west-east-${index / 4}`,
-    category: 'landmarks',
-    kind: 'order',
-    label: 'West to east',
-    prompt: 'Put these landmarks in order from west to east.',
-    items: group.map((landmark) => landmark.name),
-    answer: westEast.map((landmark) => landmark.name),
-    startLabel: 'West',
-    endLabel: 'East',
-    explanation: `From west to east: ${westEast.map((landmark) => landmark.name).join(', ')}.`,
-  })
+for (const scope of ['us', 'world'] as const) {
+  const scopedLandmarks = landmarks.filter((landmark) => landmarkScope(landmark) === scope)
+  for (let index = 0; index + 3 < scopedLandmarks.length; index += 4) {
+    const group = scopedLandmarks.slice(index, index + 4)
+    const northSouth = [...group].sort((a, b) => b.lat - a.lat)
+    const westEast = [...group].sort((a, b) => a.lon - b.lon)
+    landmarkMatchingQuestions.push({
+      id: `landmark-match-${scope}-${index / 4}`,
+      category: 'landmarks',
+      scope,
+      kind: 'matching',
+      label: 'Matching pairs',
+      prompt: 'Match each landmark to its location.',
+      hint: 'Choose one item from each column.',
+      pairs: group.map((landmark) => ({ left: landmark.name, right: landmark.place })),
+      explanation: 'Each landmark is now connected to its place on your mental map.',
+    })
+    landmarkOrderQuestions.push({
+      id: `landmark-north-south-${scope}-${index / 4}`,
+      category: 'landmarks',
+      scope,
+      kind: 'order',
+      label: 'North to south',
+      prompt: 'Put these landmarks in order from north to south.',
+      items: group.map((landmark) => landmark.name),
+      answer: northSouth.map((landmark) => landmark.name),
+      startLabel: 'North',
+      endLabel: 'South',
+      explanation: `From north to south: ${northSouth.map((landmark) => landmark.name).join(', ')}.`,
+    })
+    landmarkOrderQuestions.push({
+      id: `landmark-west-east-${scope}-${index / 4}`,
+      category: 'landmarks',
+      scope,
+      kind: 'order',
+      label: 'West to east',
+      prompt: 'Put these landmarks in order from west to east.',
+      items: group.map((landmark) => landmark.name),
+      answer: westEast.map((landmark) => landmark.name),
+      startLabel: 'West',
+      endLabel: 'East',
+      explanation: `From west to east: ${westEast.map((landmark) => landmark.name).join(', ')}.`,
+    })
+  }
 }
 
 const landmarkQuestions: Question[] = [
@@ -451,14 +492,12 @@ const landmarkQuestions: Question[] = [
   ...landmarkOrderQuestions,
 ]
 
-const waterwayNames = waterways.map((waterway) => waterway.name)
 const waterwayTypes = [...new Set(waterways.map((waterway) => waterway.type))]
-const waterwayPlaces = waterways.map((waterway) => waterway.place)
-
 const waterwayChoiceQuestions: ChoiceQuestion[] = waterways.flatMap((waterway, index) => [
   {
     id: `waterway-type-${index}`,
     category: 'waterways',
+    scope: waterwayScope(waterway),
     kind: 'choice',
     label: 'Name that feature',
     prompt: `What type of water feature is ${waterway.name}?`,
@@ -469,10 +508,17 @@ const waterwayChoiceQuestions: ChoiceQuestion[] = waterways.flatMap((waterway, i
   {
     id: `waterway-place-${index}`,
     category: 'waterways',
+    scope: waterwayScope(waterway),
     kind: 'choice',
     label: 'Where is it?',
     prompt: `Where would you find ${waterway.name}?`,
-    options: uniqueOptions(waterway.place, waterwayPlaces, index + 17),
+    options: uniqueOptions(
+      waterway.place,
+      waterways
+        .filter((candidate) => waterwayScope(candidate) === waterwayScope(waterway))
+        .map((candidate) => candidate.place),
+      index + 17,
+    ),
     answer: waterway.place,
     explanation: `${waterway.name} is ${waterway.place}.`,
   },
@@ -480,44 +526,50 @@ const waterwayChoiceQuestions: ChoiceQuestion[] = waterways.flatMap((waterway, i
 
 const waterwayMatchingQuestions: MatchingQuestion[] = []
 const waterwayOrderQuestions: OrderQuestion[] = []
-for (let index = 0; index + 3 < waterways.length; index += 4) {
-  const group = waterways.slice(index, index + 4)
-  const northSouth = [...group].sort((a, b) => b.lat - a.lat)
-  const westEast = [...group].sort((a, b) => a.lon - b.lon)
-  waterwayMatchingQuestions.push({
-    id: `waterway-match-${index / 4}`,
-    category: 'waterways',
-    kind: 'matching',
-    label: 'Matching pairs',
-    prompt: 'Match each waterway to its location.',
-    hint: 'Choose one item from each column.',
-    pairs: group.map((waterway) => ({ left: waterway.name, right: waterway.place })),
-    explanation: 'Each waterway is now connected to its place on your mental map.',
-  })
-  waterwayOrderQuestions.push({
-    id: `waterway-north-south-${index / 4}`,
-    category: 'waterways',
-    kind: 'order',
-    label: 'North to south',
-    prompt: 'Put these waterways in order from north to south.',
-    items: group.map((waterway) => waterway.name),
-    answer: northSouth.map((waterway) => waterway.name),
-    startLabel: 'North',
-    endLabel: 'South',
-    explanation: `From north to south: ${northSouth.map((waterway) => waterway.name).join(', ')}.`,
-  })
-  waterwayOrderQuestions.push({
-    id: `waterway-west-east-${index / 4}`,
-    category: 'waterways',
-    kind: 'order',
-    label: 'West to east',
-    prompt: 'Put these waterways in order from west to east.',
-    items: group.map((waterway) => waterway.name),
-    answer: westEast.map((waterway) => waterway.name),
-    startLabel: 'West',
-    endLabel: 'East',
-    explanation: `From west to east: ${westEast.map((waterway) => waterway.name).join(', ')}.`,
-  })
+for (const scope of ['us', 'world'] as const) {
+  const scopedWaterways = waterways.filter((waterway) => waterwayScope(waterway) === scope)
+  for (let index = 0; index + 3 < scopedWaterways.length; index += 4) {
+    const group = scopedWaterways.slice(index, index + 4)
+    const northSouth = [...group].sort((a, b) => b.lat - a.lat)
+    const westEast = [...group].sort((a, b) => a.lon - b.lon)
+    waterwayMatchingQuestions.push({
+      id: `waterway-match-${scope}-${index / 4}`,
+      category: 'waterways',
+      scope,
+      kind: 'matching',
+      label: 'Matching pairs',
+      prompt: 'Match each waterway to its location.',
+      hint: 'Choose one item from each column.',
+      pairs: group.map((waterway) => ({ left: waterway.name, right: waterway.place })),
+      explanation: 'Each waterway is now connected to its place on your mental map.',
+    })
+    waterwayOrderQuestions.push({
+      id: `waterway-north-south-${scope}-${index / 4}`,
+      category: 'waterways',
+      scope,
+      kind: 'order',
+      label: 'North to south',
+      prompt: 'Put these waterways in order from north to south.',
+      items: group.map((waterway) => waterway.name),
+      answer: northSouth.map((waterway) => waterway.name),
+      startLabel: 'North',
+      endLabel: 'South',
+      explanation: `From north to south: ${northSouth.map((waterway) => waterway.name).join(', ')}.`,
+    })
+    waterwayOrderQuestions.push({
+      id: `waterway-west-east-${scope}-${index / 4}`,
+      category: 'waterways',
+      scope,
+      kind: 'order',
+      label: 'West to east',
+      prompt: 'Put these waterways in order from west to east.',
+      items: group.map((waterway) => waterway.name),
+      answer: westEast.map((waterway) => waterway.name),
+      startLabel: 'West',
+      endLabel: 'East',
+      explanation: `From west to east: ${westEast.map((waterway) => waterway.name).join(', ')}.`,
+    })
+  }
 }
 
 const waterwayQuestions: Question[] = [
@@ -654,10 +706,10 @@ const worldClueQuestions: ClueQuestion[] = countries.map(([country, capital, con
   explanation: `${country} is in ${continent}, and its capital is ${capital}.`,
 }))
 
-const landmarkNames = landmarks.map((landmark) => landmark.name)
 const landmarkClueQuestions: ClueQuestion[] = landmarks.map((landmark, index) => ({
   id: `clue-landmark-${index}`,
   category: 'landmarks',
+  scope: landmarkScope(landmark),
   practice: 'clue-ladder',
   kind: 'clue',
   label: 'Clue Ladder',
@@ -667,7 +719,13 @@ const landmarkClueQuestions: ClueQuestion[] = landmarks.map((landmark, index) =>
     `It is in ${landmark.region}.`,
     `Look for it in or near ${landmark.place}.`,
   ],
-  options: uniqueOptions(landmark.name, landmarkNames, index + 59),
+  options: uniqueOptions(
+    landmark.name,
+    landmarks
+      .filter((candidate) => landmarkScope(candidate) === landmarkScope(landmark))
+      .map((candidate) => candidate.name),
+    index + 59,
+  ),
   answer: landmark.name,
   explanation: `${landmark.name} is in ${landmark.place}, ${landmark.region}.`,
 }))
@@ -675,6 +733,7 @@ const landmarkClueQuestions: ClueQuestion[] = landmarks.map((landmark, index) =>
 const waterwayClueQuestions: ClueQuestion[] = waterways.map((waterway, index) => ({
   id: `clue-waterway-${index}`,
   category: 'waterways',
+  scope: waterwayScope(waterway),
   practice: 'clue-ladder',
   kind: 'clue',
   label: 'Clue Ladder',
@@ -684,7 +743,13 @@ const waterwayClueQuestions: ClueQuestion[] = waterways.map((waterway, index) =>
     `It is a ${waterway.type.toLowerCase()}.`,
     `It is located ${waterway.place}.`,
   ],
-  options: uniqueOptions(waterway.name, waterwayNames, index + 71),
+  options: uniqueOptions(
+    waterway.name,
+    waterways
+      .filter((candidate) => waterwayScope(candidate) === waterwayScope(waterway))
+      .map((candidate) => candidate.name),
+    index + 71,
+  ),
   answer: waterway.name,
   explanation: `${waterway.name} is a ${waterway.type.toLowerCase()} located ${waterway.place}.`,
 }))
@@ -754,14 +819,18 @@ function distanceKm(
 }
 
 const closerQuestions: ChoiceQuestion[] = landmarks.map((anchor, index) => {
-  const first = landmarks[(index + 7) % landmarks.length]
-  const second = landmarks[(index + 19) % landmarks.length]
+  const scope = landmarkScope(anchor)
+  const scopedLandmarks = landmarks.filter((landmark) => landmarkScope(landmark) === scope)
+  const anchorIndex = scopedLandmarks.indexOf(anchor)
+  const first = scopedLandmarks[(anchorIndex + 3) % scopedLandmarks.length]
+  const second = scopedLandmarks[(anchorIndex + 7) % scopedLandmarks.length]
   const firstDistance = distanceKm(anchor, first)
   const secondDistance = distanceKm(anchor, second)
   const answer = firstDistance < secondDistance ? first.name : second.name
   return {
     id: `closer-landmark-${index}`,
     category: 'landmarks',
+    scope,
     practice: 'closer',
     kind: 'choice',
     label: 'Which Is Closer?',
@@ -773,14 +842,18 @@ const closerQuestions: ChoiceQuestion[] = landmarks.map((anchor, index) => {
 })
 
 const waterwayCloserQuestions: ChoiceQuestion[] = waterways.map((anchor, index) => {
-  const first = waterways[(index + 7) % waterways.length]
-  const second = waterways[(index + 17) % waterways.length]
+  const scope = waterwayScope(anchor)
+  const scopedWaterways = waterways.filter((waterway) => waterwayScope(waterway) === scope)
+  const anchorIndex = scopedWaterways.indexOf(anchor)
+  const first = scopedWaterways[(anchorIndex + 1) % scopedWaterways.length]
+  const second = scopedWaterways[(anchorIndex + 3) % scopedWaterways.length]
   const firstDistance = distanceKm(anchor, first)
   const secondDistance = distanceKm(anchor, second)
   const answer = firstDistance < secondDistance ? first.name : second.name
   return {
     id: `closer-waterway-${index}`,
     category: 'waterways',
+    scope,
     practice: 'closer',
     kind: 'choice',
     label: 'Which Is Closer?',
@@ -794,6 +867,7 @@ const waterwayCloserQuestions: ChoiceQuestion[] = waterways.map((anchor, index) 
 const pinpointQuestions: PinpointQuestion[] = landmarks.map((landmark, index) => ({
   id: `pinpoint-landmark-${index}`,
   category: 'landmarks',
+  scope: landmarkScope(landmark),
   practice: 'pinpoint',
   kind: 'pinpoint',
   label: 'Map Pinpoint',
@@ -808,6 +882,7 @@ const pinpointQuestions: PinpointQuestion[] = landmarks.map((landmark, index) =>
 const waterwayPinpointQuestions: PinpointQuestion[] = waterways.map((waterway, index) => ({
   id: `pinpoint-waterway-${index}`,
   category: 'waterways',
+  scope: waterwayScope(waterway),
   practice: 'pinpoint',
   kind: 'pinpoint',
   label: 'Map Pinpoint',
@@ -889,6 +964,14 @@ function questionsFor(categories: readonly Category[], practice: PracticeMode) {
   return categories.flatMap((category) => bank[category])
 }
 
+function filterByGeographicScope(questions: Question[], categories: readonly Category[]) {
+  const includesUs = categories.includes('us')
+  const includesWorld = categories.includes('world')
+  if (includesUs === includesWorld) return questions
+  const scope = includesUs ? 'us' : 'world'
+  return questions.filter((question) => !question.scope || question.scope === scope)
+}
+
 export function getQuestionPoolCount(
   categories: readonly Category[],
   practice: PracticeMode,
@@ -897,9 +980,10 @@ export function getQuestionPoolCount(
   allFlaggedModes = false,
 ) {
   const selected = new Set(categories)
-  const source = allFlaggedModes
+  const completeSource = allFlaggedModes
     ? allQuestions.filter((question) => selected.has(question.category))
     : questionsFor(categories, practice)
+  const source = filterByGeographicScope(completeSource, categories)
   if (!onlyFlagged) return source.length
   const flagged = new Set(flaggedIds)
   return source.filter((question) => flagged.has(question.id)).length
@@ -921,9 +1005,10 @@ export function buildQuestions(
 ) {
   const flagged = new Set(flaggedIds)
   const selected = new Set(categories)
-  const completeSource = allFlaggedModes
+  const unfilteredSource = allFlaggedModes
     ? allQuestions.filter((question) => selected.has(question.category))
     : questionsFor(categories, practice)
+  const completeSource = filterByGeographicScope(unfilteredSource, categories)
   const source = onlyFlagged
     ? completeSource.filter((question) => flagged.has(question.id))
     : completeSource
@@ -933,13 +1018,13 @@ export function buildQuestions(
   }
 
   const guaranteed = categories.flatMap((category) => {
-    if (category === 'us') return [shuffled(usQuestions)[0]]
-    if (category === 'world') return [shuffled(worldQuestions)[0]]
-    if (category === 'landmarks') {
-      return [shuffled(landmarkMatchingQuestions)[0], shuffled(landmarkOrderQuestions)[0]]
-    }
-    return [shuffled(waterwayMatchingQuestions)[0], shuffled(waterwayOrderQuestions)[0]]
-  })
+    const categorySource = source.filter((question) => question.category === category)
+    if (category === 'us' || category === 'world') return [shuffled(categorySource)[0]]
+    return [
+      shuffled(categorySource.filter((question) => question.kind === 'matching'))[0],
+      shuffled(categorySource.filter((question) => question.kind === 'order'))[0],
+    ]
+  }).filter((question): question is Question => Boolean(question))
   const rest = shuffled(source).filter((question) => !guaranteed.some((item) => item.id === question.id))
   return shuffled([...guaranteed, ...rest.slice(0, Math.max(0, count - guaranteed.length))])
 }

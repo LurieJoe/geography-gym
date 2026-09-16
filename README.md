@@ -38,6 +38,10 @@ The home page uses a two-step workout path: first select one or more subjects
 compatible practice style. Selecting multiple subjects creates a custom mixed
 workout from exactly those choices. Practice styles use the compatible portion
 of the selection and remain disabled when none of the selected subjects apply.
+When exactly one geographic scope is selected, U.S. Geography or World Geography
+also filters every Landmark and Waterways question, distractor, matching group,
+ordering activity, comparison, and pinpoint target to that scope. Selecting both
+geographic scopes restores the complete content collections.
 Flagged Review remains available as a profile-specific shortcut beside the
 progress counters.
 

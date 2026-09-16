@@ -113,7 +113,7 @@ type SavedWorkout = {
 type SavedWorkoutStore = Record<string, SavedWorkout>
 
 const defaultStats: Stats = { games: 0, correct: 0, answered: 0, bestStreak: 0 }
-const APP_VERSION = 'v25'
+const APP_VERSION = 'v26'
 const PROFILES_KEY = 'geography-gym-profiles-v1'
 const SAVED_WORKOUTS_KEY = 'geography-gym-saved-workouts-v1'
 const defaultPreferences: Preferences = {
@@ -197,6 +197,10 @@ const tips = [
   {
     title: 'Mix your own workout',
     text: 'Select two or more subjects to study them together. Each practice style uses the compatible questions from your selected subjects.',
+  },
+  {
+    title: 'Use U.S. or World as a filter',
+    text: 'Combine U.S. Geography or World Geography with Landmarks or Waterways to keep every question and answer choice within that geographic scope.',
   },
   {
     title: 'Install for easy access',
