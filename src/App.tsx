@@ -138,7 +138,7 @@ type BackupNotice = {
 }
 
 const defaultStats: Stats = { games: 0, correct: 0, answered: 0, bestStreak: 0 }
-const APP_VERSION = 'v30'
+const APP_VERSION = 'v31'
 const PROFILES_KEY = 'geography-gym-profiles-v1'
 const SAVED_WORKOUTS_KEY = 'geography-gym-saved-workouts-v1'
 const BACKUP_FORMAT = 'geography-gym-backup'
@@ -875,8 +875,9 @@ function App() {
     }))
   }
 
-  function openWorkoutSetup(nextCategory: Category) {
-    setPendingCategories([nextCategory])
+  function openWebsiteWorkoutSetup() {
+    if (appSelectedCategories.length === 0) return
+    setPendingCategories(appSelectedCategories)
     setPendingPractice('variety')
     setOnlyFlagged(false)
     setAllFlaggedModes(false)
@@ -887,7 +888,7 @@ function App() {
     window.location.assign(websiteHref('./app/?app=1'))
   }
 
-  function toggleAppCategory(nextCategory: Category) {
+  function toggleSelectedCategory(nextCategory: Category) {
     const nextCategories = appSelectedCategories.includes(nextCategory)
       ? appSelectedCategories.filter((category) => category !== nextCategory)
       : categories.filter((category) => [...appSelectedCategories, nextCategory].includes(category))
@@ -1426,7 +1427,9 @@ function App() {
           accuracy={accuracy}
           flaggedCount={flaggedCount}
           savedWorkout={savedWorkout}
-          openWorkoutSetup={openWorkoutSetup}
+          selectedCategories={appSelectedCategories}
+          onToggleCategory={toggleSelectedCategory}
+          openWorkoutSetup={openWebsiteWorkoutSetup}
           openFlaggedReview={openFlaggedReview}
           onResumeWorkout={resumeWorkout}
           onDismissWorkout={dismissSavedWorkout}
@@ -1446,7 +1449,7 @@ function App() {
           preferences={preferences}
           setupQuestionCount={appSelectedCategories.length > 0 ? setupQuestionCount : 0}
           profileName={activeProfile.name}
-          onToggleCategory={toggleAppCategory}
+          onToggleCategory={toggleSelectedCategory}
           onOpenBuilder={() => setAppPage('builder')}
           onAppHome={() => setAppPage('home')}
           onSelectPractice={setPendingPractice}
@@ -2390,6 +2393,8 @@ function Home({
   accuracy,
   flaggedCount,
   savedWorkout,
+  selectedCategories,
+  onToggleCategory,
   openWorkoutSetup,
   openFlaggedReview,
   onResumeWorkout,
@@ -2400,7 +2405,9 @@ function Home({
   accuracy: number
   flaggedCount: number
   savedWorkout?: SavedWorkout
-  openWorkoutSetup: (category: Category) => void
+  selectedCategories: Category[]
+  onToggleCategory: (category: Category) => void
+  openWorkoutSetup: () => void
   openFlaggedReview: () => void
   onResumeWorkout: () => void
   onDismissWorkout: () => void
@@ -2422,7 +2429,7 @@ function Home({
               type="button"
               onClick={() => document.getElementById('subjects')?.scrollIntoView({ behavior: 'smooth' })}
             >
-              <Sparkles size={19} /> Choose a subject
+              <Sparkles size={19} /> Choose subjects
             </button>
             <span>Choose 10, 25, or 50 questions</span>
           </div>
@@ -2488,6 +2495,7 @@ function Home({
           <div>
             <p className="eyebrow">Start your workout</p>
             <h2>Choose your geography exercise</h2>
+            <p>Select one or more subjects. Multiple subjects are mixed into the same workout.</p>
           </div>
           <div className="workout-steps" aria-label="Two steps to build a workout">
             <div>
@@ -2509,7 +2517,8 @@ function Home({
             description="The 50 states, Washington, D.C., and the five inhabited U.S. territories."
             games={['Capitals & shorthand', 'Flags & nearby places', 'Matching & ordering', 'Map Pinpoint']}
             count={questionPoolCounts.us}
-            onStart={openWorkoutSetup}
+            selected={selectedCategories.includes('us')}
+            onToggle={onToggleCategory}
           />
           <TrackCard
             icon={<Globe2 />}
@@ -2518,7 +2527,8 @@ function Home({
             description="Countries and places outside the United States: capitals, regions, and map placement."
             games={['Find the country', 'Capital call', 'World regions', 'Map practice']}
             count={questionPoolCounts.world}
-            onStart={openWorkoutSetup}
+            selected={selectedCategories.includes('world')}
+            onToggle={onToggleCategory}
           />
           <TrackCard
             icon={<Landmark />}
@@ -2527,7 +2537,8 @@ function Home({
             description="Match famous places to locations and arrange them geographically."
             games={['Where is it?', 'Matching pairs', 'North to south', 'East to west']}
             count={questionPoolCounts.landmarks}
-            onStart={openWorkoutSetup}
+            selected={selectedCategories.includes('landmarks')}
+            onToggle={onToggleCategory}
           />
           <TrackCard
             icon={<Waves />}
@@ -2536,8 +2547,30 @@ function Home({
             description="Explore major oceans, seas, gulfs, rivers, straits, lakes, waterfalls, and canals."
             games={['Where is it?', 'Matching pairs', 'Map Pinpoint', 'Which Is Closer?']}
             count={questionPoolCounts.waterways}
-            onStart={openWorkoutSetup}
+            selected={selectedCategories.includes('waterways')}
+            onToggle={onToggleCategory}
           />
+        </div>
+        <div className="website-workout-selection" aria-live="polite">
+          <div>
+            <p className="eyebrow">Your workout</p>
+            <strong>{studyLabel(selectedCategories)}</strong>
+            <span>
+              {selectedCategories.length > 1
+                ? `${selectedCategories.length} subjects will be studied together.`
+                : selectedCategories.length === 1
+                  ? 'Add another subject or continue to choose a practice style.'
+                  : 'Select at least one subject above.'}
+            </span>
+          </div>
+          <button
+            className="primary-button"
+            type="button"
+            onClick={openWorkoutSetup}
+            disabled={selectedCategories.length === 0}
+          >
+            Continue <span aria-hidden="true">→</span>
+          </button>
         </div>
       </section>
 
@@ -2560,7 +2593,8 @@ function TrackCard({
   description,
   games,
   count,
-  onStart,
+  selected,
+  onToggle,
 }: {
   icon: React.ReactNode
   category: Category
@@ -2568,10 +2602,11 @@ function TrackCard({
   description: string
   games: string[]
   count: number
-  onStart: (category: Category) => void
+  selected: boolean
+  onToggle: (category: Category) => void
 }) {
   return (
-    <article className="track-card">
+    <article className={`track-card ${selected ? 'selected-track' : ''}`}>
       <div className="track-card-top">
         <div className="track-icon">{icon}</div>
         <span className="pool-count">{count} questions</span>
@@ -2581,8 +2616,14 @@ function TrackCard({
       <ul>
         {games.map((game) => <li key={game}><Check size={14} /> {game}</li>)}
       </ul>
-      <button className="card-button" type="button" onClick={() => onStart(category)}>
-        Choose this exercise <span aria-hidden="true">→</span>
+      <button
+        className="card-button"
+        type="button"
+        aria-pressed={selected}
+        onClick={() => onToggle(category)}
+      >
+        {selected ? 'Selected' : 'Add to workout'}
+        <span aria-hidden="true">{selected ? '✓' : '+'}</span>
       </button>
     </article>
   )
