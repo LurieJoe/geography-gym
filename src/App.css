@@ -839,41 +839,77 @@
   cursor: default;
 }
 .world-map { margin-top: 26px; }
-.world-map svg { width: 100%; max-height: 370px; border: 1px solid var(--cp-border); border-radius: 16px; background: var(--cp-bg-elevated); }
-.continent { fill: var(--cp-surface-soft); stroke: var(--cp-border-strong); stroke-width: 2; }
-.world-point { cursor: pointer; }
-.world-point circle { fill: var(--cp-accent); stroke: var(--cp-surface); stroke-width: 4; }
-.world-point text { fill: var(--cp-accent-fg); font-size: 15px; font-weight: 800; text-anchor: middle; pointer-events: none; }
-.world-point.map-correct circle { fill: var(--cp-success); }
-.world-point.map-wrong circle { fill: var(--cp-danger); }
-.map-key { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
-.map-key span { padding: 5px 8px; border-radius: 0.625rem; background: var(--cp-surface-soft); color: var(--cp-text-muted); font-size: 0.75rem; }
-.map-key b { color: var(--cp-accent); }
 .map-answer { margin-top: 10px; font-size: 0.84rem; }
-.pinpoint-map svg { cursor: crosshair; }
-.pinpoint-map svg.pinpoint-complete { cursor: default; }
-.pinpoint-map svg:focus-visible {
+.interactive-globe {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+}
+.interactive-globe > svg {
+  width: min(100%, 520px);
+  max-height: min(58vh, 520px);
+  overflow: visible;
+  border-radius: 50%;
+  cursor: grab;
+  touch-action: none;
+}
+.interactive-globe.is-dragging > svg { cursor: grabbing; }
+.interactive-globe > svg:focus-visible {
   outline: 3px solid var(--cp-accent);
   outline-offset: 3px;
 }
-.pinpoint-attempt circle { fill: var(--cp-danger); stroke: var(--cp-surface); stroke-width: 4; }
-.pinpoint-attempt text {
+.globe-ocean {
+  fill: var(--cp-bg-elevated);
+  stroke: var(--cp-border-strong);
+  stroke-width: 2;
+}
+.globe-graticule {
+  fill: none;
+  stroke: var(--cp-border);
+  stroke-width: 0.7;
+}
+.globe-land {
+  fill: var(--cp-surface-soft);
+  stroke: var(--cp-border-strong);
+  stroke-linejoin: round;
+  stroke-width: 1.2;
+}
+.globe-point { cursor: pointer; }
+.globe-point circle {
+  fill: var(--cp-accent);
+  stroke: var(--cp-surface);
+  stroke-width: 4;
+}
+.globe-point text,
+.globe-attempt text {
   fill: var(--cp-accent-fg);
-  font-size: 12px;
+  font-size: 15px;
   font-weight: 800;
   text-anchor: middle;
   pointer-events: none;
 }
-.pinpoint-target circle { fill: var(--cp-success); stroke: var(--cp-surface); stroke-width: 4; }
-.pinpoint-target path {
+.globe-point-correct circle { fill: var(--cp-success); }
+.globe-point-wrong circle,
+.globe-attempt circle {
+  fill: var(--cp-danger);
+  stroke: var(--cp-surface);
+  stroke-width: 4;
+}
+.globe-attempt text { font-size: 12px; }
+.globe-target circle {
+  fill: var(--cp-success);
+  stroke: var(--cp-surface);
+  stroke-width: 4;
+}
+.globe-target path {
   fill: none;
   stroke: var(--cp-accent-fg);
   stroke-linecap: round;
   stroke-linejoin: round;
   stroke-width: 4;
 }
-.pinpoint-keyboard-cursor circle,
-.pinpoint-keyboard-cursor path {
+.globe-keyboard-cursor circle,
+.globe-keyboard-cursor path {
   fill: none;
   stroke: var(--cp-accent);
   stroke-dasharray: 7 5;
@@ -881,6 +917,76 @@
   vector-effect: non-scaling-stroke;
   pointer-events: none;
 }
+.globe-controls {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+.globe-controls button,
+.globe-keyboard-locations button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: 38px;
+  padding: 7px 12px;
+  border: 1px solid var(--cp-border);
+  border-radius: 0.625rem;
+  background: var(--cp-surface);
+  color: var(--cp-text);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.globe-controls button:hover:not(:disabled),
+.globe-keyboard-locations button:hover:not(:disabled) {
+  border-color: var(--cp-accent);
+  color: var(--cp-accent);
+}
+.globe-controls button:disabled,
+.globe-keyboard-locations button:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+.globe-controls svg {
+  width: 17px;
+  height: 17px;
+}
+.globe-guidance,
+.globe-keyboard-help {
+  max-width: 620px;
+  margin: 0;
+  color: var(--cp-text-muted);
+  font-size: 0.82rem;
+  text-align: center;
+}
+.globe-keyboard-locations {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 10px 12px;
+  border: 1px solid var(--cp-border);
+  border-radius: 0.625rem;
+  background: var(--cp-surface-soft);
+  color: var(--cp-text-muted);
+  font-size: 0.8rem;
+}
+.globe-keyboard-locations button {
+  min-width: 38px;
+  padding: 6px;
+}
+.globe-keyboard-locations .globe-keyboard-correct {
+  border-color: var(--cp-success);
+  color: var(--cp-success);
+}
+.globe-keyboard-locations .globe-keyboard-wrong {
+  border-color: var(--cp-danger);
+  color: var(--cp-danger);
+}
+.pinpoint-threshold { text-align: center; }
 .clue-ladder { margin-top: 28px; }
 .clue-ladder ol { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
 .clue-ladder li {

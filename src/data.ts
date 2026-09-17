@@ -26,7 +26,7 @@ export type LocateUsQuestion = BaseQuestion & {
 export type LocateWorldQuestion = BaseQuestion & {
   kind: 'locate-world'
   answer: string
-  points: { name: string; x: number; y: number }[]
+  points: { name: string; lat: number; lon: number }[]
 }
 
 export type MatchingQuestion = BaseQuestion & {
@@ -255,24 +255,24 @@ const countries = [
 
 const worldLocateGroups = [
   [
-    { name: 'Canada', x: 175, y: 90 }, { name: 'Brazil', x: 285, y: 295 },
-    { name: 'Egypt', x: 500, y: 190 }, { name: 'Japan', x: 770, y: 155 },
+    { name: 'Canada', lat: 56, lon: -106 }, { name: 'Brazil', lat: -10, lon: -55 },
+    { name: 'Egypt', lat: 27, lon: 30 }, { name: 'Japan', lat: 36, lon: 138 },
   ],
   [
-    { name: 'Mexico', x: 175, y: 180 }, { name: 'Argentina', x: 285, y: 365 },
-    { name: 'France', x: 445, y: 120 }, { name: 'India', x: 650, y: 200 },
+    { name: 'Mexico', lat: 23, lon: -102 }, { name: 'Argentina', lat: -34, lon: -64 },
+    { name: 'France', lat: 46, lon: 2 }, { name: 'India', lat: 22, lon: 79 },
   ],
   [
-    { name: 'United Kingdom', x: 430, y: 100 }, { name: 'Nigeria', x: 475, y: 245 },
-    { name: 'China', x: 685, y: 145 }, { name: 'Australia', x: 765, y: 325 },
+    { name: 'United Kingdom', lat: 54, lon: -2 }, { name: 'Nigeria', lat: 9, lon: 8 },
+    { name: 'China', lat: 35, lon: 103 }, { name: 'Australia', lat: -25, lon: 134 },
   ],
   [
-    { name: 'Colombia', x: 245, y: 230 }, { name: 'Spain', x: 425, y: 145 },
-    { name: 'Kenya', x: 535, y: 270 }, { name: 'Indonesia', x: 715, y: 270 },
+    { name: 'Colombia', lat: 4, lon: -74 }, { name: 'Spain', lat: 40, lon: -4 },
+    { name: 'Kenya', lat: 0, lon: 38 }, { name: 'Indonesia', lat: -2, lon: 118 },
   ],
   [
-    { name: 'Chile', x: 255, y: 335 }, { name: 'Morocco', x: 425, y: 185 },
-    { name: 'Saudi Arabia', x: 565, y: 205 }, { name: 'New Zealand', x: 835, y: 360 },
+    { name: 'Chile', lat: -30, lon: -71 }, { name: 'Morocco', lat: 32, lon: -6 },
+    { name: 'Saudi Arabia', lat: 24, lon: 45 }, { name: 'New Zealand', lat: -41, lon: 174 },
   ],
 ] as const
 

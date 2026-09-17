@@ -49,6 +49,7 @@ import {
   type PracticeMode,
   type Question,
 } from './data'
+import { InteractiveGlobe, type GlobeCoordinate } from './InteractiveGlobe'
 import { US_MAP_VIEWBOX, usRegionShapes, usStateShapes } from './usStateShapes'
 import './App.css'
 
@@ -113,7 +114,7 @@ type SavedWorkout = {
 type SavedWorkoutStore = Record<string, SavedWorkout>
 
 const defaultStats: Stats = { games: 0, correct: 0, answered: 0, bestStreak: 0 }
-const APP_VERSION = 'v28'
+const APP_VERSION = 'v29'
 const PROFILES_KEY = 'geography-gym-profiles-v1'
 const SAVED_WORKOUTS_KEY = 'geography-gym-saved-workouts-v1'
 const defaultPreferences: Preferences = {
@@ -261,7 +262,7 @@ const tips = [
   },
   {
     title: 'Pinpoint a place in two tries',
-    text: 'Your first Map Pinpoint miss reports the distance in your selected units but hides the target. A second try reveals the target’s location.',
+    text: 'Rotate the globe and place your marker within about 466 miles (750 kilometers). After a first miss, the globe moves closer to the correct region while keeping the exact target hidden.',
   },
   {
     title: 'Choose miles or kilometers',
@@ -2726,60 +2727,38 @@ function WorldMap({
   onSelect,
 }: {
   answer: string
-  points: { name: string; x: number; y: number }[]
+  points: { name: string; lat: number; lon: number }[]
   wrongAnswers: string[]
   correctAnswer: string | null
   shakingAnswer: string | null
   answered: boolean
   onSelect: (value: string) => void
 }) {
+  const globePoints = points.map((point) => ({
+    id: point.name,
+    label: point.name,
+    lat: point.lat,
+    lon: point.lon,
+    state: ((answered || correctAnswer) && point.name === answer
+      ? 'correct'
+      : wrongAnswers.includes(point.name)
+        ? 'wrong'
+        : 'default') as 'correct' | 'wrong' | 'default',
+    shaking: shakingAnswer === point.name,
+  }))
+
   return (
-    <div className="world-map" aria-label="Simplified world map">
-      <svg viewBox="0 0 900 440" role="img" aria-label="World map with selectable locations">
-        <path className="continent" d="M70 70 L145 38 250 62 300 118 270 165 218 172 190 220 140 205 110 150 55 125Z" />
-        <path className="continent" d="M245 220 L300 245 325 325 292 405 250 360 228 280Z" />
-        <path className="continent" d="M390 85 L455 65 500 92 475 125 432 132 400 112Z" />
-        <path className="continent" d="M430 145 L505 138 555 205 530 322 480 360 445 292 420 205Z" />
-        <path className="continent" d="M505 78 L650 58 785 105 820 180 755 215 675 185 625 230 550 190 500 130Z" />
-        <path className="continent" d="M700 285 L790 275 835 330 785 380 710 350Z" />
-        {points.map((point, index) => {
-          const correct = (answered || correctAnswer) && point.name === answer
-          const wrong = wrongAnswers.includes(point.name)
-          return (
-            <g
-              className={[
-                'world-point',
-                correct ? 'map-correct' : '',
-                wrong ? 'map-wrong' : '',
-                shakingAnswer === point.name ? 'shake' : '',
-              ].join(' ')}
-              key={point.name}
-              onClick={() => !answered && !wrong && onSelect(point.name)}
-              role="button"
-              tabIndex={answered || wrong ? -1 : 0}
-              onKeyDown={(event) => {
-                if (!answered && !wrong && (event.key === 'Enter' || event.key === ' ')) onSelect(point.name)
-              }}
-              aria-label={`Location ${index + 1}`}
-            >
-              <circle cx={point.x} cy={point.y} r="17" />
-              <text x={point.x} y={point.y + 5}>{index + 1}</text>
-            </g>
-          )
-        })}
-      </svg>
-      <div className="map-key">
-        {points.map((point, index) => <span key={point.name}><b>{index + 1}</b> Location {index + 1}</span>)}
-      </div>
+    <div className="world-map">
+      <InteractiveGlobe
+        ariaLabel="Rotatable globe with selectable numbered locations. Drag or swipe to rotate. Keyboard users can use the arrow keys."
+        points={globePoints}
+        answered={answered}
+        onPointSelect={(value) => {
+          if (!wrongAnswers.includes(value)) onSelect(value)
+        }}
+      />
     </div>
   )
-}
-
-function mapPoint(lat: number, lon: number) {
-  return {
-    x: ((lon + 180) / 360) * 900,
-    y: ((90 - lat) / 180) * 440,
-  }
 }
 
 function mapDistanceKm(
@@ -2810,107 +2789,40 @@ function PinpointMap({
   onFeedback: (kind: FeedbackKind) => void
   distanceUnit: DistanceUnit
 }) {
-  const [attempts, setAttempts] = useState<{ x: number; y: number; distance: number }[]>([])
-  const [keyboardPoint, setKeyboardPoint] = useState({ x: 450, y: 220 })
-  const target = mapPoint(question.target.lat, question.target.lon)
+  const [attempts, setAttempts] = useState<Array<GlobeCoordinate & { distance: number }>>([])
 
-  function chooseCoordinates(x: number, y: number) {
+  function chooseCoordinates(coordinate: GlobeCoordinate) {
     if (answered || attempts.length >= 2) return
-    const selected = {
-      lat: 90 - (y / 440) * 180,
-      lon: (x / 900) * 360 - 180,
-    }
-    const distance = mapDistanceKm(selected, question.target)
-    const nextAttempts = [...attempts, { x, y, distance }]
+    const distance = mapDistanceKm(coordinate, question.target)
+    const nextAttempts = [...attempts, { ...coordinate, distance }]
     const correct = distance <= 750
     setAttempts(nextAttempts)
     onFeedback(correct ? 'correct' : 'incorrect')
     if (correct || nextAttempts.length >= 2) onComplete(correct)
   }
 
-  function choosePoint(event: React.MouseEvent<SVGSVGElement>) {
-    const bounds = event.currentTarget.getBoundingClientRect()
-    chooseCoordinates(
-      ((event.clientX - bounds.left) / bounds.width) * 900,
-      ((event.clientY - bounds.top) / bounds.height) * 440,
-    )
-  }
-
-  function handleKeyboard(event: React.KeyboardEvent<SVGSVGElement>) {
-    if (answered || attempts.length >= 2) return
-    const step = event.shiftKey ? 50 : 20
-    const movements: Partial<Record<string, { x: number; y: number }>> = {
-      ArrowLeft: { x: -step, y: 0 },
-      ArrowRight: { x: step, y: 0 },
-      ArrowUp: { x: 0, y: -step },
-      ArrowDown: { x: 0, y: step },
-    }
-    const movement = movements[event.key]
-    if (movement) {
-      event.preventDefault()
-      setKeyboardPoint((point) => ({
-        x: Math.min(900, Math.max(0, point.x + movement.x)),
-        y: Math.min(440, Math.max(0, point.y + movement.y)),
-      }))
-      return
-    }
-    if (event.key === 'Home') {
-      event.preventDefault()
-      setKeyboardPoint({ x: 450, y: 220 })
-      return
-    }
-    if (event.key === 'Enter' || event.key === ' ') {
-      event.preventDefault()
-      chooseCoordinates(keyboardPoint.x, keyboardPoint.y)
-    }
-  }
-
   const latestAttempt = attempts.at(-1)
+  const acceptanceDistance = formatDistance(750, distanceUnit)
 
   return (
     <div className="world-map pinpoint-map">
-      <svg
-        viewBox="0 0 900 440"
-        role="button"
-        tabIndex={answered ? -1 : 0}
-        aria-label={`World map. Place ${question.answer}. Use arrow keys to move the marker, then press Enter or Space to place it.`}
-        className={answered ? 'pinpoint-complete' : ''}
-        onClick={choosePoint}
-        onKeyDown={handleKeyboard}
-      >
-        <path className="continent" d="M70 70 L145 38 250 62 300 118 270 165 218 172 190 220 140 205 110 150 55 125Z" />
-        <path className="continent" d="M245 220 L300 245 325 325 292 405 250 360 228 280Z" />
-        <path className="continent" d="M390 85 L455 65 500 92 475 125 432 132 400 112Z" />
-        <path className="continent" d="M430 145 L505 138 555 205 530 322 480 360 445 292 420 205Z" />
-        <path className="continent" d="M505 78 L650 58 785 105 820 180 755 215 675 185 625 230 550 190 500 130Z" />
-        <path className="continent" d="M700 285 L790 275 835 330 785 380 710 350Z" />
-        {attempts.map((attempt, index) => (
-          <g className="pinpoint-attempt" key={`${attempt.x}-${attempt.y}`}>
-            <circle cx={attempt.x} cy={attempt.y} r="13" />
-            <text x={attempt.x} y={attempt.y + 5}>{index + 1}</text>
-          </g>
-        ))}
-        {!answered && attempts.length < 2 && (
-          <g className="pinpoint-keyboard-cursor" aria-hidden="true">
-            <circle cx={keyboardPoint.x} cy={keyboardPoint.y} r="17" />
-            <path d={`M${keyboardPoint.x - 24} ${keyboardPoint.y} H${keyboardPoint.x + 24} M${keyboardPoint.x} ${keyboardPoint.y - 24} V${keyboardPoint.y + 24}`} />
-          </g>
-        )}
-        {answered && (
-          <g className="pinpoint-target">
-            <circle cx={target.x} cy={target.y} r="15" />
-            <path d={`M${target.x - 7} ${target.y} L${target.x - 2} ${target.y + 6} L${target.x + 9} ${target.y - 7}`} />
-          </g>
-        )}
-      </svg>
+      <InteractiveGlobe
+        key={`${attempts.length}-${answered}`}
+        ariaLabel={`Rotatable globe. Place ${question.answer}. Drag or swipe to rotate. Keyboard users can use the arrow keys and press Enter or Space to place the center marker.`}
+        answered={answered}
+        attempts={attempts.map((attempt, index) => ({ ...attempt, index: index + 1 }))}
+        target={answered ? question.target : undefined}
+        focusTarget={attempts.length > 0 ? question.target : undefined}
+        onPlace={chooseCoordinates}
+      />
       {!answered && attempts.length === 0 && (
-        <p className="map-answer">
-          Tap the map, or use the arrow keys and press Enter, to place your first marker.
+        <p className="map-answer pinpoint-threshold">
+          Tap the globe to place your marker. A marker within about {acceptanceDistance} counts as correct.
         </p>
       )}
       {!answered && latestAttempt && (
         <p className="try-again-message" role="status">
-          About {formatDistance(latestAttempt.distance, distanceUnit)} away. Try once more—the exact location is still hidden.
+          About {formatDistance(latestAttempt.distance, distanceUnit)} away. The globe has moved closer to the correct region for your second try, but the exact location is still hidden.
         </p>
       )}
       {answered && latestAttempt && (

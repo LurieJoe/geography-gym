@@ -72,6 +72,13 @@ feedback. Optional answer sounds, an elapsed timer, rotating startup tips, High 
 Small/Default/Large/XL font sizes, Miles or Kilometers for distance activities, and local
 progress are available from Settings.
 
+World-location and Map Pinpoint activities use a bundled orthographic globe with real
+geographic outlines. Players can drag or swipe to rotate it, use visible rotation
+controls, or operate it with the keyboard. Keyboard-only location choices and the
+Map Pinpoint center marker stay hidden until keyboard interaction. Map Pinpoint accepts
+answers within 750 kilometers (about 466 miles); after a first miss, the globe presents
+a larger view near the correct region without revealing the exact target.
+
 Multiple local profiles can share one device without accounts or passwords. Each
 profile has independent progress, theme, contrast, font size, accent color, sounds, timer,
 startup tips, tip rotation, distance units, default workout length, and flagged-question review list. Existing
