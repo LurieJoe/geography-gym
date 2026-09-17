@@ -92,6 +92,12 @@ practice style, question position, score, streak, order, and paused elapsed time
 During a workout, **Previous** returns to an answered question in review-only mode,
 showing the correct answer without changing the score or streak.
 
+Settings includes local **Create Backup** and **Restore Backup** actions. A versioned
+JSON backup contains every profile, progress total, preference, flagged-question list,
+and unfinished workout. Restore validates and previews the file before offering to
+replace the browser's current Geography Gym data, enabling private transfer between
+devices without an account or cloud service.
+
 Clue Ladder randomizes its three clues for each question instead of consistently
 leading with the broadest location clue.
 

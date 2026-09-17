@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent, type ReactNode } from 'react'
 import {
   ArrowLeft,
   Award,
@@ -27,6 +27,7 @@ import {
   Sun,
   Trash2,
   Trophy,
+  Upload,
   UserRound,
   Volume2,
   VolumeX,
@@ -60,7 +61,7 @@ type RoundSize = 10 | 25 | 50
 type DistanceUnit = 'miles' | 'kilometers'
 type FontSize = 's' | 'm' | 'l' | 'xl'
 type AccentColor = 'indigo' | 'blue' | 'teal' | 'green' | 'violet' | 'rose' | 'orange' | 'crimson'
-type Modal = 'settings' | 'tips' | 'setup' | 'startup-tip' | 'reset-stats' | 'profiles' | null
+type Modal = 'settings' | 'tips' | 'setup' | 'startup-tip' | 'reset-stats' | 'profiles' | 'restore-backup' | null
 type FeedbackKind = 'correct' | 'incorrect'
 
 type Stats = {
@@ -113,10 +114,36 @@ type SavedWorkout = {
 
 type SavedWorkoutStore = Record<string, SavedWorkout>
 
+type GeographyGymBackup = {
+  format: 'geography-gym-backup'
+  version: 1
+  createdAt: string
+  appVersion: string
+  profileStore: ProfileStore
+  savedWorkouts: SavedWorkoutStore
+}
+
+type BackupPreview = {
+  backup: GeographyGymBackup
+  fileName: string
+  profileCount: number
+  completedWorkouts: number
+  flaggedQuestions: number
+  savedWorkoutCount: number
+}
+
+type BackupNotice = {
+  kind: 'success' | 'error'
+  message: string
+}
+
 const defaultStats: Stats = { games: 0, correct: 0, answered: 0, bestStreak: 0 }
-const APP_VERSION = 'v29'
+const APP_VERSION = 'v30'
 const PROFILES_KEY = 'geography-gym-profiles-v1'
 const SAVED_WORKOUTS_KEY = 'geography-gym-saved-workouts-v1'
+const BACKUP_FORMAT = 'geography-gym-backup'
+const BACKUP_VERSION = 1
+const MAX_BACKUP_FILE_SIZE = 2 * 1024 * 1024
 const defaultPreferences: Preferences = {
   theme: 'system',
   accent: 'indigo',
@@ -305,48 +332,101 @@ function createProfileId() {
     : `profile-${Date.now()}-${Math.random().toString(36).slice(2)}`
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value)
+}
+
+function nonNegativeInteger(value: unknown, fallback = 0) {
+  return typeof value === 'number' && Number.isFinite(value) && value >= 0
+    ? Math.floor(value)
+    : fallback
+}
+
+function parseProfileStore(value: unknown): ProfileStore | null {
+  if (!isRecord(value) || !Array.isArray(value.profiles)) return null
+
+  const seenProfileIds = new Set<string>()
+  const profiles = value.profiles.flatMap((candidate): Profile[] => {
+    if (!isRecord(candidate) || typeof candidate.id !== 'string' || typeof candidate.name !== 'string') {
+      return []
+    }
+
+    const id = candidate.id.trim()
+    if (!id || seenProfileIds.has(id)) return []
+    seenProfileIds.add(id)
+
+    const statsValue = isRecord(candidate.stats) ? candidate.stats : {}
+    const preferencesValue = isRecord(candidate.preferences) ? candidate.preferences : {}
+    const theme = ['system', 'light', 'dark'].includes(String(preferencesValue.theme))
+      ? preferencesValue.theme as ThemeMode
+      : defaultPreferences.theme
+    const accent = accentColors.some((color) => color.id === preferencesValue.accent)
+      ? preferencesValue.accent as AccentColor
+      : defaultPreferences.accent
+    const roundSize = [10, 25, 50].includes(Number(preferencesValue.roundSize))
+      ? Number(preferencesValue.roundSize) as RoundSize
+      : defaultPreferences.roundSize
+    const distanceUnit = ['miles', 'kilometers'].includes(String(preferencesValue.distanceUnit))
+      ? preferencesValue.distanceUnit as DistanceUnit
+      : defaultPreferences.distanceUnit
+    const fontSize = ['s', 'm', 'l', 'xl'].includes(String(preferencesValue.fontSize))
+      ? preferencesValue.fontSize as FontSize
+      : defaultPreferences.fontSize
+    const flaggedQuestionIds = Array.isArray(candidate.flaggedQuestionIds)
+      ? [...new Set(candidate.flaggedQuestionIds.filter(
+          (questionId): questionId is string =>
+            typeof questionId === 'string' && getQuestionsByIds([questionId]).length === 1,
+        ))]
+      : []
+
+    return [{
+      id,
+      name: candidate.name.trim().slice(0, 24) || 'Profile',
+      stats: {
+        games: nonNegativeInteger(statsValue.games),
+        correct: nonNegativeInteger(statsValue.correct),
+        answered: nonNegativeInteger(statsValue.answered),
+        bestStreak: nonNegativeInteger(statsValue.bestStreak),
+      },
+      preferences: {
+        theme,
+        accent,
+        sound: typeof preferencesValue.sound === 'boolean'
+          ? preferencesValue.sound
+          : defaultPreferences.sound,
+        timer: typeof preferencesValue.timer === 'boolean'
+          ? preferencesValue.timer
+          : defaultPreferences.timer,
+        tipsStartup: typeof preferencesValue.tipsStartup === 'boolean'
+          ? preferencesValue.tipsStartup
+          : defaultPreferences.tipsStartup,
+        roundSize,
+        distanceUnit,
+        highContrast: typeof preferencesValue.highContrast === 'boolean'
+          ? preferencesValue.highContrast
+          : defaultPreferences.highContrast,
+        fontSize,
+      },
+      tipIndex: nonNegativeInteger(candidate.tipIndex),
+      flaggedQuestionIds,
+    }]
+  })
+
+  if (profiles.length === 0) return null
+  const activeProfileId = typeof value.activeProfileId === 'string'
+    && profiles.some((profile) => profile.id === value.activeProfileId)
+    ? value.activeProfileId
+    : profiles[0].id
+
+  return { activeProfileId, profiles }
+}
+
 function readProfileStore(): ProfileStore {
   try {
     const saved = localStorage.getItem(PROFILES_KEY)
     if (saved) {
-      const parsed = JSON.parse(saved) as Partial<ProfileStore>
-      const profiles = Array.isArray(parsed.profiles)
-        ? parsed.profiles
-            .filter((profile) => profile && typeof profile.id === 'string' && typeof profile.name === 'string')
-            .map((profile) => {
-              const preferences = { ...defaultPreferences, ...profile.preferences }
-              if (!accentColors.some((color) => color.id === preferences.accent)) {
-                preferences.accent = 'indigo'
-              }
-              if (!['miles', 'kilometers'].includes(preferences.distanceUnit)) {
-                preferences.distanceUnit = 'miles'
-              }
-              if (typeof preferences.highContrast !== 'boolean') {
-                preferences.highContrast = false
-              }
-              if (!['s', 'm', 'l', 'xl'].includes(preferences.fontSize)) {
-                preferences.fontSize = 'm'
-              }
-
-              return {
-                id: profile.id,
-                name: profile.name.trim().slice(0, 24) || 'Profile',
-                stats: { ...defaultStats, ...profile.stats },
-                preferences,
-                tipIndex: Number.isInteger(profile.tipIndex) ? profile.tipIndex : 0,
-                flaggedQuestionIds: Array.isArray(profile.flaggedQuestionIds)
-                  ? profile.flaggedQuestionIds.filter((id): id is string => typeof id === 'string')
-                  : [],
-              }
-            })
-        : []
-
-      if (profiles.length > 0) {
-        const activeProfileId = profiles.some((profile) => profile.id === parsed.activeProfileId)
-          ? parsed.activeProfileId as string
-          : profiles[0].id
-        return { activeProfileId, profiles }
-      }
+      const parsed = parseProfileStore(JSON.parse(saved))
+      if (parsed) return parsed
     }
   } catch {
     // Fall through to the legacy-data migration.
@@ -361,16 +441,6 @@ function readProfileStore(): ProfileStore {
     flaggedQuestionIds: [],
   }
   return { activeProfileId: profile.id, profiles: [profile] }
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return Boolean(value) && typeof value === 'object' && !Array.isArray(value)
-}
-
-function nonNegativeInteger(value: unknown, fallback = 0) {
-  return typeof value === 'number' && Number.isFinite(value) && value >= 0
-    ? Math.floor(value)
-    : fallback
 }
 
 function parseSavedWorkout(value: unknown): SavedWorkout | null {
@@ -435,6 +505,65 @@ function readSavedWorkouts(): SavedWorkoutStore {
   } catch {
     return {}
   }
+}
+
+function parseBackup(value: unknown, fileName: string): BackupPreview {
+  if (!isRecord(value) || value.format !== BACKUP_FORMAT) {
+    throw new Error('This is not a Geography Gym backup file.')
+  }
+  if (value.version !== BACKUP_VERSION) {
+    throw new Error('This backup uses an unsupported format version.')
+  }
+  if (typeof value.createdAt !== 'string' || !Number.isFinite(Date.parse(value.createdAt))) {
+    throw new Error('The backup creation date is missing or invalid.')
+  }
+
+  const profileStore = parseProfileStore(value.profileStore)
+  if (!profileStore) {
+    throw new Error('The backup does not contain any valid Geography Gym profiles.')
+  }
+
+  const validProfileIds = new Set(profileStore.profiles.map((profile) => profile.id))
+  const savedWorkouts = isRecord(value.savedWorkouts)
+    ? Object.fromEntries(
+        Object.entries(value.savedWorkouts).flatMap(([profileId, candidate]) => {
+          if (!validProfileIds.has(profileId)) return []
+          const workout = parseSavedWorkout(candidate)
+          if (!workout || getQuestionsByIds(workout.questionIds).length !== workout.questionIds.length) {
+            return []
+          }
+          return [[profileId, workout]]
+        }),
+      )
+    : {}
+
+  const backup: GeographyGymBackup = {
+    format: BACKUP_FORMAT,
+    version: BACKUP_VERSION,
+    createdAt: value.createdAt,
+    appVersion: typeof value.appVersion === 'string' ? value.appVersion : 'Unknown',
+    profileStore,
+    savedWorkouts,
+  }
+
+  return {
+    backup,
+    fileName,
+    profileCount: profileStore.profiles.length,
+    completedWorkouts: profileStore.profiles.reduce((sum, profile) => sum + profile.stats.games, 0),
+    flaggedQuestions: profileStore.profiles.reduce(
+      (sum, profile) => sum + profile.flaggedQuestionIds.length,
+      0,
+    ),
+    savedWorkoutCount: Object.keys(savedWorkouts).length,
+  }
+}
+
+function formatBackupDate(value: string) {
+  return new Intl.DateTimeFormat(undefined, {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(new Date(value))
 }
 
 function profileInitial(name: string) {
@@ -553,8 +682,11 @@ function App() {
   const [editingProfileId, setEditingProfileId] = useState<string | null>(null)
   const [editingProfileName, setEditingProfileName] = useState('')
   const [deleteProfileId, setDeleteProfileId] = useState<string | null>(null)
+  const [backupPreview, setBackupPreview] = useState<BackupPreview | null>(null)
+  const [backupNotice, setBackupNotice] = useState<BackupNotice | null>(null)
   const [deferredPrompt, setDeferredPrompt] = useState<Event | null>(null)
   const [waitingWorker, setWaitingWorker] = useState<ServiceWorker | null>(null)
+  const backupInputRef = useRef<HTMLInputElement>(null)
   const updateRequested = useRef(false)
   const reloadingForUpdate = useRef(false)
   const startupTipShown = useRef(false)
@@ -1093,6 +1225,110 @@ function App() {
     setAppPage('home')
   }
 
+  function createBackup() {
+    const currentSavedWorkouts = screen === 'quiz' && questions.length > 0
+      ? {
+          ...savedWorkouts,
+          [activeProfile.id]: {
+            categories: workoutCategories,
+            practice,
+            questionIds: questions.map((question) => question.id),
+            questionIndex,
+            answers: answerHistory,
+            score,
+            streak,
+            bestRunStreak,
+            elapsed,
+            timerEnabled: workoutTimerEnabled,
+            onlyFlagged: workoutOnlyFlagged,
+            allFlaggedModes: workoutAllFlaggedModes,
+          },
+        }
+      : savedWorkouts
+    const createdAt = new Date().toISOString()
+    const backup: GeographyGymBackup = {
+      format: BACKUP_FORMAT,
+      version: BACKUP_VERSION,
+      createdAt,
+      appVersion: APP_VERSION,
+      profileStore,
+      savedWorkouts: currentSavedWorkouts,
+    }
+    const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `Geography-Gym-Backup-${createdAt.slice(0, 10)}.json`
+    document.body.append(link)
+    link.click()
+    link.remove()
+    window.setTimeout(() => URL.revokeObjectURL(url), 0)
+    setBackupNotice({
+      kind: 'success',
+      message: `Backup created for ${profileStore.profiles.length} ${profileStore.profiles.length === 1 ? 'profile' : 'profiles'}.`,
+    })
+  }
+
+  function chooseBackupFile() {
+    setBackupNotice(null)
+    if (backupInputRef.current) backupInputRef.current.value = ''
+    backupInputRef.current?.click()
+  }
+
+  async function readBackupFile(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+    if (!file) return
+    if (file.size > MAX_BACKUP_FILE_SIZE) {
+      setBackupNotice({ kind: 'error', message: 'The selected file is too large to be a Geography Gym backup.' })
+      return
+    }
+
+    try {
+      const preview = parseBackup(JSON.parse(await file.text()), file.name)
+      setBackupPreview(preview)
+      setBackupNotice(null)
+      setModal('restore-backup')
+    } catch (error) {
+      setBackupNotice({
+        kind: 'error',
+        message: error instanceof Error ? error.message : 'The backup file could not be read.',
+      })
+    }
+  }
+
+  function restoreBackup() {
+    if (!backupPreview) return
+    const { profileStore: restoredProfileStore, savedWorkouts: restoredSavedWorkouts } = backupPreview.backup
+
+    try {
+      localStorage.setItem(PROFILES_KEY, JSON.stringify(restoredProfileStore))
+      localStorage.setItem(SAVED_WORKOUTS_KEY, JSON.stringify(restoredSavedWorkouts))
+    } catch {
+      setBackupNotice({
+        kind: 'error',
+        message: 'The browser could not save the restored data. Check its storage settings and try again.',
+      })
+      setModal('settings')
+      return
+    }
+
+    setProfileStore(restoredProfileStore)
+    setSavedWorkouts(restoredSavedWorkouts)
+    setQuestions([])
+    setAnswerHistory({})
+    setScreen('home')
+    setAppPage('home')
+    setEditingProfileId(null)
+    setDeleteProfileId(null)
+    setBackupPreview(null)
+    setBackupNotice({
+      kind: 'success',
+      message: `Restored ${restoredProfileStore.profiles.length} ${restoredProfileStore.profiles.length === 1 ? 'profile' : 'profiles'} from backup.`,
+    })
+    setModal('settings')
+  }
+
   const themeLabel =
     preferences.theme === 'system'
       ? 'System'
@@ -1563,6 +1799,37 @@ function App() {
               ))}
             </div>
           </fieldset>
+          <section className="settings-resource-card backup-card">
+            <p className="eyebrow">Backup and restore</p>
+            <p>
+              Save every profile, preference, progress total, flagged question, and unfinished
+              workout to a JSON file you can keep or move to another device.
+            </p>
+            <input
+              ref={backupInputRef}
+              className="visually-hidden"
+              type="file"
+              accept=".json,application/json"
+              tabIndex={-1}
+              onChange={readBackupFile}
+            />
+            <div className="backup-actions">
+              <button className="primary-button" type="button" onClick={createBackup}>
+                <Download size={17} /> Create Backup
+              </button>
+              <button className="quiet-button" type="button" onClick={chooseBackupFile}>
+                <Upload size={17} /> Restore Backup
+              </button>
+            </div>
+            {backupNotice && (
+              <p
+                className={`backup-notice ${backupNotice.kind}`}
+                role={backupNotice.kind === 'error' ? 'alert' : 'status'}
+              >
+                {backupNotice.message}
+              </p>
+            )}
+          </section>
           <section className="settings-resource-card">
             <p className="eyebrow">Feedback</p>
             <p>Found a problem or have an idea? Share feedback or report an issue on GitHub.</p>
@@ -1586,6 +1853,49 @@ function App() {
             </nav>
           </section>
           <p className="version-label">Geography Gym {APP_VERSION}</p>
+        </ModalShell>
+      )}
+
+      {modal === 'restore-backup' && backupPreview && (
+        <ModalShell
+          title="Restore backup"
+          eyebrow="Review before replacing this device"
+          onClose={() => {
+            setBackupPreview(null)
+            setModal('settings')
+          }}
+        >
+          <p className="modal-lead">
+            This will replace every Geography Gym profile and saved workout currently stored in
+            this browser.
+          </p>
+          <dl className="backup-summary">
+            <div><dt>Backup file</dt><dd>{backupPreview.fileName}</dd></div>
+            <div><dt>Created</dt><dd>{formatBackupDate(backupPreview.backup.createdAt)}</dd></div>
+            <div><dt>App version</dt><dd>{backupPreview.backup.appVersion}</dd></div>
+            <div><dt>Profiles</dt><dd>{backupPreview.profileCount}</dd></div>
+            <div><dt>Completed workouts</dt><dd>{backupPreview.completedWorkouts.toLocaleString()}</dd></div>
+            <div><dt>Flagged questions</dt><dd>{backupPreview.flaggedQuestions.toLocaleString()}</dd></div>
+            <div><dt>Unfinished workouts</dt><dd>{backupPreview.savedWorkoutCount}</dd></div>
+          </dl>
+          <p className="restore-warning">
+            Create a backup of the current data first if you might need to return to it.
+          </p>
+          <div className="confirmation-actions">
+            <button
+              className="quiet-button"
+              type="button"
+              onClick={() => {
+                setBackupPreview(null)
+                setModal('settings')
+              }}
+            >
+              Cancel
+            </button>
+            <button className="danger-button" type="button" onClick={restoreBackup}>
+              <Upload size={17} /> Replace everything
+            </button>
+          </div>
         </ModalShell>
       )}
 
