@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent, type ReactNode } from 'react'
+import { lazy, Suspense, useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent, type ReactNode } from 'react'
 import {
   ArrowLeft,
   Award,
@@ -50,9 +50,15 @@ import {
   type PracticeMode,
   type Question,
 } from './data'
-import { InteractiveGlobe, type GlobeCoordinate } from './InteractiveGlobe'
+import type { GlobeCoordinate } from './InteractiveGlobe'
 import { US_MAP_VIEWBOX, usRegionShapes, usStateShapes } from './usStateShapes'
 import './App.css'
+
+// Lazy-loaded: pulls in d3-geo, topojson-client, and a bundled world map dataset,
+// which only players using globe-based game modes actually need.
+const InteractiveGlobe = lazy(() =>
+  import('./InteractiveGlobe').then((module) => ({ default: module.InteractiveGlobe })),
+)
 
 type Screen = 'home' | 'quiz' | 'results'
 type AppPage = 'home' | 'builder'
@@ -3100,14 +3106,16 @@ function WorldMap({
 
   return (
     <div className="world-map">
-      <InteractiveGlobe
-        ariaLabel="Rotatable globe with selectable numbered locations. Drag or swipe to rotate. Keyboard users can use the arrow keys."
-        points={globePoints}
-        answered={answered}
-        onPointSelect={(value) => {
-          if (!wrongAnswers.includes(value)) onSelect(value)
-        }}
-      />
+      <Suspense fallback={<div className="world-map-loading">Loading globe…</div>}>
+        <InteractiveGlobe
+          ariaLabel="Rotatable globe with selectable numbered locations. Drag or swipe to rotate. Keyboard users can use the arrow keys."
+          points={globePoints}
+          answered={answered}
+          onPointSelect={(value) => {
+            if (!wrongAnswers.includes(value)) onSelect(value)
+          }}
+        />
+      </Suspense>
     </div>
   )
 }
@@ -3157,15 +3165,17 @@ function PinpointMap({
 
   return (
     <div className="world-map pinpoint-map">
-      <InteractiveGlobe
-        key={`${attempts.length}-${answered}`}
-        ariaLabel={`Rotatable globe. Place ${question.answer}. Drag or swipe to rotate. Keyboard users can use the arrow keys and press Enter or Space to place the center marker.`}
-        answered={answered}
-        attempts={attempts.map((attempt, index) => ({ ...attempt, index: index + 1 }))}
-        target={answered ? question.target : undefined}
-        focusTarget={attempts.length > 0 ? question.target : undefined}
-        onPlace={chooseCoordinates}
-      />
+      <Suspense fallback={<div className="world-map-loading">Loading globe…</div>}>
+        <InteractiveGlobe
+          key={`${attempts.length}-${answered}`}
+          ariaLabel={`Rotatable globe. Place ${question.answer}. Drag or swipe to rotate. Keyboard users can use the arrow keys and press Enter or Space to place the center marker.`}
+          answered={answered}
+          attempts={attempts.map((attempt, index) => ({ ...attempt, index: index + 1 }))}
+          target={answered ? question.target : undefined}
+          focusTarget={attempts.length > 0 ? question.target : undefined}
+          onPlace={chooseCoordinates}
+        />
+      </Suspense>
       {!answered && attempts.length === 0 && (
         <p className="map-answer pinpoint-threshold">
           Tap the globe to place your marker. A marker within about {acceptanceDistance} counts as correct.

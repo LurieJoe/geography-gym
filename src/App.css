@@ -875,6 +875,16 @@
   cursor: default;
 }
 .world-map { margin-top: 26px; }
+.world-map-loading {
+  aspect-ratio: 1 / 1;
+  max-width: 520px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--cp-text-muted, #888);
+  font-size: 0.95rem;
+}
 .map-answer { margin-top: 10px; font-size: 0.84rem; }
 .interactive-globe {
   display: grid;
