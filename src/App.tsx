@@ -144,7 +144,7 @@ type BackupNotice = {
 }
 
 const defaultStats: Stats = { games: 0, correct: 0, answered: 0, bestStreak: 0 }
-const APP_VERSION = 'v31'
+const APP_VERSION = 'v32'
 const PROFILES_KEY = 'geography-gym-profiles-v1'
 const SAVED_WORKOUTS_KEY = 'geography-gym-saved-workouts-v1'
 const BACKUP_FORMAT = 'geography-gym-backup'
