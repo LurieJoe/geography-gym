@@ -274,3 +274,5 @@ html[data-theme="dark"] .mapdle {
   .mapdle-header-buttons { gap: 6px; }
   .mapdle .mapdle-header-buttons button { padding: 8px 10px; font-size: 0.85rem; }
 }
+.mapdle-check { display: flex; align-items: center; gap: 10px; font-size: 0.95rem; cursor: pointer; }
+.mapdle-check input { width: 20px; height: 20px; accent-color: var(--cp-accent); flex: none; }

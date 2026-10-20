@@ -144,7 +144,7 @@ type BackupNotice = {
 }
 
 const defaultStats: Stats = { games: 0, correct: 0, answered: 0, bestStreak: 0 }
-const APP_VERSION = 'v32'
+const APP_VERSION = 'v36'
 const PROFILES_KEY = 'geography-gym-profiles-v1'
 const SAVED_WORKOUTS_KEY = 'geography-gym-saved-workouts-v1'
 const BACKUP_FORMAT = 'geography-gym-backup'
@@ -1374,6 +1374,7 @@ function App() {
               <button className="header-link open-app-link" type="button" onClick={enterApp}>
                 Open app
               </button>
+              <a className="header-support-link" href="./mapdle/">Mapdle</a>
               <a className="header-support-link" href="./faq/">FAQ</a>
               <a className="header-support-link" href="./help/">Help Center</a>
               <a className="header-support-link" href="./privacy/">Privacy</a>
@@ -1856,6 +1857,7 @@ function App() {
             <p>Visit the website for product information, help, and policies.</p>
             <nav className="support-links" aria-label="Geography Gym website">
               <a href={websiteHref('./?website=1')} target="_blank" rel="noreferrer"><Globe2 /> Home</a>
+              <a href={websiteHref('./mapdle/')} target="_blank" rel="noreferrer"><MapPin /> Mapdle daily game</a>
               <a href={websiteHref('./faq/')} target="_blank" rel="noreferrer"><HelpCircle /> FAQ</a>
               <a href={websiteHref('./help/')} target="_blank" rel="noreferrer"><HelpCircle /> Help Center</a>
               <a href={websiteHref('./privacy/')} target="_blank" rel="noreferrer"><ExternalLink /> Privacy</a>
@@ -2515,47 +2517,68 @@ function Home({
             </div>
           </div>
         </div>
-        <div className="track-grid">
-          <TrackCard
-            icon={<Map />}
-            category="us"
-            title="U.S. Geography"
-            description="The 50 states, Washington, D.C., and the five inhabited U.S. territories."
-            games={['Capitals & shorthand', 'Flags & nearby places', 'Matching & ordering', 'Map Pinpoint']}
-            count={questionPoolCounts.us}
-            selected={selectedCategories.includes('us')}
-            onToggle={onToggleCategory}
-          />
-          <TrackCard
-            icon={<Globe2 />}
-            category="world"
-            title="World Geography"
-            description="Countries and places outside the United States: capitals, regions, and map placement."
-            games={['Find the country', 'Capital call', 'World regions', 'Map practice']}
-            count={questionPoolCounts.world}
-            selected={selectedCategories.includes('world')}
-            onToggle={onToggleCategory}
-          />
-          <TrackCard
-            icon={<Landmark />}
-            category="landmarks"
-            title="Landmarks"
-            description="Match famous places to locations and arrange them geographically."
-            games={['Where is it?', 'Matching pairs', 'North to south', 'East to west']}
-            count={questionPoolCounts.landmarks}
-            selected={selectedCategories.includes('landmarks')}
-            onToggle={onToggleCategory}
-          />
-          <TrackCard
-            icon={<Waves />}
-            category="waterways"
-            title="Waterways"
-            description="Explore major oceans, seas, gulfs, rivers, straits, lakes, waterfalls, and canals."
-            games={['Where is it?', 'Matching pairs', 'Map Pinpoint', 'Which Is Closer?']}
-            count={questionPoolCounts.waterways}
-            selected={selectedCategories.includes('waterways')}
-            onToggle={onToggleCategory}
-          />
+        <div className="tracks-layout">
+          <article className="track-card mapdle-card">
+            <div className="track-card-top">
+              <div className="track-icon"><MapPin /></div>
+              <span className="pool-count">Daily game</span>
+            </div>
+            <h3>Play today’s Mapdle</h3>
+            <p>One hidden place each day. Find it in five pins.</p>
+            <ul>
+              <li><Check size={14} /> States &amp; Countries</li>
+              <li><Check size={14} /> Landmarks</li>
+              <li><Check size={14} /> Waterways</li>
+            </ul>
+            <a className="card-button mapdle-play" href={websiteHref('./mapdle/')}>
+              Play now
+              <span aria-hidden="true">→</span>
+            </a>
+            <p className="mapdle-checkback">Check back daily</p>
+          </article>
+          <div className="tracks-divider" aria-hidden="true" />
+          <div className="track-grid">
+            <TrackCard
+              icon={<Map />}
+              category="us"
+              title="U.S. Geography"
+              description="The 50 states, Washington, D.C., and the five inhabited U.S. territories."
+              games={['Capitals & shorthand', 'Flags & nearby places', 'Matching & ordering', 'Map Pinpoint']}
+              count={questionPoolCounts.us}
+              selected={selectedCategories.includes('us')}
+              onToggle={onToggleCategory}
+            />
+            <TrackCard
+              icon={<Globe2 />}
+              category="world"
+              title="World Geography"
+              description="Countries and places outside the United States: capitals, regions, and map placement."
+              games={['Find the country', 'Capital call', 'World regions', 'Map practice']}
+              count={questionPoolCounts.world}
+              selected={selectedCategories.includes('world')}
+              onToggle={onToggleCategory}
+            />
+            <TrackCard
+              icon={<Landmark />}
+              category="landmarks"
+              title="Landmarks"
+              description="Match famous places to locations and arrange them geographically."
+              games={['Where is it?', 'Matching pairs', 'North to south', 'East to west']}
+              count={questionPoolCounts.landmarks}
+              selected={selectedCategories.includes('landmarks')}
+              onToggle={onToggleCategory}
+            />
+            <TrackCard
+              icon={<Waves />}
+              category="waterways"
+              title="Waterways"
+              description="Explore major oceans, seas, gulfs, rivers, straits, lakes, waterfalls, and canals."
+              games={['Where is it?', 'Matching pairs', 'Map Pinpoint', 'Which Is Closer?']}
+              count={questionPoolCounts.waterways}
+              selected={selectedCategories.includes('waterways')}
+              onToggle={onToggleCategory}
+            />
+          </div>
         </div>
         <div className="website-workout-selection" aria-live="polite">
           <div>
@@ -3540,6 +3563,7 @@ function AppFooter() {
       <div>
         <span>© 2026 Geography Gym</span>
         <nav aria-label="Footer navigation">
+          <a href={websiteHref('./mapdle/')}>Mapdle</a>
           <a href="./faq/">FAQ</a>
           <a href="./help/">Help Center</a>
           <a href="https://github.com/LurieJoe/geography-gym/issues/new/choose" target="_blank" rel="noreferrer">Send Feedback</a>

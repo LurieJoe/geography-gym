@@ -1697,3 +1697,33 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; }
 }
+
+.tracks-layout { display: flex; align-items: stretch; gap: 16px; }
+.tracks-layout .track-grid { flex: 1; min-width: 0; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.tracks-layout .track-card { padding: 20px; }
+.tracks-divider { flex: none; width: 1px; background: var(--cp-border); }
+.mapdle-card { flex: none; width: 250px; border-color: var(--cp-accent); background: var(--cp-accent-soft); }
+.mapdle-card .track-icon { background: var(--cp-surface); }
+.mapdle-play { display: flex; align-items: center; justify-content: space-between; box-sizing: border-box; padding: 0.7rem 1rem; border: 1px solid var(--cp-accent); border-radius: 0.625rem; background: var(--cp-accent); color: var(--cp-accent-fg); font-weight: 700; text-decoration: none; }
+.mapdle-play:hover { background: var(--cp-accent-hover); border-color: var(--cp-accent-hover); color: var(--cp-accent-fg); }
+.track-card > .mapdle-checkback { margin: 16px 0 0; text-align: center; font-size: 0.82rem; color: var(--cp-text-muted); }
+@media (max-width: 1240px) {
+  .tracks-layout { flex-direction: column; }
+  .tracks-divider { width: auto; height: 1px; }
+  .mapdle-card { width: auto; min-height: auto; }
+  .mapdle-card ul { display: flex; flex-wrap: wrap; gap: 8px 20px; }
+  .tracks-layout .track-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .tracks-layout .track-card { padding: 24px; }
+}
+@media (max-width: 620px) {
+  .tracks-layout .track-grid { grid-template-columns: 1fr; }
+}
+@media (min-width: 1241px) {
+  /* 250px Mapdle card + 16px gap + 1px line + 16px gap */
+  .tracks-section .section-heading { margin-left: 283px; flex-wrap: wrap; justify-content: flex-start; align-items: flex-start; gap: 20px 40px; }
+}
+
+/* align-stats-bar: same width as the hero and the cards (desktop and tablet only) */
+@media (min-width: 821px) {
+  .stats-strip { width: min(1180px, calc(100% - 40px)); }
+}

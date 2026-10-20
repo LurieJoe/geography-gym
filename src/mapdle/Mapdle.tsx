@@ -70,7 +70,7 @@ export default function Mapdle() {
   const puzzle = useMemo(() => puzzleForDay(day), [day])
   const [saved, setSaved] = useState<Saved>(() => loadSaved())
   const [pending, setPending] = useState<GlobeCoordinate | null>(null)
-  const [panel, setPanel] = useState<'help' | 'stats' | null>(() => (loadSaved().seenHelp ? null : 'help'))
+  const [panel, setPanel] = useState<'help' | 'stats' | null>(() => (loadSaved().seenHelp ? null : 'help')) // seenHelp = "Don’t show on startup" is ticked
   const [notice, setNotice] = useState('')
   const waitingWorker = useServiceWorker()
 
@@ -277,6 +277,14 @@ export default function Mapdle() {
                   <li>A new puzzle appears every day at midnight.</li>
                 </ul>
                 <p className="mapdle-note"><a href="./how-to-play/">Read the full guide</a> with an example round.</p>
+                <label className="mapdle-check">
+                  <input
+                    type="checkbox"
+                    checked={saved.seenHelp}
+                    onChange={(event) => update({ ...saved, seenHelp: event.target.checked })}
+                  />
+                  <span>Don’t show this on startup</span>
+                </label>
               </>
             ) : (
               <>
@@ -302,10 +310,7 @@ export default function Mapdle() {
             <button
               type="button"
               className="primary"
-              onClick={() => {
-                if (panel === 'help' && !saved.seenHelp) update({ ...saved, seenHelp: true })
-                setPanel(null)
-              }}
+              onClick={() => setPanel(null)}
             >
               {panel === 'help' ? 'Start playing' : 'Close'}
             </button>
