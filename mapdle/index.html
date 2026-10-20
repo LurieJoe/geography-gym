@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <script>
+      (() => {
+        const param = new URLSearchParams(window.location.search).get("clawpilotTheme");
+        const theme =
+          param || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+        document.documentElement.setAttribute("data-theme", theme);
+      })();
+    </script>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="description" content="Mapdle: one hidden place every day. Place up to five pins on the globe, follow the color and direction hints, and share your result." />
+    <meta name="theme-color" content="#0f766e" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Mapdle" />
+    <link rel="icon" type="image/svg+xml" href="./icons/icon.svg" />
+    <link rel="apple-touch-icon" href="./icons/icon-192.png" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <title>Mapdle — The daily geography pin game</title>
+    <script type="module" crossorigin src="../assets/mapdle-B9R9VR48.js"></script>
+    <link rel="modulepreload" crossorigin href="../assets/jsx-runtime-D4trJeKE.js">
+    <link rel="modulepreload" crossorigin href="../assets/InteractiveGlobe-Dp_HFfpb.js">
+    <link rel="stylesheet" crossorigin href="../assets/jsx-runtime-C8T8L9id.css">
+    <link rel="stylesheet" crossorigin href="../assets/mapdle-dsfNmepE.css">
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>
