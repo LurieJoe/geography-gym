@@ -1727,3 +1727,23 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 @media (min-width: 821px) {
   .stats-strip { width: min(1180px, calc(100% - 40px)); }
 }
+
+.app-mapdle-card {
+  display: grid;
+  justify-items: center;
+  gap: 14px;
+  padding: clamp(20px, 4vw, 32px);
+  border: 1px solid var(--cp-accent);
+  border-radius: 16px;
+  background: var(--cp-accent-soft);
+  text-align: center;
+  box-shadow: 0 0 2px var(--cp-border), 0 1px 2px var(--cp-border);
+}
+.app-mapdle-icon { width: 54px; height: 54px; display: grid; place-items: center; border-radius: 0.625rem; background: var(--cp-surface); color: var(--cp-accent); }
+.app-mapdle-copy h2 { margin: 3px 0 8px; font-size: 1.35rem; }
+.app-mapdle-copy p { margin: 0; color: var(--cp-text-muted); line-height: 1.5; }
+.app-mapdle-copy .eyebrow { color: var(--cp-accent); }
+.app-mapdle-copy .app-mapdle-cats { margin-top: 8px; font-size: 0.86rem; color: var(--cp-text-soft); }
+.app-mapdle-play { width: 100%; min-height: 52px; justify-content: center; gap: 8px; text-decoration: none; }
+.app-mapdle-card .mapdle-checkback { margin: 0; font-size: 0.82rem; color: var(--cp-text-muted); }
+.app-home-links { padding: 16px 0 0; }

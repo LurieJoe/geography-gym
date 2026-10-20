@@ -144,7 +144,7 @@ type BackupNotice = {
 }
 
 const defaultStats: Stats = { games: 0, correct: 0, answered: 0, bestStreak: 0 }
-const APP_VERSION = 'v36'
+const APP_VERSION = 'v37'
 const PROFILES_KEY = 'geography-gym-profiles-v1'
 const SAVED_WORKOUTS_KEY = 'geography-gym-saved-workouts-v1'
 const BACKUP_FORMAT = 'geography-gym-backup'
@@ -2164,6 +2164,20 @@ function AppDashboard({
           </label>
         </section>
 
+        <section className="app-mapdle-card" aria-label="Mapdle daily game">
+          <div className="app-mapdle-icon" aria-hidden="true"><MapPin /></div>
+          <div className="app-mapdle-copy">
+            <p className="eyebrow">Daily game</p>
+            <h2>Play today’s Mapdle</h2>
+            <p>One hidden place each day. Find it in five pins.</p>
+            <p className="app-mapdle-cats">States &amp; Countries · Landmarks · Waterways</p>
+          </div>
+          <a className="primary-button app-mapdle-play" href={websiteHref('./mapdle/')} target="_blank" rel="noreferrer">
+            Play now <span aria-hidden="true">→</span>
+          </a>
+          <p className="mapdle-checkback">Check back daily</p>
+        </section>
+
         <AppProgressCard
           stats={stats}
           accuracy={accuracy}
@@ -2172,6 +2186,13 @@ function AppDashboard({
           onFlaggedReview={onFlaggedReview}
           onResetStats={onResetStats}
         />
+
+        <nav className="support-links app-home-links" aria-label="Geography Gym website">
+          <a href={websiteHref('./?website=1')} target="_blank" rel="noreferrer"><Globe2 /> Website</a>
+          <a href={websiteHref('./faq/')} target="_blank" rel="noreferrer"><HelpCircle /> FAQ</a>
+          <a href={websiteHref('./help/')} target="_blank" rel="noreferrer"><HelpCircle /> Help Center</a>
+          <a href={websiteHref('./privacy/')} target="_blank" rel="noreferrer"><ExternalLink /> Privacy</a>
+        </nav>
       </main>
     )
   }
