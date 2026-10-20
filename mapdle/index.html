@@ -3,10 +3,20 @@
   <head>
     <script>
       (() => {
-        const param = new URLSearchParams(window.location.search).get("clawpilotTheme");
-        const theme =
-          param || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
-        document.documentElement.setAttribute("data-theme", theme);
+        const ok = (v) => v === "light" || v === "dark" || v === "system";
+        let mode = "system";
+        try {
+          const own = localStorage.getItem("mapdle:theme");
+          if (ok(own)) mode = own;
+          else {
+            const store = JSON.parse(localStorage.getItem("geography-gym-profiles-v1") || "null");
+            const profile = store && store.profiles && (store.profiles.find((p) => p.id === store.activeProfileId) || store.profiles[0]);
+            const t = profile && profile.preferences && profile.preferences.theme;
+            if (ok(t)) mode = t;
+          }
+        } catch (e) {}
+        const dark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+        document.documentElement.setAttribute("data-theme", mode === "system" ? (dark ? "dark" : "light") : mode);
       })();
     </script>
     <meta charset="UTF-8" />
@@ -21,11 +31,11 @@
     <link rel="apple-touch-icon" href="./icons/icon-192.png" />
     <link rel="manifest" href="./manifest.webmanifest" />
     <title>Mapdle — The daily geography pin game</title>
-    <script type="module" crossorigin src="../assets/mapdle-Cf_9-qo2.js"></script>
+    <script type="module" crossorigin src="../assets/mapdle-CrdfW8yy.js"></script>
     <link rel="modulepreload" crossorigin href="../assets/jsx-runtime-D4trJeKE.js">
     <link rel="modulepreload" crossorigin href="../assets/InteractiveGlobe-Dp_HFfpb.js">
     <link rel="stylesheet" crossorigin href="../assets/jsx-runtime-C8T8L9id.css">
-    <link rel="stylesheet" crossorigin href="../assets/mapdle-B6LzkmBI.css">
+    <link rel="stylesheet" crossorigin href="../assets/mapdle-wr0lwd-d.css">
   </head>
   <body>
     <div id="root"></div>
