@@ -6,6 +6,7 @@ import {
   type DayRecord, type Saved,
 } from './logic'
 import { GREEN_KM, YELLOW_KM } from './puzzles'
+import { applyTheme, readThemeMode, saveThemeMode, type ThemeMode } from './theme'
 
 function useDay() {
   const [day, setDay] = useState(() => dayNumber())
@@ -72,6 +73,7 @@ export default function Mapdle() {
   const [pending, setPending] = useState<GlobeCoordinate | null>(null)
   const [panel, setPanel] = useState<'help' | 'stats' | null>(() => (loadSaved().seenHelp ? null : 'help')) // seenHelp = "Don’t show on startup" is ticked
   const [notice, setNotice] = useState('')
+  const [themeMode, setThemeMode] = useState<ThemeMode>(readThemeMode)
   const waitingWorker = useServiceWorker()
 
   const record: DayRecord = saved.records[day] ?? newRecord(day)
@@ -80,6 +82,21 @@ export default function Mapdle() {
   const target = { lat: puzzle.lat, lon: puzzle.lon }
 
   useEffect(() => { setPending(null) }, [day])
+
+  useEffect(() => {
+    applyTheme(themeMode)
+    if (themeMode !== 'system') return
+    const media = window.matchMedia('(prefers-color-scheme: dark)')
+    const onChange = () => applyTheme('system')
+    media.addEventListener('change', onChange)
+    return () => media.removeEventListener('change', onChange)
+  }, [themeMode])
+
+  function cycleTheme() {
+    const next: ThemeMode = themeMode === 'system' ? 'light' : themeMode === 'light' ? 'dark' : 'system'
+    saveThemeMode(next)
+    setThemeMode(next)
+  }
 
   const update = useCallback((next: Saved) => { setSaved(next); save(next) }, [])
 
@@ -261,6 +278,10 @@ export default function Mapdle() {
         <a href="../privacy/">Privacy</a>
         <span aria-hidden="true">·</span>
         <a href="../">Geography Gym</a>
+        <span aria-hidden="true">·</span>
+        <button type="button" className="mapdle-theme-button" onClick={cycleTheme}>
+          Theme: {themeMode === 'system' ? 'Auto' : themeMode === 'light' ? 'Light' : 'Dark'}
+        </button>
       </footer>
 
       {panel && (

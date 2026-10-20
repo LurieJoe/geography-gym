@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <script>
+      (() => {
+        const ok = (v) => v === "light" || v === "dark" || v === "system";
+        let mode = "system";
+        try {
+          const own = localStorage.getItem("mapdle:theme");
+          if (ok(own)) mode = own;
+          else {
+            const store = JSON.parse(localStorage.getItem("geography-gym-profiles-v1") || "null");
+            const profile = store && store.profiles && (store.profiles.find((p) => p.id === store.activeProfileId) || store.profiles[0]);
+            const t = profile && profile.preferences && profile.preferences.theme;
+            if (ok(t)) mode = t;
+          }
+        } catch (e) {}
+        const dark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+        document.documentElement.setAttribute("data-theme", mode === "system" ? (dark ? "dark" : "light") : mode);
+      })();
+    </script>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="description" content="Mapdle: one hidden place every day. Place up to five pins on the globe, follow the color and direction hints, and share your result." />
+    <meta name="theme-color" content="#0f766e" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Mapdle" />
+    <link rel="icon" type="image/svg+xml" href="./icons/icon.svg" />
+    <link rel="apple-touch-icon" href="./icons/icon-192.png" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <title>Mapdle — The daily geography pin game</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="../src/mapdle/main.tsx"></script>
+  </body>
+</html>
