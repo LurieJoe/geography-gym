@@ -276,5 +276,4 @@ html[data-theme="dark"] .mapdle {
 }
 .mapdle-check { display: flex; align-items: center; gap: 10px; font-size: 0.95rem; cursor: pointer; }
 .mapdle-check input { width: 20px; height: 20px; accent-color: var(--cp-accent); flex: none; }
-.mapdle .mapdle-theme-button { min-height: 0; padding: 0; border: 0; background: none; color: var(--cp-accent); font: inherit; font-weight: 600; cursor: pointer; }
-.mapdle .mapdle-theme-button:hover { border: 0; text-decoration: underline; }
+.mapdle .mapdle-header-buttons .mapdle-theme-button { display: inline-flex; align-items: center; justify-content: center; width: 40px; min-height: 40px; padding: 0; }

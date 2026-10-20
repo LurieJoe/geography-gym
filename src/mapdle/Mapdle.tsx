@@ -66,6 +66,31 @@ function useServiceWorker() {
   return waiting
 }
 
+function ThemeIcon({ mode }: { mode: ThemeMode }) {
+  const common = { 'aria-hidden': true, width: 19, height: 19, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' } as const
+  if (mode === 'light') {
+    return (
+      <svg {...common}>
+        <circle cx="12" cy="12" r="4" />
+        <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" />
+      </svg>
+    )
+  }
+  if (mode === 'dark') {
+    return (
+      <svg {...common}>
+        <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
+      </svg>
+    )
+  }
+  return (
+    <svg {...common} strokeLinecap={undefined} strokeLinejoin={undefined}>
+      <path d="M12 3a9 9 0 0 0 0 18Z" fill="currentColor" stroke="none" />
+      <circle cx="12" cy="12" r="9" />
+    </svg>
+  )
+}
+
 export default function Mapdle() {
   const day = useDay()
   const puzzle = useMemo(() => puzzleForDay(day), [day])
@@ -167,6 +192,15 @@ export default function Mapdle() {
               </button>
             ))}
           </div>
+          <button
+            type="button"
+            className="mapdle-theme-button"
+            onClick={cycleTheme}
+            aria-label={`Theme: ${themeMode === 'system' ? 'auto' : themeMode}. Change theme`}
+            title={`Theme: ${themeMode === 'system' ? 'auto' : themeMode}`}
+          >
+            <ThemeIcon mode={themeMode} />
+          </button>
           <button type="button" onClick={() => setPanel('stats')}>Stats</button>
           <button type="button" onClick={() => setPanel('help')}>How to play</button>
         </div>
@@ -278,10 +312,6 @@ export default function Mapdle() {
         <a href="../privacy/">Privacy</a>
         <span aria-hidden="true">·</span>
         <a href="../">Geography Gym</a>
-        <span aria-hidden="true">·</span>
-        <button type="button" className="mapdle-theme-button" onClick={cycleTheme}>
-          Theme: {themeMode === 'system' ? 'Auto' : themeMode === 'light' ? 'Light' : 'Dark'}
-        </button>
       </footer>
 
       {panel && (
