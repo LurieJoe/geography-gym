@@ -1,0 +1,276 @@
+/* Globe styles copied from App.css so this page stays small and independent. */
+.interactive-globe {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+}
+.interactive-globe > svg {
+  width: min(100%, 520px);
+  max-height: min(58vh, 520px);
+  overflow: visible;
+  border-radius: 50%;
+  cursor: grab;
+  touch-action: none;
+}
+.interactive-globe.is-dragging > svg { cursor: grabbing; }
+.interactive-globe > svg:focus-visible {
+  outline: 3px solid var(--cp-accent);
+  outline-offset: 3px;
+}
+.globe-ocean {
+  fill: var(--cp-bg-elevated);
+  stroke: var(--cp-border-strong);
+  stroke-width: 2;
+}
+.globe-graticule {
+  fill: none;
+  stroke: var(--cp-border);
+  stroke-width: 0.7;
+}
+.globe-land {
+  fill: var(--cp-surface-soft);
+  stroke: var(--cp-border-strong);
+  stroke-linejoin: round;
+  stroke-width: 1.2;
+}
+.globe-point { cursor: pointer; }
+.globe-point circle {
+  fill: var(--cp-accent);
+  stroke: var(--cp-surface);
+  stroke-width: 4;
+}
+.globe-point text,
+.globe-attempt text {
+  fill: var(--cp-accent-fg);
+  font-size: 15px;
+  font-weight: 800;
+  text-anchor: middle;
+  pointer-events: none;
+}
+.globe-point-correct circle { fill: var(--cp-success); }
+.globe-point-wrong circle,
+.globe-attempt circle {
+  fill: var(--cp-danger);
+  stroke: var(--cp-surface);
+  stroke-width: 4;
+}
+.globe-attempt text { font-size: 12px; }
+.globe-target circle {
+  fill: var(--cp-success);
+  stroke: var(--cp-surface);
+  stroke-width: 4;
+}
+.globe-target path {
+  fill: none;
+  stroke: var(--cp-accent-fg);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 4;
+}
+.globe-keyboard-cursor circle,
+.globe-keyboard-cursor path {
+  fill: none;
+  stroke: var(--cp-accent);
+  stroke-dasharray: 7 5;
+  stroke-width: 3;
+  vector-effect: non-scaling-stroke;
+  pointer-events: none;
+}
+.globe-controls {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+.globe-controls button,
+.globe-keyboard-locations button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: 38px;
+  padding: 7px 12px;
+  border: 1px solid var(--cp-border);
+  border-radius: 0.625rem;
+  background: var(--cp-surface);
+  color: var(--cp-text);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.globe-controls button:hover:not(:disabled),
+.globe-keyboard-locations button:hover:not(:disabled) {
+  border-color: var(--cp-accent);
+  color: var(--cp-accent);
+}
+.globe-controls button:disabled,
+.globe-keyboard-locations button:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+.globe-controls svg {
+  width: 17px;
+  height: 17px;
+}
+.globe-guidance,
+.globe-keyboard-help {
+  max-width: 620px;
+  margin: 0;
+  color: var(--cp-text-muted);
+  font-size: 0.82rem;
+  text-align: center;
+}
+.globe-keyboard-locations {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 10px 12px;
+  border: 1px solid var(--cp-border);
+  border-radius: 0.625rem;
+  background: var(--cp-surface-soft);
+  color: var(--cp-text-muted);
+  font-size: 0.8rem;
+}
+.globe-keyboard-locations button {
+  min-width: 38px;
+  padding: 6px;
+}
+.globe-keyboard-locations .globe-keyboard-correct {
+  border-color: var(--cp-success);
+  color: var(--cp-success);
+}
+.globe-keyboard-locations .globe-keyboard-wrong {
+  border-color: var(--cp-danger);
+  color: var(--cp-danger);
+}
+
+/* Pin colors on the globe (text labels also appear in the list, so color is never the only signal) */
+.globe-attempt-green circle { fill: #16a34a; }
+.globe-attempt-yellow circle { fill: #eab308; }
+.globe-attempt-yellow text { fill: #1a1a1a; }
+.globe-attempt-red circle { fill: #dc2626; }
+.globe-attempt-pending circle { fill: var(--cp-accent); stroke-dasharray: 5 3; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* ---- Mapdle page ---- */
+.mapdle {
+  --band-green: #16a34a;
+  --band-yellow: #eab308;
+  --band-red: #dc2626;
+  max-width: 640px;
+  margin: 0 auto;
+  padding: max(14px, env(safe-area-inset-top)) 16px max(28px, env(safe-area-inset-bottom));
+  display: grid;
+  gap: 14px;
+}
+.mapdle button {
+  min-height: 40px;
+  padding: 8px 14px;
+  border: 1px solid var(--cp-border-strong);
+  border-radius: 0.625rem;
+  background: var(--cp-surface);
+  color: var(--cp-text);
+  font-weight: 700;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+.mapdle button:hover { border-color: var(--cp-accent); color: var(--cp-accent); }
+.mapdle button.primary { background: var(--cp-accent); border-color: var(--cp-accent); color: var(--cp-accent-fg); }
+.mapdle button.primary:hover { background: var(--cp-accent-hover); color: var(--cp-accent-fg); }
+.mapdle button.linkish { min-height: 0; padding: 0; border: 0; background: none; color: var(--cp-link); text-decoration: underline; font-size: inherit; font-weight: 600; }
+.mapdle-update { display: flex; gap: 10px; align-items: center; justify-content: space-between; padding: 10px 12px; border-radius: 0.75rem; background: var(--cp-accent-soft); font-size: 0.9rem; }
+.mapdle-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.mapdle-header h1 { margin: 0; font-size: 1.9rem; letter-spacing: -0.02em; color: var(--cp-accent); }
+.mapdle-day { margin: 0; color: var(--cp-text-muted); font-size: 0.85rem; }
+.mapdle-header-buttons { display: flex; gap: 8px; }
+.mapdle-subject { display: grid; gap: 2px; padding: 12px 16px; border-radius: 0.9rem; background: var(--cp-accent); color: var(--cp-accent-fg); }
+.mapdle-subject span { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; opacity: 0.85; }
+.mapdle-subject strong { font-size: 1.35rem; }
+.mapdle-clues ol { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.mapdle-clues li { display: grid; grid-template-columns: 30px 1fr; gap: 10px; align-items: start; padding: 10px 12px; border: 1px solid var(--cp-border); border-radius: 0.75rem; background: var(--cp-surface); }
+.mapdle-clues li.is-locked { background: var(--cp-surface-soft); color: var(--cp-text-muted); border-style: dashed; }
+.clue-number { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: var(--cp-accent-soft); color: var(--cp-accent); font-weight: 800; font-size: 0.85rem; }
+.clue-text { line-height: 1.4; }
+.mapdle-map { display: grid; gap: 10px; }
+.mapdle-actions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; align-items: center; }
+.mapdle-actions p { margin: 0; color: var(--cp-text-muted); font-size: 0.9rem; }
+.mapdle-pins ol { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.pin-row { display: grid; grid-template-columns: 28px auto auto 1fr auto; gap: 8px; align-items: center; padding: 8px 12px; border-radius: 0.7rem; border: 1px solid var(--cp-border); background: var(--cp-surface); font-size: 0.92rem; }
+.pin-row.band-green { border-color: var(--band-green); }
+.pin-row.band-yellow { border-color: var(--band-yellow); }
+.pin-row.band-red { border-color: var(--band-red); }
+.pin-name { font-weight: 800; }
+.pin-band { color: var(--cp-text-muted); font-size: 0.8rem; }
+.pin-distance { text-align: right; font-weight: 700; }
+.pin-direction { font-weight: 800; min-width: 52px; text-align: right; }
+.mapdle-legend { margin: 8px 0 0; color: var(--cp-text-muted); font-size: 0.8rem; line-height: 1.5; }
+.mapdle-result { display: grid; gap: 10px; padding: 16px; border-radius: 1rem; border: 2px solid var(--band-green); background: var(--cp-surface); text-align: center; }
+.mapdle-result.lost { border-color: var(--band-red); }
+.mapdle-result h2 { margin: 0; font-size: 1.4rem; }
+.mapdle-answer { margin: 0; }
+.mapdle-share { margin: 0 auto; padding: 10px 14px; border-radius: 0.7rem; background: var(--cp-surface-soft); font: inherit; font-size: 1rem; line-height: 1.5; white-space: pre-wrap; word-break: break-word; }
+.mapdle-notice { margin: 0; white-space: pre-wrap; color: var(--cp-text-muted); font-size: 0.85rem; }
+.mapdle-next { margin: 0; color: var(--cp-text-muted); }
+.mapdle-next strong { font-variant-numeric: tabular-nums; color: var(--cp-text); }
+.mapdle-modal { position: fixed; inset: 0; z-index: 10; display: grid; place-items: center; padding: 16px; background: rgba(0, 0, 0, 0.55); }
+.mapdle-modal-card { width: min(100%, 440px); max-height: 90vh; overflow: auto; display: grid; gap: 12px; padding: 20px; border-radius: 1rem; background: var(--cp-surface); box-shadow: var(--cp-shadow); }
+.mapdle-modal-card h2, .mapdle-modal-card h3 { margin: 0; }
+.mapdle-modal-card ul { margin: 0; padding-left: 20px; display: grid; gap: 8px; line-height: 1.45; }
+.mapdle-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 0; text-align: center; }
+.mapdle-stats dt { font-size: 0.75rem; color: var(--cp-text-muted); }
+.mapdle-stats dd { margin: 0; font-size: 1.6rem; font-weight: 800; }
+.mapdle-dist { display: grid; gap: 4px; margin: 0; padding: 0; list-style: none; }
+.mapdle-dist li { display: grid; grid-template-columns: 18px 1fr; gap: 8px; align-items: center; }
+.mapdle-dist .bar { display: block; padding: 2px 8px; border-radius: 4px; background: var(--cp-accent); color: var(--cp-accent-fg); font-weight: 700; font-size: 0.8rem; text-align: right; }
+.mapdle-note { margin: 0; color: var(--cp-text-muted); font-size: 0.8rem; }
+@media (max-width: 420px) {
+  .pin-row { grid-template-columns: 24px auto 1fr auto; }
+  .pin-band { display: none; }
+}
+
+/* Mapdle look: teal accent (matches the app icon), zoomed map stays inside the page */
+.mapdle {
+  --cp-accent: #0f766e;
+  --cp-accent-hover: #115e59;
+  --cp-accent-soft: rgba(15, 118, 110, 0.1);
+  --cp-accent-fg: #ffffff;
+}
+html[data-theme="dark"] .mapdle {
+  --cp-accent: #5eead4;
+  --cp-accent-hover: #99f6e4;
+  --cp-accent-soft: rgba(94, 234, 212, 0.14);
+  --cp-accent-fg: #0b1f1d;
+}
+.mapdle .interactive-globe > svg { overflow: hidden; border-radius: 1.1rem; }
+.mapdle-map.is-finished .globe-controls,
+.mapdle-map.is-finished .globe-guidance { display: none; }
+.mapdle-footer { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; color: var(--cp-text-muted); font-size: 0.85rem; }
+.mapdle-footer a, .mapdle-modal-card a { color: var(--cp-accent); font-weight: 600; }
+
+/* Pin tracker and callout above the globe */
+.mapdle-status { display: grid; gap: 10px; }
+.mapdle-tracker { display: flex; gap: 8px; justify-content: center; margin: 0; padding: 0; list-style: none; }
+.tracker-dot { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; border: 2px solid var(--cp-border-strong); color: var(--cp-text-muted); font-weight: 800; font-size: 0.85rem; }
+.tracker-dot.current { border-color: var(--cp-accent); color: var(--cp-accent); box-shadow: 0 0 0 3px var(--cp-accent-soft); }
+.tracker-dot.used { border-color: transparent; color: #fff; }
+.tracker-dot.used.band-green { background: var(--band-green); }
+.tracker-dot.used.band-yellow { background: var(--band-yellow); color: #1a1a1a; }
+.tracker-dot.used.band-red { background: var(--band-red); }
+.mapdle-callout { padding: 12px 14px; border-radius: 0.8rem; border: 1px solid var(--cp-accent); background: var(--cp-accent-soft); }
+.mapdle-callout.all-clues { border-width: 2px; }
+.mapdle-callout p { margin: 0 0 6px; line-height: 1.45; }
+.mapdle-callout p:last-child { margin-bottom: 0; }
+.mapdle-callout .mapdle-actions { justify-content: flex-start; margin-top: 8px; }
+
+/* km / mi switch in the header */
+.mapdle-header-buttons { flex-wrap: wrap; justify-content: flex-end; align-items: center; }
+.unit-toggle { display: inline-flex; border: 1px solid var(--cp-border-strong); border-radius: 0.625rem; overflow: hidden; }
+.mapdle .unit-toggle button { min-height: 40px; padding: 8px 12px; border: 0; border-radius: 0; background: var(--cp-surface); }
+.mapdle .unit-toggle button + button { border-left: 1px solid var(--cp-border-strong); }
+.mapdle .unit-toggle button.is-on { background: var(--cp-accent); color: var(--cp-accent-fg); }
+@media (max-width: 380px) {
+  .mapdle-header-buttons { gap: 6px; }
+  .mapdle .mapdle-header-buttons button { padding: 8px 10px; font-size: 0.85rem; }
+}

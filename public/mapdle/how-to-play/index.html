@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0f766e" />
+  <meta name="description" content="How to play Mapdle, the daily geography pin game: clues, five pins, color hints, direction arrows, and sharing your result." />
+  <link rel="icon" type="image/svg+xml" href="../icons/icon.svg" />
+  <title>How to play Mapdle</title>
+  <style>
+    :root { color-scheme: light dark; --bg:#f7f4ef; --card:#fff; --text:#242424; --muted:#5c5c5c; --accent:#0f766e; --border:#dedede; }
+    @media (prefers-color-scheme: dark) { :root { --bg:#3d3b3a; --card:#292929; --text:#dedede; --muted:#b0b0b0; --accent:#5eead4; --border:#474747; } }
+    * { box-sizing: border-box; }
+    body { margin:0; background:var(--bg); color:var(--text); font-family:"Segoe UI",Aptos,Calibri,-apple-system,BlinkMacSystemFont,sans-serif; line-height:1.55; }
+    main { max-width: 680px; margin: 0 auto; padding: 20px 16px 48px; }
+    h1 { margin: 6px 0 4px; font-size: 2rem; color: var(--accent); }
+    h2 { margin: 28px 0 8px; font-size: 1.25rem; }
+    p, li { font-size: 1rem; }
+    .lead { color: var(--muted); margin-top: 0; }
+    .play { display:inline-block; margin: 10px 0 4px; padding: 12px 20px; border-radius: 10px; background: var(--accent); color: var(--bg); font-weight: 800; text-decoration: none; }
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 14px 16px; margin: 10px 0; }
+    ol.steps { padding-left: 22px; display: grid; gap: 8px; }
+    table { width: 100%; border-collapse: collapse; }
+    td, th { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--border); vertical-align: top; }
+    pre { margin: 8px 0; padding: 12px 14px; border-radius: 10px; background: var(--bg); font: inherit; white-space: pre-wrap; }
+    a { color: var(--accent); }
+    dt { font-weight: 800; margin-top: 12px; }
+    dd { margin: 2px 0 0; }
+  </style>
+</head>
+<body>
+<main>
+  <p><a href="../">&larr; Back to Mapdle</a></p>
+  <h1>How to play Mapdle</h1>
+  <p class="lead">One hidden place every day. Find it on the globe in five pins or fewer.</p>
+  <a class="play" href="../">Play today’s puzzle</a>
+
+  <h2>The basics</h2>
+  <ol class="steps">
+    <li><strong>Check today’s subject.</strong> Every day has one subject: <em>States &amp; Countries</em>, <em>Landmarks</em>, or <em>Waterways</em>. It is shown at the top of the screen.</li>
+    <li><strong>Read clue 1.</strong> It tells you the broad area and what kind of place it is.</li>
+    <li><strong>Place a pin.</strong> Drag the globe to turn it, tap to drop a pin, then press <em>Confirm pin</em>. Not sure? Press <em>Clear</em> and tap again.</li>
+    <li><strong>Unlock more clues.</strong> Clue 2 appears after your first pin, clue 3 after your second. You can win on any pin.</li>
+    <li><strong>Follow the hints.</strong> After each miss, you see how far away you were and which direction to go. The globe also turns closer to the answer.</li>
+    <li><strong>Win or run out.</strong> You get up to five pins. Then the answer is revealed and you can share your result.</li>
+  </ol>
+
+  <h2>What the colors mean</h2>
+  <div class="card">
+    <table>
+      <tr><td>🟩 <strong>Green</strong></td><td>Within 350 km (217 miles). You found it!</td></tr>
+      <tr><td>🟨 <strong>Yellow</strong></td><td>351 to 1,000 km (218 to 621 miles) away. Getting warm.</td></tr>
+      <tr><td>🟥 <strong>Red</strong></td><td>More than 1,000 km (621 miles) away.</td></tr>
+    </table>
+    <p>The arrow next to each pin (for example ↗ NE) points <em>from your pin toward the answer</em>. You can switch between kilometers and miles on the game screen. The colors always use the same distances.</p>
+  </div>
+
+  <h2>An example round</h2>
+  <div class="card">
+    <p><strong>Subject: Landmarks.</strong></p>
+    <ol class="steps">
+      <li>Clue 1: <em>“A landmark in Western Europe.”</em> You pin Germany. 🟨 about 620 km, ← W.</li>
+      <li>Clue 2 unlocks: <em>“It is in France.”</em> You pin central France. 🟩 Found it!</li>
+    </ol>
+    <p>Your share message would look like this. The colored squares show how each pin went:</p>
+    <pre>Mapdle #42
+Landmarks
+🟨🟩
+https://geographygym.com/mapdle/</pre>
+  </div>
+
+  <h2>Good to know</h2>
+  <dl>
+    <dt>When does the next puzzle appear?</dt>
+    <dd>At midnight in your time zone. After you finish, the screen counts down to it.</dd>
+    <dt>Can I play today’s puzzle twice?</dt>
+    <dd>No. There is one puzzle per day, and your result is saved on your device.</dd>
+    <dt>What are the answers like?</dt>
+    <dd>Each answer is a place you can point to: a state, a compact country, a city, a landmark, a lake, a strait, a river at a notable spot, and so on. Huge areas such as Russia or the Sahara are never the answer, but a city or landmark inside them can be.</dd>
+    <dt>Is my streak safe if I switch phones?</dt>
+    <dd>Your streak and stats are saved on the device and browser you play on. They do not move to another device.</dd>
+    <dt>Does it work offline?</dt>
+    <dd>Once you have opened Mapdle, it can load without a connection. Add it to your Home Screen for the best experience.</dd>
+  </dl>
+
+  <p style="margin-top:28px"><a class="play" href="../">Play today’s puzzle</a></p>
+  <p class="lead"><a href="../../privacy/">Privacy</a> &middot; Part of <a href="../../">Geography Gym</a></p>
+</main>
+</body>
+</html>

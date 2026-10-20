@@ -77,7 +77,7 @@ export function InteractiveGlobe({
   points?: GlobePoint[]
   answered?: boolean
   target?: GlobeCoordinate
-  attempts?: Array<GlobeCoordinate & { index: number }>
+  attempts?: Array<GlobeCoordinate & { index: number; band?: string }>
   focusTarget?: GlobeCoordinate
   onPointSelect?: (id: string) => void
   onPlace?: (coordinate: GlobeCoordinate) => void
@@ -256,7 +256,7 @@ export function InteractiveGlobe({
           if (!attempt.visible || !attempt.projected) return null
           return (
             <g
-              className="globe-attempt"
+              className={`globe-attempt${attempt.band ? ` globe-attempt-${attempt.band}` : ''}`}
               key={`${attempt.index}-${attempt.lat}-${attempt.lon}`}
               transform={`translate(${attempt.projected[0]} ${attempt.projected[1]})`}
             >

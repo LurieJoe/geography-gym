@@ -11,6 +11,7 @@ export default defineConfig({
       input: {
         website: resolve(import.meta.dirname, 'index.html'),
         app: resolve(import.meta.dirname, 'app/index.html'),
+        mapdle: resolve(import.meta.dirname, 'mapdle/index.html'),
       },
     },
   },
