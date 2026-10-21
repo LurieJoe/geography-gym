@@ -1,4 +1,4 @@
-const CACHE_NAME = 'geography-gym-v43'
+const CACHE_NAME = 'geography-gym-v44'
 const APP_SHELL = [
   './',
   './app/',

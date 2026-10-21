@@ -1,5 +1,5 @@
 // Mapdle service worker. Lives at /mapdle/sw.js so it only controls /mapdle/.
-const CACHE_NAME = 'mapdle-v9'
+const CACHE_NAME = 'mapdle-v10'
 const APP_SHELL = ['./', './manifest.webmanifest', './icons/icon.svg']
 const SHELL_PATHS = new Set(APP_SHELL.map((url) => new URL(url, self.location.href).pathname))
 const ASSETS_PATH = new URL('../assets/', self.location.href).pathname
