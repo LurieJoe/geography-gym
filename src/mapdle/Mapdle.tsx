@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { InteractiveGlobe, type GlobeCoordinate } from '../InteractiveGlobe'
 import {
-  BAND_EMOJI, BAND_WORD, MAX_PINS, bandFor, bearingDeg, compass, currentStreak, dayNumber, formatDistance,
+  BAND_EMOJI, BAND_WORD, MAX_PINS, bandFor, bearingDeg, compass, currentStreak, dayLabel, dayNumber, formatDistance,
   interpolate, loadSaved, msUntilNextDay, newRecord, puzzleForDay, recordFinished, save, shareText, submitPin,
   type DayRecord, type Saved,
 } from './logic'
@@ -176,7 +176,7 @@ export default function Mapdle() {
       <header className="mapdle-header">
         <div>
           <h1>Mapdle</h1>
-          <p className="mapdle-day">Daily puzzle #{day}</p>
+          <p className="mapdle-day">{dayLabel(day)}</p>
         </div>
         <div className="mapdle-header-buttons">
           <div className="unit-toggle" role="group" aria-label="Distance units">

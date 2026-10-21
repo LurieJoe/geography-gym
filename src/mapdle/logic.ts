@@ -85,7 +85,14 @@ const utcDay = (key: string) => {
 }
 /** Day 1 is LAUNCH_DATE. Before launch (testing) it stays at 1. Uses the player's local calendar date. */
 export function dayNumber(date: Date = new Date(), launch: string = LAUNCH_DATE): number {
-  return Math.max(1, utcDay(dateKey(date)) - utcDay(launch) + 1)
+  return utcDay(dateKey(date)) - utcDay(launch) + 1 // zero or negative before launch: a preview day
+}
+/** Text under the Mapdle title. Before launch it says so, so nobody mistakes a preview for puzzle #1. */
+export function dayLabel(day: number, launch: string = LAUNCH_DATE): string {
+  if (day >= 1) return `Daily puzzle #${day}`
+  const [y, m, d] = launch.split('-').map(Number)
+  const when = new Date(y, m - 1, d).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })
+  return `Preview puzzle · daily puzzles start ${when}`
 }
 export function puzzleForDay(day: number, puzzles: MapdlePuzzle[] = PUZZLES): MapdlePuzzle {
   return puzzles[(((day - 1) % puzzles.length) + puzzles.length) % puzzles.length]
@@ -113,14 +120,15 @@ export function cluesShown(record: DayRecord): number {
 
 export function shareText(record: DayRecord, subject: string): string {
   const blocks = record.pins.map((p) => BAND_EMOJI[bandFor(p.km)]).join('')
-  return `Mapdle #${record.day}\n${subject}\n${blocks}\n${SHARE_URL}`
+  const title = record.day >= 1 ? `Mapdle #${record.day}` : 'Mapdle preview'
+  return `${title}\n${subject}\n${blocks}\n${SHARE_URL}`
 }
 
 // ---- stats ----
 export const emptyStats = (): Stats => ({ played: 0, wins: 0, streak: 0, maxStreak: 0, lastWonDay: 0, distribution: [0, 0, 0, 0, 0], lastFinishedDay: 0 })
 
 export function recordFinished(stats: Stats, record: DayRecord): Stats {
-  if (record.status === 'playing' || record.day <= stats.lastFinishedDay) return stats
+  if (record.status === 'playing' || record.day < 1 || record.day <= stats.lastFinishedDay) return stats // preview days never count
   const next: Stats = { ...stats, distribution: [...stats.distribution], played: stats.played + 1, lastFinishedDay: record.day }
   if (record.status === 'won') {
     next.wins += 1
