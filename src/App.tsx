@@ -144,7 +144,7 @@ type BackupNotice = {
 }
 
 const defaultStats: Stats = { games: 0, correct: 0, answered: 0, bestStreak: 0 }
-const APP_VERSION = 'v37'
+const APP_VERSION = 'v40'
 const PROFILES_KEY = 'geography-gym-profiles-v1'
 const SAVED_WORKOUTS_KEY = 'geography-gym-saved-workouts-v1'
 const BACKUP_FORMAT = 'geography-gym-backup'
@@ -1375,6 +1375,7 @@ function App() {
                 Open app
               </button>
               <a className="header-support-link" href="./mapdle/">Mapdle</a>
+              <a className="header-support-link" href="./quizzes/">Quizzes</a>
               <a className="header-support-link" href="./faq/">FAQ</a>
               <a className="header-support-link" href="./help/">Help Center</a>
               <a className="header-support-link" href="./privacy/">Privacy</a>
@@ -3585,6 +3586,7 @@ function AppFooter() {
         <span>© 2026 Geography Gym</span>
         <nav aria-label="Footer navigation">
           <a href={websiteHref('./mapdle/')}>Mapdle</a>
+          <a href={websiteHref('./quizzes/')}>Quizzes</a>
           <a href="./faq/">FAQ</a>
           <a href="./help/">Help Center</a>
           <a href="https://github.com/LurieJoe/geography-gym/issues/new/choose" target="_blank" rel="noreferrer">Send Feedback</a>

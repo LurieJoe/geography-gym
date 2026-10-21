@@ -1,0 +1,14 @@
+.cta-row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 8px; }
+.muted { color: var(--cp-text-muted); margin: 0 0 12px; }
+.table-wrap { overflow-x: auto; border: 1px solid var(--cp-border); border-radius: 0.75rem; background: var(--cp-surface); }
+.table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.95rem; }
+.table-wrap th, .table-wrap td { padding: 10px 14px; text-align: left; border-bottom: 1px solid var(--cp-border); }
+.table-wrap tbody tr:last-child > * { border-bottom: 0; }
+.table-wrap thead th { background: var(--cp-surface-soft); color: var(--cp-text-muted); font-size: 0.8rem; letter-spacing: 0.04em; text-transform: uppercase; white-space: nowrap; }
+.table-wrap tbody th { font-weight: 700; color: var(--cp-text); }
+.table-wrap td { color: var(--cp-text-muted); }
+.topic-card { display: block; text-decoration: none; color: inherit; }
+.topic-card h2 { margin: 0 0 8px; font-size: 1.25rem; color: var(--cp-text); }
+.topic-link { display: inline-block; margin-top: 8px; color: var(--cp-accent); font-weight: 700; }
+.mapdle-topic { border-color: var(--cp-accent); background: var(--cp-accent-soft); }
+@media (max-width: 700px) { .card-grid { grid-template-columns: 1fr; } }

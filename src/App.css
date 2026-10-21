@@ -1747,3 +1747,23 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 .app-mapdle-play { width: 100%; min-height: 52px; justify-content: center; gap: 8px; text-decoration: none; }
 .app-mapdle-card .mapdle-checkback { margin: 0; font-size: 0.82rem; color: var(--cp-text-muted); }
 .app-home-links { padding: 16px 0 0; }
+
+/* header-menu-fit: keep the website menu from overlapping the logo on mid-size screens */
+.app-header { gap: 12px; }
+.header-brand-group { flex: none; }
+.header-actions { min-width: 0; }
+@media (max-width: 1520px) {
+  .header-nav a.header-support-link[href*="issues/new"] { display: none !important; }
+}
+@media (max-width: 1360px) {
+  .header-nav a.header-support-link[href="./privacy/"] { display: none !important; }
+}
+@media (max-width: 1240px) {
+  .header-nav a.header-support-link[href="./help/"] { display: none !important; }
+}
+@media (max-width: 1160px) {
+  .header-nav a.header-support-link[href="./faq/"] { display: none !important; }
+}
+@media (min-width: 961px) and (max-width: 1080px) {
+  .header-nav a.header-support-link[href="./mapdle/"] { display: inline-flex !important; }
+}

@@ -383,7 +383,7 @@ const waterways: WaterwayRecord[] = [
   { name: 'Strait of Hormuz', type: 'Strait', place: 'between Iran and the Musandam Peninsula', lat: 26.5, lon: 56.5 },
   { name: 'Strait of Dover', type: 'Strait', place: 'between England and France', lat: 51, lon: 1.5 },
   { name: 'Lake Superior', type: 'Lake', place: 'between the United States and Canada', lat: 47.7, lon: -87.5 },
-  { name: 'Lake Ontario', type: 'Lake', place: 'between New York and Ontario', lat: 43.7, lon: -77.9 },
+  { name: 'Lake Ontario', type: 'Lake', place: 'between New York and Ontario', lat: 43.7, lon: -77.9, note: 'The U.S. federal government currently calls this lake Lake America.' },
   { name: 'Lake Victoria', type: 'Lake', place: 'between Tanzania, Uganda, and Kenya', lat: -1, lon: 33 },
   { name: 'Lake Baikal', type: 'Lake', place: 'in southern Siberia, Russia', lat: 53, lon: 108 },
   { name: 'Lake Tanganyika', type: 'Lake', place: 'in East Africa along four national borders', lat: -6.3, lon: 29.5 },
