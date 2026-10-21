@@ -277,3 +277,7 @@ html[data-theme="dark"] .mapdle {
 .mapdle-check { display: flex; align-items: center; gap: 10px; font-size: 0.95rem; cursor: pointer; }
 .mapdle-check input { width: 20px; height: 20px; accent-color: var(--cp-accent); flex: none; }
 .mapdle .mapdle-header-buttons .mapdle-theme-button { display: inline-flex; align-items: center; justify-content: center; width: 40px; min-height: 40px; padding: 0; }
+.mapdle-about { display: grid; gap: 8px; padding: 16px; border: 1px solid var(--cp-border); border-radius: 1rem; background: var(--cp-surface); }
+.mapdle-about h2 { margin: 0; font-size: 1.1rem; }
+.mapdle-about p { margin: 0; color: var(--cp-text-muted); line-height: 1.55; font-size: 0.92rem; }
+.mapdle-about a { color: var(--cp-accent); font-weight: 600; }

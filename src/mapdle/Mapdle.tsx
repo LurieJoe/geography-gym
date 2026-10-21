@@ -306,6 +306,19 @@ export default function Mapdle() {
         </section>
       )}
 
+      <section className="mapdle-about" aria-labelledby="about-mapdle">
+        <h2 id="about-mapdle">About Mapdle</h2>
+        <p>
+          Mapdle is a free daily geography game. Every day there is one hidden place, such as a state, a country,
+          a landmark, or a waterway. You get up to five pins on the globe. After each pin you see how close you were
+          (green, yellow, or red), which direction to go, and a new clue.
+        </p>
+        <p>
+          Everyone gets the same puzzle each day, so you can compare results by sharing your colored squares. Mapdle is part
+          of <a href="../">Geography Gym</a>, where you can also <a href="../quizzes/">study states, countries, landmarks, and waterways</a>.
+        </p>
+      </section>
+
       <footer className="mapdle-footer">
         <a href="./how-to-play/">How to play</a>
         <span aria-hidden="true">·</span>
