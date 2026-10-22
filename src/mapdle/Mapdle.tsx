@@ -54,7 +54,14 @@ function useServiceWorker() {
       window.location.reload()
     }
     navigator.serviceWorker.addEventListener('controllerchange', onChange)
+    // An installed app can stay open for days, so look for a new version whenever it comes back to the front.
+    let current: ServiceWorkerRegistration | null = null
+    const checkForUpdate = () => {
+      if (!document.hidden) current?.update().catch(() => { /* try again next time */ })
+    }
+    document.addEventListener('visibilitychange', checkForUpdate)
     navigator.serviceWorker.register('./sw.js').then((registration) => {
+      current = registration
       if (registration.waiting && navigator.serviceWorker.controller) setWaiting(registration.waiting)
       registration.addEventListener('updatefound', () => {
         const worker = registration.installing
@@ -63,7 +70,10 @@ function useServiceWorker() {
         })
       })
     }).catch(() => { /* offline support is optional */ })
-    return () => navigator.serviceWorker.removeEventListener('controllerchange', onChange)
+    return () => {
+      navigator.serviceWorker.removeEventListener('controllerchange', onChange)
+      document.removeEventListener('visibilitychange', checkForUpdate)
+    }
   }, [])
   return waiting
 }
@@ -108,6 +118,13 @@ export default function Mapdle() {
   const finished = record.status !== 'playing'
   const countdown = useCountdown(finished)
   const target = { lat: puzzle.lat, lon: puzzle.lon }
+
+  // A new version is ready. If today's game has not started, switch to it now. Otherwise the bar lets the player choose.
+  useEffect(() => {
+    if (waitingWorker && record.pins.length === 0 && !pending && (panel === null || panel === 'help')) {
+      waitingWorker.postMessage({ type: 'SKIP_WAITING' })
+    }
+  }, [waitingWorker, record.pins.length, pending, panel])
 
   useEffect(() => { setPending(null) }, [day])
 
