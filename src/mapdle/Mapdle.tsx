@@ -7,6 +7,8 @@ import {
 } from './logic'
 import { GREEN_KM, YELLOW_KM } from './puzzles'
 import { applyTheme, readThemeMode, saveThemeMode, type ThemeMode } from './theme'
+import { LearnPanel } from './LearnPanel'
+import { track } from './analytics'
 
 function useDay() {
   const [day, setDay] = useState(() => dayNumber())
@@ -96,8 +98,9 @@ export default function Mapdle() {
   const puzzle = useMemo(() => puzzleForDay(day), [day])
   const [saved, setSaved] = useState<Saved>(() => loadSaved())
   const [pending, setPending] = useState<GlobeCoordinate | null>(null)
-  const [panel, setPanel] = useState<'help' | 'stats' | null>(() => (loadSaved().seenHelp ? null : 'help')) // seenHelp = "Don’t show on startup" is ticked
+  const [panel, setPanel] = useState<'help' | 'stats' | 'learn' | null>(() => (loadSaved().seenHelp ? null : 'help')) // seenHelp = "Don’t show on startup" is ticked
   const [notice, setNotice] = useState('')
+  const [globeZoom, setGlobeZoom] = useState<number | undefined>(undefined) // keeps your zoom after each pin
   const [themeMode, setThemeMode] = useState<ThemeMode>(readThemeMode)
   const waitingWorker = useServiceWorker()
 
@@ -128,12 +131,18 @@ export default function Mapdle() {
   function confirmPin() {
     if (!pending || finished) return
     const nextRecord = submitPin(record, pending, target)
+    const eventBase = { puzzle: day, phase: day >= 1 ? 'live' : 'preview' }
+    const placed = nextRecord.pins[nextRecord.pins.length - 1]
+    track('pin_placed', { ...eventBase, pin: nextRecord.pins.length, band: placed ? bandFor(placed.km) : 'none' })
+    if (nextRecord.status === 'won') track('game_won', { ...eventBase, pins: nextRecord.pins.length })
+    if (nextRecord.status === 'lost') track('game_lost', eventBase)
     const stats = nextRecord.status !== 'playing' ? recordFinished(saved.stats, nextRecord) : saved.stats
     update({ ...saved, records: { ...saved.records, [day]: nextRecord }, stats })
     setPending(null)
   }
 
   async function share() {
+    track('share_clicked', { puzzle: day, phase: day >= 1 ? 'live' : 'preview', result: record.status })
     const text = shareText(record, puzzle.subject)
     try {
       if (navigator.share) {
@@ -263,6 +272,9 @@ export default function Mapdle() {
           target={target}
           focusTarget={focus}
           onPlace={(coordinate) => setPending(coordinate)}
+          zoom={globeZoom}
+          borders
+          onZoomChange={setGlobeZoom}
         />
       </section>
 
@@ -299,6 +311,7 @@ export default function Mapdle() {
           <pre className="mapdle-share">{shareText(record, puzzle.subject)}</pre>
           <div className="mapdle-actions">
             <button type="button" className="primary" onClick={share}>Share result</button>
+            <button type="button" onClick={() => { track('learn_more_opened', { puzzle: day, phase: day >= 1 ? 'live' : 'preview' }); setPanel('learn') }}>Learn more</button>
             <button type="button" onClick={() => setPanel('stats')}>See stats</button>
           </div>
           {notice && <p className="mapdle-notice" role="status">{notice}</p>}
@@ -322,15 +335,19 @@ export default function Mapdle() {
       <footer className="mapdle-footer">
         <a href="./how-to-play/">How to play</a>
         <span aria-hidden="true">·</span>
+        <a href="https://forms.gle/mRhYSimCSsg96rCs8" target="_blank" rel="noreferrer">Send feedback</a>
+        <span aria-hidden="true">·</span>
         <a href="../privacy/">Privacy</a>
         <span aria-hidden="true">·</span>
         <a href="../">Geography Gym</a>
       </footer>
 
       {panel && (
-        <div className="mapdle-modal" role="dialog" aria-modal="true" aria-label={panel === 'help' ? 'How to play' : 'Statistics'}>
+        <div className="mapdle-modal" role="dialog" aria-modal="true" aria-label={panel === 'help' ? 'How to play' : panel === 'learn' ? 'About today’s answer' : 'Statistics'}>
           <div className="mapdle-modal-card">
-            {panel === 'help' ? (
+            {panel === 'learn' ? (
+              <LearnPanel puzzle={puzzle} day={day} />
+            ) : panel === 'help' ? (
               <>
                 <h2>How to play</h2>
                 <ul>
@@ -373,7 +390,7 @@ export default function Mapdle() {
             )}
             <button
               type="button"
-              className="primary"
+              className={panel === 'learn' ? '' : 'primary'}
               onClick={() => setPanel(null)}
             >
               {panel === 'help' ? 'Start playing' : 'Close'}

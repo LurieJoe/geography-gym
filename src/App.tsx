@@ -144,7 +144,7 @@ type BackupNotice = {
 }
 
 const defaultStats: Stats = { games: 0, correct: 0, answered: 0, bestStreak: 0 }
-const APP_VERSION = 'v41'
+const APP_VERSION = 'v46'
 const PROFILES_KEY = 'geography-gym-profiles-v1'
 const SAVED_WORKOUTS_KEY = 'geography-gym-saved-workouts-v1'
 const BACKUP_FORMAT = 'geography-gym-backup'
@@ -1381,7 +1381,7 @@ function App() {
               <a className="header-support-link" href="./privacy/">Privacy</a>
               <a
                 className="header-support-link"
-                href="https://github.com/LurieJoe/geography-gym/issues/new/choose"
+                href="https://forms.gle/mRhYSimCSsg96rCs8"
                 target="_blank"
                 rel="noreferrer"
               >
@@ -1843,10 +1843,10 @@ function App() {
           </section>
           <section className="settings-resource-card">
             <p className="eyebrow">Feedback</p>
-            <p>Found a problem or have an idea? Share feedback or report an issue on GitHub.</p>
+            <p>Found a problem or have an idea? Share feedback, suggest new places to add, or report an issue.</p>
             <a
               className="primary-button settings-feedback-button"
-              href="https://github.com/LurieJoe/geography-gym/issues/new/choose"
+              href="https://forms.gle/mRhYSimCSsg96rCs8"
               target="_blank"
               rel="noreferrer"
             >
@@ -3589,7 +3589,7 @@ function AppFooter() {
           <a href={websiteHref('./quizzes/')}>Quizzes</a>
           <a href="./faq/">FAQ</a>
           <a href="./help/">Help Center</a>
-          <a href="https://github.com/LurieJoe/geography-gym/issues/new/choose" target="_blank" rel="noreferrer">Send Feedback</a>
+          <a href="https://forms.gle/mRhYSimCSsg96rCs8" target="_blank" rel="noreferrer">Send Feedback</a>
           <a href="./privacy/">Privacy</a>
         </nav>
       </div>

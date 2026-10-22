@@ -281,3 +281,50 @@ html[data-theme="dark"] .mapdle {
 .mapdle-about h2 { margin: 0; font-size: 1.1rem; }
 .mapdle-about p { margin: 0; color: var(--cp-text-muted); line-height: 1.55; font-size: 0.92rem; }
 .mapdle-about a { color: var(--cp-accent); font-weight: 600; }
+
+/* mapdle-learn: the "Learn more" pop-up */
+.mapdle-learn-sub { margin: -6px 0 0; color: var(--cp-text-muted); font-size: 0.9rem; }
+.mapdle-fact { margin: 0; line-height: 1.5; }
+.mapdle-learn-where { display: grid; gap: 4px; padding: 12px 14px; border-radius: 0.8rem; background: var(--cp-surface-soft); font-size: 0.95rem; }
+.mapdle-learn-where strong { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--cp-text-muted); }
+.mapdle-learn-links { display: flex; flex-wrap: wrap; gap: 6px 18px; }
+.mapdle-modal-card a.mapdle-learn-cta { display: block; padding: 12px 16px; border-radius: 0.8rem; background: var(--cp-accent); color: var(--cp-accent-fg); text-align: center; text-decoration: none; font-weight: 700; }
+.mapdle-modal-card a.mapdle-learn-cta:hover { background: var(--cp-accent-hover); }
+
+/* globe-zoom: zoom buttons on the globe */
+.interactive-globe { position: relative; }
+.globe-zoom {
+  position: absolute;
+  top: 8px;
+  right: max(8px, calc((100% - 520px) / 2 + 8px));
+  display: grid;
+  gap: 6px;
+}
+.interactive-globe .globe-zoom button {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  min-height: 0;
+  padding: 0;
+  border: 1px solid var(--cp-border);
+  border-radius: 50%;
+  background: var(--cp-surface);
+  color: var(--cp-text);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+  cursor: pointer;
+}
+.interactive-globe .globe-zoom button:hover:not(:disabled) { border-color: var(--cp-accent); color: var(--cp-accent); }
+.interactive-globe .globe-zoom button:disabled { opacity: 0.45; cursor: default; }
+.interactive-globe .globe-zoom svg { width: 20px; height: 20px; }
+
+/* globe-borders: country borders and U.S. state lines */
+.globe-borders {
+  fill: none;
+  stroke: var(--cp-text-muted);
+  stroke-width: 0.8;
+  stroke-linejoin: round;
+  stroke-opacity: 0.6;
+  pointer-events: none;
+}
+.globe-borders-states { stroke-width: 0.6; stroke-dasharray: 3 2; stroke-opacity: 0.5; }
