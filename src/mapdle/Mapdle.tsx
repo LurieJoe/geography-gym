@@ -355,6 +355,7 @@ export default function Mapdle() {
                   <li>Place up to {MAX_PINS} pins on the globe. You start with one clue and unlock more after each pin.</li>
                   <li>🟩 means within {GREEN_KM} km: you found it. 🟨 is up to {YELLOW_KM} km away. 🟥 is farther.</li>
                   <li>After each miss you see how far away you were and which way to go, and the globe turns closer to the answer.</li>
+                  <li>Zoom in with the + and − buttons or by pinching. Country borders fade in as you zoom, and U.S. state lines appear a little closer. Reset puts the globe back.</li>
                   <li>A new puzzle appears every day at midnight.</li>
                 </ul>
                 <p className="mapdle-note"><a href="./how-to-play/">Read the full guide</a> with an example round.</p>
