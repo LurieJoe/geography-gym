@@ -260,6 +260,27 @@ export default function Mapdle() {
         </ol>
       </section>
 
+      {record.pins.length > 0 && (
+        <section className="mapdle-chips" aria-label="Your pins" aria-live="polite">
+          <ol>
+            {record.pins.map((pin, index) => {
+              const band = pinBand(pin)
+              const heading = compass(bearingDeg(pin, target))
+              const win = band === 'green'
+              return (
+                <li key={index} className={`pin-chip band-${band}`} aria-label={`Pin ${index + 1}: ${BAND_WORD[band]}${win ? ', you win' : `, ${formatDistance(pin.km, unit)}, go ${heading.label}`}`}>
+                  <span aria-hidden="true">{BAND_EMOJI[band]}</span>
+                  <strong aria-hidden="true">{index + 1}</strong>
+                  {win
+                    ? <span aria-hidden="true">{regionKind ? 'Inside!' : 'Close enough!'}</span>
+                    : <span aria-hidden="true">{formatDistance(pin.km, unit)} <span className="chip-arrow">{heading.arrow} {heading.label}</span></span>}
+                </li>
+              )
+            })}
+          </ol>
+        </section>
+      )}
+
       <section className={`mapdle-map${finished ? ' is-finished' : ''}`}>
         {!finished && (
           <div className="mapdle-status">
@@ -310,26 +331,7 @@ export default function Mapdle() {
         />
       </section>
 
-      <section className="mapdle-pins" aria-label="Your pins" aria-live="polite">
-        <ol>
-          {record.pins.map((pin, index) => {
-            const band = pinBand(pin)
-            const heading = compass(bearingDeg(pin, target))
-            return (
-              <li key={index} className={`pin-row band-${band}`}>
-                <span className="pin-block" aria-hidden="true">{BAND_EMOJI[band]}</span>
-                <span className="pin-name">Pin {index + 1}</span>
-                <span className="pin-band">{BAND_WORD[band]}</span>
-                <span className="pin-distance">{band === 'green' ? (regionKind ? 'Inside, you win!' : 'Close enough, you win!') : formatDistance(pin.km, unit)}</span>
-                {band !== 'green' && (
-                  <span className="pin-direction" title={`Go ${heading.label}`}>
-                    <span aria-hidden="true">{heading.arrow}</span> {heading.label}
-                  </span>
-                )}
-              </li>
-            )
-          })}
-        </ol>
+      <section className="mapdle-pins" aria-label="Color legend">
         <p className="mapdle-legend">
           {regionKind
             ? <>🟩 inside the {regionKind}, you win · 🟨 outside, up to {formatDistance(YELLOW_KM, unit)} away · 🟥 farther.</>
