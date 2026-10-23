@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { InteractiveGlobe, type GlobeCoordinate } from '../InteractiveGlobe'
 import {
-  BAND_EMOJI, BAND_WORD, MAX_PINS, bandFor, bearingDeg, compass, currentStreak, dayLabel, dayNumber, formatDistance,
+  BAND_EMOJI, BAND_WORD, MAX_PINS, pinBand, bearingDeg, compass, currentStreak, dayLabel, dayNumber, formatDistance,
   interpolate, loadSaved, msUntilNextDay, newRecord, puzzleForDay, recordFinished, save, shareText, submitPin,
   type DayRecord, type Saved,
 } from './logic'
@@ -10,6 +10,7 @@ import { applyTheme, readThemeMode, saveThemeMode, type ThemeMode } from './them
 import { LearnPanel } from './LearnPanel'
 import { PUZZLE_FACTS } from './puzzleFacts'
 import { track } from './analytics'
+import { REGION_KIND, checkInside, preloadRegion } from './regions'
 
 function useDay() {
   const [day, setDay] = useState(() => dayNumber())
@@ -111,6 +112,7 @@ export default function Mapdle() {
   const [pending, setPending] = useState<GlobeCoordinate | null>(null)
   const [panel, setPanel] = useState<'help' | 'stats' | 'learn' | null>(() => (loadSaved().seenHelp ? null : 'help')) // seenHelp = "Don’t show on startup" is ticked
   const [notice, setNotice] = useState('')
+  const [checking, setChecking] = useState(false)
   const [globeZoom, setGlobeZoom] = useState<number | undefined>(undefined) // keeps your zoom after each pin
   const [themeMode, setThemeMode] = useState<ThemeMode>(readThemeMode)
   const waitingWorker = useServiceWorker()
@@ -128,6 +130,8 @@ export default function Mapdle() {
   }, [waitingWorker, record.pins.length, pending, panel])
 
   useEffect(() => { setPending(null) }, [day])
+  const regionKind = REGION_KIND[puzzle.id]
+  useEffect(() => { preloadRegion(puzzle.id) }, [puzzle.id])
 
   useEffect(() => {
     applyTheme(themeMode)
@@ -146,12 +150,15 @@ export default function Mapdle() {
 
   const update = useCallback((next: Saved) => { setSaved(next); save(next) }, [])
 
-  function confirmPin() {
-    if (!pending || finished) return
-    const nextRecord = submitPin(record, pending, target)
+  async function confirmPin() {
+    if (!pending || finished || checking) return
+    setChecking(true)
+    const inside = await checkInside(puzzle.id, target, pending)
+    setChecking(false)
+    const nextRecord = submitPin(record, pending, target, inside)
     const eventBase = { puzzle: day, phase: day >= 1 ? 'live' : 'preview' }
     const placed = nextRecord.pins[nextRecord.pins.length - 1]
-    track('pin_placed', { ...eventBase, pin: nextRecord.pins.length, band: placed ? bandFor(placed.km) : 'none' })
+    track('pin_placed', { ...eventBase, pin: nextRecord.pins.length, band: placed ? pinBand(placed) : 'none' })
     if (nextRecord.status === 'won') track('game_won', { ...eventBase, pins: nextRecord.pins.length })
     if (nextRecord.status === 'lost') track('game_lost', eventBase)
     const stats = nextRecord.status !== 'playing' ? recordFinished(saved.stats, nextRecord) : saved.stats
@@ -181,7 +188,7 @@ export default function Mapdle() {
   const lastPin = record.pins[record.pins.length - 1]
   const focus = finished ? target : lastPin ? interpolate(lastPin, target, 0.55) : undefined
   const attempts = [
-    ...record.pins.map((pin, index) => ({ lat: pin.lat, lon: pin.lon, index: index + 1, band: bandFor(pin.km) as string })),
+    ...record.pins.map((pin, index) => ({ lat: pin.lat, lon: pin.lon, index: index + 1, band: pinBand(pin) as string })),
     ...(pending && !finished ? [{ lat: pending.lat, lon: pending.lon, index: record.pins.length + 1, band: 'pending' as string }] : []),
   ]
   const pinsLeft = MAX_PINS - record.pins.length
@@ -259,7 +266,7 @@ export default function Mapdle() {
             <ol className="mapdle-tracker" aria-label={`Pin ${record.pins.length + 1} of ${MAX_PINS}. ${pinsLeft} pins left.`}>
               {Array.from({ length: MAX_PINS }, (_, index) => {
                 const pin = record.pins[index]
-                const state = pin ? `used band-${bandFor(pin.km)}` : index === record.pins.length ? 'current' : 'open'
+                const state = pin ? `used band-${pinBand(pin)}` : index === record.pins.length ? 'current' : 'open'
                 return <li key={index} className={`tracker-dot ${state}`}>{index + 1}</li>
               })}
             </ol>
@@ -268,7 +275,7 @@ export default function Mapdle() {
                 <>
                   <p><strong>Pin {record.pins.length + 1} is placed.</strong> Confirm it, or tap the globe somewhere else to move it.</p>
                   <div className="mapdle-actions">
-                    <button type="button" className="primary" onClick={confirmPin}>Confirm pin {record.pins.length + 1} of {MAX_PINS}</button>
+                    <button type="button" className="primary" onClick={confirmPin} disabled={checking}>{checking ? 'Checking…' : `Confirm pin ${record.pins.length + 1} of ${MAX_PINS}`}</button>
                     <button type="button" onClick={() => setPending(null)}>Clear</button>
                   </div>
                 </>
@@ -299,7 +306,7 @@ export default function Mapdle() {
       <section className="mapdle-pins" aria-label="Your pins" aria-live="polite">
         <ol>
           {record.pins.map((pin, index) => {
-            const band = bandFor(pin.km)
+            const band = pinBand(pin)
             const heading = compass(bearingDeg(pin, target))
             return (
               <li key={index} className={`pin-row band-${band}`}>
@@ -317,7 +324,9 @@ export default function Mapdle() {
           })}
         </ol>
         <p className="mapdle-legend">
-          🟩 within {formatDistance(GREEN_KM, unit)} · 🟨 up to {formatDistance(YELLOW_KM, unit)} · 🟥 farther.
+          {regionKind
+            ? <>🟩 inside the {regionKind} · 🟨 outside, up to {formatDistance(YELLOW_KM, unit)} away · 🟥 farther.</>
+            : <>🟩 within {formatDistance(GREEN_KM, unit)} · 🟨 up to {formatDistance(YELLOW_KM, unit)} · 🟥 farther.</>}{' '}
           The arrow points from your pin toward the answer.
         </p>
       </section>
@@ -373,6 +382,7 @@ export default function Mapdle() {
                   <li>Each day has one hidden place. Today’s subject is shown at the top.</li>
                   <li>Place up to {MAX_PINS} pins on the globe. You start with one clue and unlock more after each pin.</li>
                   <li>🟩 means within {GREEN_KM} km: you found it. 🟨 is up to {YELLOW_KM} km away. 🟥 is farther.</li>
+                  <li>When the answer is a whole U.S. state or country, 🟩 means your pin is inside it (with a few kilometers of leeway at the border). The legend under the globe tells you which kind of puzzle you have.</li>
                   <li>After each miss you see how far away you were and which way to go, and the globe turns closer to the answer.</li>
                   <li>Zoom in with the + and − buttons or by pinching. Country borders fade in as you zoom, and U.S. state lines appear a little closer. Reset puts the globe back.</li>
                   <li>A new puzzle appears every day at midnight.</li>

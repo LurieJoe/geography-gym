@@ -9,7 +9,7 @@ export const SHARE_URL = 'https://geographygym.com/mapdle/'
 export type Band = 'green' | 'yellow' | 'red'
 export type Status = 'playing' | 'won' | 'lost'
 export interface Coord { lat: number; lon: number }
-export interface Pin extends Coord { km: number }
+export interface Pin extends Coord { km: number; band?: Band }
 export interface DayRecord { day: number; pins: Pin[]; status: Status }
 export interface Stats {
   played: number
@@ -53,6 +53,8 @@ export function bandFor(km: number): Band {
   if (km <= YELLOW_KM) return 'yellow'
   return 'red'
 }
+/** The color of a pin. State and country puzzles store it directly; all others come from the distance. */
+export function pinBand(pin: Pin): Band { return pin.band ?? bandFor(pin.km) }
 export const BAND_EMOJI: Record<Band, string> = { green: '🟩', yellow: '🟨', red: '🟥' }
 export const BAND_WORD: Record<Band, string> = { green: 'Green', yellow: 'Yellow', red: 'Red' }
 
@@ -105,11 +107,14 @@ export function msUntilNextDay(now: Date = new Date()): number {
 // ---- play ----
 export function newRecord(day: number): DayRecord { return { day, pins: [], status: 'playing' } }
 
-export function submitPin(record: DayRecord, coord: Coord, target: Coord): DayRecord {
+/** `inside` is for state and country puzzles: true = inside it (green), false = outside (never green), null or missing = distance only. */
+export function submitPin(record: DayRecord, coord: Coord, target: Coord, inside?: boolean | null): DayRecord {
   if (record.status !== 'playing') return record
   const pin: Pin = { lat: coord.lat, lon: coord.lon, km: distanceKm(coord, target) }
+  if (inside === true) pin.band = 'green'
+  else if (inside === false) pin.band = pin.km <= YELLOW_KM ? 'yellow' : 'red'
   const pins = [...record.pins, pin]
-  const status: Status = pin.km <= GREEN_KM ? 'won' : pins.length >= MAX_PINS ? 'lost' : 'playing'
+  const status: Status = pinBand(pin) === 'green' ? 'won' : pins.length >= MAX_PINS ? 'lost' : 'playing'
   return { ...record, pins, status }
 }
 
@@ -119,7 +124,7 @@ export function cluesShown(record: DayRecord): number {
 }
 
 export function shareText(record: DayRecord, subject: string): string {
-  const blocks = record.pins.map((p) => BAND_EMOJI[bandFor(p.km)]).join('')
+  const blocks = record.pins.map((p) => BAND_EMOJI[pinBand(p)]).join('')
   const title = record.day >= 1 ? `Mapdle #${record.day}` : 'Mapdle preview'
   return `${title}\n${subject}\n${blocks}\n${SHARE_URL}`
 }
