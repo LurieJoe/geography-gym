@@ -260,6 +260,7 @@ html[data-theme="dark"] .mapdle {
 .tracker-dot.used.band-red { background: var(--band-red); }
 .mapdle-callout { padding: 12px 14px; border-radius: 0.8rem; border: 1px solid var(--cp-accent); background: var(--cp-accent-soft); }
 .mapdle-callout.all-clues { border-width: 2px; }
+.mapdle-clue-notice { margin: 0 0 8px; padding: 10px 14px; border-radius: 0.8rem; background: var(--cp-accent); color: var(--cp-accent-fg); font-weight: 600; line-height: 1.4; }
 .mapdle-callout p { margin: 0 0 6px; line-height: 1.45; }
 .mapdle-callout p:last-child { margin-bottom: 0; }
 .mapdle-callout .mapdle-actions { justify-content: flex-start; margin-top: 8px; }

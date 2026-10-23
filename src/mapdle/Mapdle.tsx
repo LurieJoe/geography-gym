@@ -270,6 +270,13 @@ export default function Mapdle() {
                 return <li key={index} className={`tracker-dot ${state}`}>{index + 1}</li>
               })}
             </ol>
+            {record.pins.length >= 2 && (
+              <p className="mapdle-clue-notice" role="status">
+                {record.pins.length === 2
+                  ? `Last clue unlocked! All 3 clues are open. You have ${pinsLeft} pins left.`
+                  : `You’ve used all 3 clues, but you still have ${pinsLeft} ${pinsLeft === 1 ? 'pin' : 'pins'} left. The arrows and distances will keep guiding you.`}
+              </p>
+            )}
             <div className={`mapdle-callout${record.pins.length >= 2 ? ' all-clues' : ''}`} role="status">
               {pending ? (
                 <>
@@ -284,7 +291,7 @@ export default function Mapdle() {
               ) : record.pins.length === 1 ? (
                 <p><strong>Clue 2 is unlocked.</strong> Follow the arrow, then tap the globe to place pin 2. You have {pinsLeft} pins left.</p>
               ) : (
-                <p><strong>All 3 clues are unlocked.</strong> You still have {pinsLeft} more {pinsLeft === 1 ? 'pin' : 'pins'}. Tap the globe to place pin {record.pins.length + 1}.</p>
+                <p><strong>Tap the globe to place pin {record.pins.length + 1}.</strong></p>
               )}
             </div>
           </div>
@@ -313,7 +320,7 @@ export default function Mapdle() {
                 <span className="pin-block" aria-hidden="true">{BAND_EMOJI[band]}</span>
                 <span className="pin-name">Pin {index + 1}</span>
                 <span className="pin-band">{BAND_WORD[band]}</span>
-                <span className="pin-distance">{band === 'green' ? 'Found it' : formatDistance(pin.km, unit)}</span>
+                <span className="pin-distance">{band === 'green' ? (regionKind ? 'Inside, you win!' : 'Close enough, you win!') : formatDistance(pin.km, unit)}</span>
                 {band !== 'green' && (
                   <span className="pin-direction" title={`Go ${heading.label}`}>
                     <span aria-hidden="true">{heading.arrow}</span> {heading.label}
@@ -325,8 +332,8 @@ export default function Mapdle() {
         </ol>
         <p className="mapdle-legend">
           {regionKind
-            ? <>🟩 inside the {regionKind} · 🟨 outside, up to {formatDistance(YELLOW_KM, unit)} away · 🟥 farther.</>
-            : <>🟩 within {formatDistance(GREEN_KM, unit)} · 🟨 up to {formatDistance(YELLOW_KM, unit)} · 🟥 farther.</>}{' '}
+            ? <>🟩 inside the {regionKind}, you win · 🟨 outside, up to {formatDistance(YELLOW_KM, unit)} away · 🟥 farther.</>
+            : <>🟩 close enough to win (within {formatDistance(GREEN_KM, unit)}) · 🟨 up to {formatDistance(YELLOW_KM, unit)} · 🟥 farther.</>}{' '}
           The arrow points from your pin toward the answer.
         </p>
       </section>
@@ -381,7 +388,7 @@ export default function Mapdle() {
                 <ul>
                   <li>Each day has one hidden place. Today’s subject is shown at the top.</li>
                   <li>Place up to {MAX_PINS} pins on the globe. You start with one clue and unlock more after each pin.</li>
-                  <li>🟩 means within {GREEN_KM} km: you found it. 🟨 is up to {YELLOW_KM} km away. 🟥 is farther.</li>
+                  <li>🟩 means within {GREEN_KM} km: close enough, you win! 🟨 is up to {YELLOW_KM} km away. 🟥 is farther.</li>
                   <li>When the answer is a whole U.S. state or country, 🟩 means your pin is inside it (with a few kilometers of leeway at the border). The legend under the globe tells you which kind of puzzle you have.</li>
                   <li>After each miss you see how far away you were and which way to go, and the globe turns closer to the answer.</li>
                   <li>Zoom in with the + and − buttons or by pinching. Country borders fade in as you zoom, and U.S. state lines appear a little closer. Reset puts the globe back.</li>
