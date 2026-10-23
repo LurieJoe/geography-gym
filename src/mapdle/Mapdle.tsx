@@ -8,6 +8,7 @@ import {
 import { GREEN_KM, YELLOW_KM } from './puzzles'
 import { applyTheme, readThemeMode, saveThemeMode, type ThemeMode } from './theme'
 import { LearnPanel } from './LearnPanel'
+import { PUZZLE_FACTS } from './puzzleFacts'
 import { track } from './analytics'
 
 function useDay() {
@@ -325,6 +326,7 @@ export default function Mapdle() {
         <section className={`mapdle-result ${record.status}`} aria-label="Result">
           <h2>{record.status === 'won' ? (record.pins.length === 1 ? 'First pin!' : `Found it in ${record.pins.length} pins`) : 'Out of pins'}</h2>
           <p className="mapdle-answer">The answer was <strong>{puzzle.answer}</strong>.</p>
+          {PUZZLE_FACTS[puzzle.id] && <p className="mapdle-fun-fact"><strong>Fun fact:</strong> {PUZZLE_FACTS[puzzle.id].fact}</p>}
           <pre className="mapdle-share">{shareText(record, puzzle.subject)}</pre>
           <div className="mapdle-actions">
             <button type="button" className="primary" onClick={share}>Share result</button>

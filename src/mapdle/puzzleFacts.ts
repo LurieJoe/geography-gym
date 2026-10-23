@@ -1,7 +1,8 @@
 // Fun facts for the "Learn more" pop-up, keyed by puzzle id (see puzzles.ts).
 // A puzzle with no entry here still gets the pop-up: coordinates, a map link, and a Wikipedia link.
 // `wiki` is the Wikipedia article name. `practice` picks which Geography Gym page the button opens.
-// Batch 1 of 4: puzzles 1-85. Add the next batches to the end of this object.
+// Batch 1 of 4: puzzles 1-85, plus Massachusetts (90) and the ten preview-week puzzles (331-340).
+// Add the next batches to the end of this object.
 
 export type PracticeKey = 'us' | 'world' | 'landmarks' | 'waterways'
 export interface PuzzleFact { wiki: string; practice: PracticeKey; fact: string }
@@ -92,4 +93,15 @@ export const PUZZLE_FACTS: Record<number, PuzzleFact> = {
   83: { wiki: 'Illinois', practice: 'us', fact: 'The ten-story Home Insurance Building, completed in Chicago in 1885, is often called the world’s first skyscraper.' },
   84: { wiki: 'São Paulo', practice: 'world', fact: 'It is the largest city in Brazil, and it is home to the largest Japanese community outside Japan.' },
   85: { wiki: 'Charles Bridge', practice: 'landmarks', fact: 'Construction began in 1357 under Emperor Charles IV. The bridge is lined with 30 statues, mostly of saints.' },
+  90: { wiki: 'Massachusetts', practice: 'us', fact: 'Marshmallow Fluff was invented in Somerville, Massachusetts, in 1917, and it has been made in Lynn, Massachusetts, since 1920.' },
+  331: { wiki: 'New York (state)', practice: 'us', fact: 'The state bird of New York is the eastern bluebird, and its state fruit is the apple.' },
+  332: { wiki: 'Persepolis', practice: 'landmarks', fact: 'Darius the Great began building Persepolis around 518 BCE as a ceremonial capital of the Persian Empire. Alexander the Great’s army burned it in 330 BCE.' },
+  333: { wiki: 'Belize', practice: 'world', fact: 'Belize is the only country in Central America where English is the official language. Its barrier reef is the largest in the Northern Hemisphere.' },
+  334: { wiki: 'Guinea', practice: 'world', fact: 'The Niger, Senegal, and Gambia rivers all begin in Guinea, which is why it is nicknamed the water tower of West Africa.' },
+  335: { wiki: 'Perito Moreno Glacier', practice: 'landmarks', fact: 'Visitors can watch huge chunks of ice break off the face of this glacier and crash into Lake Argentino.' },
+  336: { wiki: 'Moscow', practice: 'world', fact: 'The Moscow Metro opened in 1935, and many of its stations are decorated like palaces, with chandeliers, mosaics, and marble.' },
+  337: { wiki: 'Kiel Canal', practice: 'waterways', fact: 'Opened in 1895, the Kiel Canal is about 98 kilometers (61 miles) long and one of the busiest artificial waterways in the world. It saves ships the trip around Denmark.' },
+  338: { wiki: 'Tennessee', practice: 'us', fact: 'Nashville is nicknamed Music City, and Memphis is home to Elvis Presley’s Graceland.' },
+  339: { wiki: 'Masada', practice: 'landmarks', fact: 'King Herod built palaces on this rock plateau above the Dead Sea. It is also where Jewish rebels made their last stand against Rome, around 73 CE.' },
+  340: { wiki: 'Bosnia and Herzegovina', practice: 'world', fact: 'Sarajevo, the capital of Bosnia and Herzegovina, hosted the 1984 Winter Olympics.' },
 }

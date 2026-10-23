@@ -46,7 +46,6 @@ export function LearnPanel({ puzzle, day }: { puzzle: MapdlePuzzle; day: number 
     <>
       <h2>{puzzle.answer}</h2>
       <p className="mapdle-learn-sub">{puzzle.subject}</p>
-      {entry && <p className="mapdle-fact"><strong>Did you know?</strong> {entry.fact}</p>}
       <div className="mapdle-learn-where">
         <strong>Approximate location</strong>
         <span>{formatCoords(puzzle.lat, puzzle.lon)}</span>
