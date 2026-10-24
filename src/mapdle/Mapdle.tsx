@@ -110,7 +110,7 @@ export default function Mapdle() {
   const puzzle = useMemo(() => puzzleForDay(day), [day])
   const [saved, setSaved] = useState<Saved>(() => loadSaved())
   const [pending, setPending] = useState<GlobeCoordinate | null>(null)
-  const [panel, setPanel] = useState<'help' | 'stats' | 'learn' | null>(() => (loadSaved().seenHelp ? null : 'help')) // seenHelp = "Don’t show on startup" is ticked
+  const [panel, setPanel] = useState<'help' | 'stats' | 'learn' | 'result' | null>(() => (loadSaved().seenHelp ? null : 'help')) // seenHelp = "Don’t show on startup" is ticked
   const [notice, setNotice] = useState('')
   const [checking, setChecking] = useState(false)
   const [globeZoom, setGlobeZoom] = useState<number | undefined>(undefined) // keeps your zoom after each pin
@@ -164,6 +164,7 @@ export default function Mapdle() {
     const stats = nextRecord.status !== 'playing' ? recordFinished(saved.stats, nextRecord) : saved.stats
     update({ ...saved, records: { ...saved.records, [day]: nextRecord }, stats })
     setPending(null)
+    if (nextRecord.status !== 'playing') window.setTimeout(() => setPanel('result'), 900)
   }
 
   async function share() {
@@ -197,6 +198,21 @@ export default function Mapdle() {
   const streak = currentStreak(saved.stats, day)
   const winPct = saved.stats.played ? Math.round((saved.stats.wins / saved.stats.played) * 100) : 0
   const maxBar = Math.max(1, ...saved.stats.distribution)
+  const resultBody = finished ? (
+    <>
+        <h2>{record.status === 'won' ? (record.pins.length === 1 ? 'First pin!' : `Found it in ${record.pins.length} pins`) : 'Out of pins'}</h2>
+        <p className="mapdle-answer">The answer was <strong>{puzzle.answer}</strong>.</p>
+        {PUZZLE_FACTS[puzzle.id] && <p className="mapdle-fun-fact"><strong>Fun fact:</strong> {PUZZLE_FACTS[puzzle.id].fact}</p>}
+        <pre className="mapdle-share">{shareText(record, puzzle.subject)}</pre>
+        <div className="mapdle-actions">
+          <button type="button" className="primary" onClick={share}>Share result</button>
+          <button type="button" onClick={() => { track('learn_more_opened', { puzzle: day, phase: day >= 1 ? 'live' : 'preview' }); setPanel('learn') }}>Learn more</button>
+          <button type="button" onClick={() => setPanel('stats')}>See stats</button>
+        </div>
+        {notice && <p className="mapdle-notice" role="status">{notice}</p>}
+        <p className="mapdle-next">Next puzzle in <strong>{countdown}</strong></p>
+    </>
+  ) : null
 
   return (
     <main className="mapdle">
@@ -282,6 +298,9 @@ export default function Mapdle() {
       )}
 
       <section className={`mapdle-map${finished ? ' is-finished' : ''}`}>
+        {finished && (
+          <button type="button" className="primary mapdle-show-result" onClick={() => setPanel('result')}>Show result, share, and fun fact</button>
+        )}
         {!finished && (
           <div className="mapdle-status">
             <ol className="mapdle-tracker" aria-label={`Pin ${record.pins.length + 1} of ${MAX_PINS}. ${pinsLeft} pins left.`}>
@@ -342,17 +361,7 @@ export default function Mapdle() {
 
       {finished && (
         <section className={`mapdle-result ${record.status}`} aria-label="Result">
-          <h2>{record.status === 'won' ? (record.pins.length === 1 ? 'First pin!' : `Found it in ${record.pins.length} pins`) : 'Out of pins'}</h2>
-          <p className="mapdle-answer">The answer was <strong>{puzzle.answer}</strong>.</p>
-          {PUZZLE_FACTS[puzzle.id] && <p className="mapdle-fun-fact"><strong>Fun fact:</strong> {PUZZLE_FACTS[puzzle.id].fact}</p>}
-          <pre className="mapdle-share">{shareText(record, puzzle.subject)}</pre>
-          <div className="mapdle-actions">
-            <button type="button" className="primary" onClick={share}>Share result</button>
-            <button type="button" onClick={() => { track('learn_more_opened', { puzzle: day, phase: day >= 1 ? 'live' : 'preview' }); setPanel('learn') }}>Learn more</button>
-            <button type="button" onClick={() => setPanel('stats')}>See stats</button>
-          </div>
-          {notice && <p className="mapdle-notice" role="status">{notice}</p>}
-          <p className="mapdle-next">Next puzzle in <strong>{countdown}</strong></p>
+          {resultBody}
         </section>
       )}
 
@@ -380,9 +389,11 @@ export default function Mapdle() {
       </footer>
 
       {panel && (
-        <div className="mapdle-modal" role="dialog" aria-modal="true" aria-label={panel === 'help' ? 'How to play' : panel === 'learn' ? 'About today’s answer' : 'Statistics'}>
+        <div className="mapdle-modal" role="dialog" aria-modal="true" aria-label={panel === 'result' ? 'Your result' : panel === 'help' ? 'How to play' : panel === 'learn' ? 'About today’s answer' : 'Statistics'}>
           <div className="mapdle-modal-card">
-            {panel === 'learn' ? (
+            {panel === 'result' ? (
+              <div className={`mapdle-result-body ${record.status}`}>{resultBody}</div>
+            ) : panel === 'learn' ? (
               <LearnPanel puzzle={puzzle} day={day} />
             ) : panel === 'help' ? (
               <>
@@ -429,10 +440,10 @@ export default function Mapdle() {
             )}
             <button
               type="button"
-              className={panel === 'learn' ? '' : 'primary'}
+              className={panel === 'learn' || panel === 'result' ? '' : 'primary'}
               onClick={() => setPanel(null)}
             >
-              {panel === 'help' ? 'Start playing' : 'Close'}
+              {panel === 'help' ? 'Start playing' : panel === 'result' ? 'Back to the globe' : 'Close'}
             </button>
           </div>
         </div>

@@ -211,6 +211,9 @@
 .pin-chip.band-yellow { border-color: var(--band-yellow); }
 .pin-chip.band-red { border-color: var(--band-red); }
 .chip-arrow { font-weight: 800; white-space: nowrap; }
+.mapdle-result-body { display: grid; gap: 10px; text-align: center; }
+.mapdle-result-body h2 { margin: 0; font-size: 1.4rem; }
+.mapdle-show-result { width: 100%; }
 .mapdle-legend { margin: 8px 0 0; color: var(--cp-text-muted); font-size: 0.8rem; line-height: 1.5; }
 .mapdle-result { display: grid; gap: 10px; padding: 16px; border-radius: 1rem; border: 2px solid var(--band-green); background: var(--cp-surface); text-align: center; }
 .mapdle-result.lost { border-color: var(--band-red); }
