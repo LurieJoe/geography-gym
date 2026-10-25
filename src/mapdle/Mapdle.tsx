@@ -124,12 +124,18 @@ export default function Mapdle() {
 
   // A new version is ready. If today's game has not started, switch to it now. Otherwise the bar lets the player choose.
   useEffect(() => {
-    if (waitingWorker && record.pins.length === 0 && !pending && (panel === null || panel === 'help')) {
+    if (waitingWorker && record.pins.length === 0 && !pending && panel === null) {
       waitingWorker.postMessage({ type: 'SKIP_WAITING' })
     }
   }, [waitingWorker, record.pins.length, pending, panel])
 
   useEffect(() => { setPending(null) }, [day])
+  useEffect(() => {
+    if (!panel) return
+    const onKey = (event: KeyboardEvent) => { if (event.key === 'Escape') setPanel(null) }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [panel])
   const regionKind = REGION_KIND[puzzle.id]
   useEffect(() => { preloadRegion(puzzle.id) }, [puzzle.id])
 
@@ -389,7 +395,7 @@ export default function Mapdle() {
       </footer>
 
       {panel && (
-        <div className="mapdle-modal" role="dialog" aria-modal="true" aria-label={panel === 'result' ? 'Your result' : panel === 'help' ? 'How to play' : panel === 'learn' ? 'About today’s answer' : 'Statistics'}>
+        <div className="mapdle-modal" onClick={(event) => { if (event.target === event.currentTarget) setPanel(null) }} role="dialog" aria-modal="true" aria-label={panel === 'result' ? 'Your result' : panel === 'help' ? 'How to play' : panel === 'learn' ? 'About today’s answer' : 'Statistics'}>
           <div className="mapdle-modal-card">
             {panel === 'result' ? (
               <div className={`mapdle-result-body ${record.status}`}>{resultBody}</div>
@@ -440,7 +446,7 @@ export default function Mapdle() {
             )}
             <button
               type="button"
-              className={panel === 'learn' || panel === 'result' ? '' : 'primary'}
+              className={`mapdle-modal-close${panel === 'learn' || panel === 'result' ? '' : ' primary'}`}
               onClick={() => setPanel(null)}
             >
               {panel === 'help' ? 'Start playing' : panel === 'result' ? 'Back to the globe' : 'Close'}
