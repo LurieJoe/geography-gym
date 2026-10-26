@@ -2,8 +2,9 @@ import { useEffect, useState } from 'react'
 import { PUZZLE_FACTS, type PracticeKey } from './puzzleFacts'
 import type { MapdlePuzzle } from './puzzles'
 import { track } from './analytics'
+import { REGION_KIND } from './regions'
 
-const PRACTICE: Record<PracticeKey, { href: string; label: string }> = {
+export const PRACTICE: Record<PracticeKey, { href: string; label: string }> = {
   us: { href: '../us-states-and-capitals/', label: 'Practice U.S. states and capitals' },
   world: { href: '../world-countries-and-capitals/', label: 'Practice world countries and capitals' },
   landmarks: { href: '../famous-landmarks/', label: 'Explore famous landmarks' },
@@ -35,10 +36,19 @@ function useOnline(): boolean {
   return online
 }
 
+/** Which Geography Gym practice page fits this puzzle. */
+export function practiceKeyFor(puzzle: MapdlePuzzle): PracticeKey {
+  const entry = PUZZLE_FACTS[puzzle.id]
+  if (entry?.practice) return entry.practice
+  if (puzzle.subject === 'Landmarks') return 'landmarks'
+  if (puzzle.subject === 'Waterways') return 'waterways'
+  return REGION_KIND[puzzle.id] === 'state' ? 'us' : 'world'
+}
+
 /** Content of the "Learn more" pop-up, shown after a puzzle is finished. */
 export function LearnPanel({ puzzle, day }: { puzzle: MapdlePuzzle; day: number }) {
   const entry = PUZZLE_FACTS[puzzle.id]
-  const practiceKey: PracticeKey = entry?.practice ?? (puzzle.subject === 'Landmarks' ? 'landmarks' : puzzle.subject === 'Waterways' ? 'waterways' : 'world')
+  const practiceKey = practiceKeyFor(puzzle)
   const practice = PRACTICE[practiceKey]
   const online = useOnline()
   const base = { puzzle: day, phase: day >= 1 ? 'live' : 'preview' }

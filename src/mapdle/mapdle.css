@@ -214,6 +214,11 @@
 .mapdle-result-body { display: grid; gap: 10px; text-align: center; }
 .mapdle-result-body h2 { margin: 0; font-size: 1.4rem; }
 .mapdle-show-result { width: 100%; }
+.mapdle-answer-big { margin: 0; display: grid; gap: 2px; }
+.mapdle-answer-big span { color: var(--cp-text-muted); font-size: 0.9rem; }
+.mapdle-answer-big strong { font-size: 1.75rem; line-height: 1.15; color: var(--cp-accent); overflow-wrap: anywhere; }
+.mapdle a.mapdle-practice-cta { display: block; padding: 12px 16px; border-radius: 0.8rem; border: 2px solid var(--cp-accent); background: var(--cp-accent-soft); color: var(--cp-accent); text-align: center; text-decoration: none; font-weight: 700; }
+.mapdle a.mapdle-practice-cta:hover { background: var(--cp-accent); color: var(--cp-accent-fg); }
 .mapdle-legend { margin: 8px 0 0; color: var(--cp-text-muted); font-size: 0.8rem; line-height: 1.5; }
 .mapdle-result { display: grid; gap: 10px; padding: 16px; border-radius: 1rem; border: 2px solid var(--band-green); background: var(--cp-surface); text-align: center; }
 .mapdle-result.lost { border-color: var(--band-red); }

@@ -7,7 +7,7 @@ import {
 } from './logic'
 import { GREEN_KM, YELLOW_KM } from './puzzles'
 import { applyTheme, readThemeMode, saveThemeMode, type ThemeMode } from './theme'
-import { LearnPanel } from './LearnPanel'
+import { LearnPanel, PRACTICE, practiceKeyFor } from './LearnPanel'
 import { PUZZLE_FACTS } from './puzzleFacts'
 import { track } from './analytics'
 import { REGION_KIND, checkInside, preloadRegion } from './regions'
@@ -204,10 +204,11 @@ export default function Mapdle() {
   const streak = currentStreak(saved.stats, day)
   const winPct = saved.stats.played ? Math.round((saved.stats.wins / saved.stats.played) * 100) : 0
   const maxBar = Math.max(1, ...saved.stats.distribution)
+  const practiceKey = practiceKeyFor(puzzle)
   const resultBody = finished ? (
     <>
         <h2>{record.status === 'won' ? (record.pins.length === 1 ? 'First pin!' : `Found it in ${record.pins.length} pins`) : 'Out of pins'}</h2>
-        <p className="mapdle-answer">The answer was <strong>{puzzle.answer}</strong>.</p>
+        <p className="mapdle-answer-big"><span>The answer was</span><strong>{puzzle.answer}</strong></p>
         {PUZZLE_FACTS[puzzle.id] && <p className="mapdle-fun-fact"><strong>Fun fact:</strong> {PUZZLE_FACTS[puzzle.id].fact}</p>}
         <pre className="mapdle-share">{shareText(record, puzzle.subject)}</pre>
         <div className="mapdle-actions">
@@ -215,6 +216,7 @@ export default function Mapdle() {
           <button type="button" onClick={() => { track('learn_more_opened', { puzzle: day, phase: day >= 1 ? 'live' : 'preview' }); setPanel('learn') }}>Learn more</button>
           <button type="button" onClick={() => setPanel('stats')}>See stats</button>
         </div>
+        <a className="mapdle-practice-cta" href={PRACTICE[practiceKey].href} target="_blank" rel="noopener" onClick={() => track('learn_practice_clicked', { puzzle: day, phase: day >= 1 ? 'live' : 'preview', practice: practiceKey, from: 'result' })}>{PRACTICE[practiceKey].label} <span aria-hidden="true">→</span></a>
         {notice && <p className="mapdle-notice" role="status">{notice}</p>}
         <p className="mapdle-next">Next puzzle in <strong>{countdown}</strong></p>
     </>
