@@ -168,10 +168,10 @@ export function loadSaved(): Saved {
     const raw = localStorage.getItem(KEY)
     if (raw) {
       const parsed = JSON.parse(raw) as Partial<Saved>
-      return { records: parsed.records ?? {}, stats: { ...emptyStats(), ...parsed.stats }, unit: parsed.unit === 'mi' ? 'mi' : 'km', seenHelp: !!parsed.seenHelp }
+      return { records: parsed.records ?? {}, stats: { ...emptyStats(), ...parsed.stats }, unit: parsed.unit === 'km' ? 'km' : 'mi', seenHelp: !!parsed.seenHelp }
     }
   } catch { /* storage blocked or corrupt: start fresh */ }
-  return { records: {}, stats: emptyStats(), unit: 'km', seenHelp: false }
+  return { records: {}, stats: emptyStats(), unit: 'mi', seenHelp: false }
 }
 export function save(saved: Saved) {
   try {

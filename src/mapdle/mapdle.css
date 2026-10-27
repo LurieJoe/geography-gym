@@ -13,6 +13,13 @@
   touch-action: none;
 }
 .interactive-globe.is-dragging > svg { cursor: grabbing; }
+/* No text selection or Copy / Look Up menu on the globe, so pressing on the map never gets in the way of placing a pin. */
+.interactive-globe, .interactive-globe svg, .interactive-globe svg text {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+}
 .interactive-globe > svg:focus-visible {
   outline: 3px solid var(--cp-accent);
   outline-offset: 3px;
