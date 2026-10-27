@@ -129,6 +129,15 @@ export function shareText(record: DayRecord, subject: string): string {
   return `${title}\n${subject}\n${blocks}\n${SHARE_URL}`
 }
 
+/** The headline in the result pop-up. "special" wins get a celebration: first pin, or never a red pin. */
+export function winHeadline(record: DayRecord): { text: string; special: boolean } {
+  if (record.status !== 'won') return { text: 'Out of pins', special: false }
+  const n = record.pins.length
+  if (n === 1) return { text: 'You got it in 1!', special: true }
+  if (!record.pins.some((p) => pinBand(p) === 'red')) return { text: "You didn't need Red!", special: true }
+  return { text: `Found it in ${n} pins`, special: false }
+}
+
 // ---- stats ----
 export const emptyStats = (): Stats => ({ played: 0, wins: 0, streak: 0, maxStreak: 0, lastWonDay: 0, distribution: [0, 0, 0, 0, 0], lastFinishedDay: 0 })
 

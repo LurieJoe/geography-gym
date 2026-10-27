@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { InteractiveGlobe, type GlobeCoordinate } from '../InteractiveGlobe'
 import {
   BAND_EMOJI, BAND_WORD, MAX_PINS, pinBand, bearingDeg, compass, currentStreak, dayLabel, dayNumber, formatDistance,
-  interpolate, loadSaved, msUntilNextDay, newRecord, puzzleForDay, recordFinished, save, shareText, submitPin,
+  interpolate, loadSaved, msUntilNextDay, newRecord, puzzleForDay, recordFinished, save, shareText, submitPin, winHeadline,
   type DayRecord, type Saved,
 } from './logic'
 import { GREEN_KM, YELLOW_KM } from './puzzles'
@@ -205,9 +205,10 @@ export default function Mapdle() {
   const winPct = saved.stats.played ? Math.round((saved.stats.wins / saved.stats.played) * 100) : 0
   const maxBar = Math.max(1, ...saved.stats.distribution)
   const practiceKey = practiceKeyFor(puzzle)
+  const headline = winHeadline(record)
   const resultBody = finished ? (
     <>
-        <h2>{record.status === 'won' ? (record.pins.length === 1 ? 'First pin!' : `Found it in ${record.pins.length} pins`) : 'Out of pins'}</h2>
+        <h2 className={headline.special ? 'mapdle-celebrate' : undefined}>{headline.special && <span aria-hidden="true">🎉 </span>}{headline.text}</h2>
         <p className="mapdle-answer-big"><span>The answer was</span><strong>{puzzle.answer}</strong></p>
         {PUZZLE_FACTS[puzzle.id] && <p className="mapdle-fun-fact"><strong>Fun fact:</strong> {PUZZLE_FACTS[puzzle.id].fact}</p>}
         <pre className="mapdle-share">{shareText(record, puzzle.subject)}</pre>
