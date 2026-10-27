@@ -260,8 +260,9 @@ html[data-theme="dark"] .mapdle {
   --cp-accent-fg: #0b1f1d;
 }
 .mapdle .interactive-globe > svg { overflow: hidden; border-radius: 1.1rem; }
-.mapdle-map.is-finished .globe-controls,
 .mapdle-map.is-finished .globe-guidance { display: none; }
+.globe-explore-hint { margin: 6px 0 0; text-align: center; color: var(--cp-text-muted); font-size: 0.85rem; }
+.globe-attempt text.globe-dot-label, .globe-target text.globe-dot-label { fill: var(--cp-text); stroke: var(--cp-surface); stroke-width: 3px; paint-order: stroke; font-size: 12px; font-weight: 800; text-anchor: middle; pointer-events: none; }
 .mapdle-footer { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; color: var(--cp-text-muted); font-size: 0.85rem; }
 .mapdle-footer a, .mapdle-modal-card a { color: var(--cp-accent); font-weight: 600; }
 

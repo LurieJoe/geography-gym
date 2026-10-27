@@ -36,6 +36,10 @@ const ASSISTED_SCALE = 292
 const ROTATION_STEP = 18
 const MIN_SCALE = 180
 const MAX_SCALE = 1600
+/** After a puzzle is finished (explore mode) players may zoom in much closer. */
+const EXPLORE_MAX_SCALE = 5000
+/** In explore mode, pins become small labeled dots from this zoom on. */
+const COMPACT_SCALE = 500
 const ZOOM_STEP = 1.35
 // Borders fade in between these globe sizes. The detailed country lines load only when zoomed in a lot.
 const COUNTRY_BORDER_START = 330
@@ -43,8 +47,8 @@ const COUNTRY_BORDER_FULL = 470
 const STATE_BORDER_START = 480
 const STATE_BORDER_FULL = 640
 const DETAIL_BORDER_SCALE = 620
-function clampScale(value: number) {
-  return Math.min(MAX_SCALE, Math.max(MIN_SCALE, value))
+function clampScale(value: number, max = MAX_SCALE) {
+  return Math.min(max, Math.max(MIN_SCALE, value))
 }
 const topology = landTopology as unknown as Topology<{ land: GeometryCollection }>
 const land = feature(topology, topology.objects.land) as GeoPermissibleObjects
@@ -59,8 +63,10 @@ function normalizeLongitude(longitude: number) {
   return ((longitude + 540) % 360) - 180
 }
 
-function initialRotation(focus?: GlobeCoordinate): Rotation {
+function initialRotation(focus?: GlobeCoordinate, exact = false): Rotation {
   if (!focus) return { lat: 10, lon: 10 }
+  // In explore mode the answer sits exactly in the middle, so zooming in lands right on it.
+  if (exact) return { lon: normalizeLongitude(focus.lon), lat: clampLatitude(focus.lat) }
   return {
     lon: normalizeLongitude(focus.lon + 18),
     lat: clampLatitude(focus.lat - (focus.lat >= 0 ? 9 : -9)),
@@ -87,6 +93,8 @@ export function InteractiveGlobe({
   zoom,
   onZoomChange,
   borders = false,
+  explore = false,
+  targetLabel = 'Answer',
 }: {
   ariaLabel: string
   points?: GlobePoint[]
@@ -102,8 +110,12 @@ export function InteractiveGlobe({
   onZoomChange?: (scale: number | undefined) => void
   /** Draw country borders and U.S. state lines as the globe is zoomed in, and always once `answered` is true. */
   borders?: boolean
+  /** Keep the globe turnable and zoomable after `answered` (pins still cannot be placed), with a closer maximum zoom. */
+  explore?: boolean
+  /** Label for the answer dot when zoomed in close in explore mode. */
+  targetLabel?: string
 }) {
-  const [rotation, setRotation] = useState<Rotation>(() => initialRotation(focusTarget))
+  const [rotation, setRotation] = useState<Rotation>(() => initialRotation(focusTarget, answered && explore))
   const baseScale = focusTarget ? ASSISTED_SCALE : DEFAULT_SCALE
   const [scale, setScaleState] = useState(() => clampScale(zoom ?? baseScale))
   const svgRef = useRef<SVGSVGElement | null>(null)
@@ -111,8 +123,10 @@ export function InteractiveGlobe({
   const pinch = useRef<{ distance: number; scale: number } | null>(null)
   const scaleRef = useRef(scale)
   scaleRef.current = scale
+  const canMove = !answered || explore
+  const maxScale = answered && explore ? EXPLORE_MAX_SCALE : MAX_SCALE
   function setScale(next: number) {
-    const clamped = clampScale(next)
+    const clamped = clampScale(next, maxScale)
     setScaleState(clamped)
     onZoomChange?.(clamped === baseScale ? undefined : clamped)
   }
@@ -208,7 +222,7 @@ export function InteractiveGlobe({
   }
 
   function reset() {
-    setRotation(initialRotation(focusTarget))
+    setRotation(initialRotation(focusTarget, answered && explore))
     setScale(focusTarget ? ASSISTED_SCALE : DEFAULT_SCALE)
   }
 
@@ -252,7 +266,7 @@ export function InteractiveGlobe({
   }
 
   function handlePointerDown(event: PointerEvent<SVGSVGElement>) {
-    if (answered) return
+    if (!canMove) return
     setKeyboardMode(false)
     pointers.current.set(event.pointerId, { x: event.clientX, y: event.clientY })
     if (pointers.current.size === 2) {
@@ -315,6 +329,7 @@ export function InteractiveGlobe({
     if (coordinate) onPlace({ lon: coordinate[0], lat: coordinate[1] })
   }
 
+  const compact = answered && explore && scale >= COMPACT_SCALE
   const visiblePointCount = projectedPoints.filter((point) => point.visible).length
 
   return (
@@ -329,7 +344,7 @@ export function InteractiveGlobe({
         ref={svgRef}
         viewBox={`0 0 ${GLOBE_SIZE} ${GLOBE_SIZE}`}
         role="application"
-        tabIndex={answered ? -1 : 0}
+        tabIndex={canMove ? 0 : -1}
         aria-label={ariaLabel}
         onKeyDown={handleKeyboard}
         onPointerDown={handlePointerDown}
@@ -383,8 +398,17 @@ export function InteractiveGlobe({
               key={`${attempt.index}-${attempt.lat}-${attempt.lon}`}
               transform={`translate(${attempt.projected[0]} ${attempt.projected[1]})`}
             >
-              <circle r="13" />
-              <text y="5">{attempt.index}</text>
+              {compact ? (
+                <>
+                  <circle r="5" />
+                  <text className="globe-dot-label" y="-10">{attempt.index}</text>
+                </>
+              ) : (
+                <>
+                  <circle r="13" />
+                  <text y="5">{attempt.index}</text>
+                </>
+              )}
             </g>
           )
         })}
@@ -393,8 +417,17 @@ export function InteractiveGlobe({
             className="globe-target"
             transform={`translate(${projectedTarget.projected[0]} ${projectedTarget.projected[1]})`}
           >
-            <circle r="15" />
-            <path d="M-7 0 L-2 6 L9 -7" />
+            {compact ? (
+              <>
+                <circle r="6" />
+                <text className="globe-dot-label" y="20">{targetLabel}</text>
+              </>
+            ) : (
+              <>
+                <circle r="15" />
+                <path d="M-7 0 L-2 6 L9 -7" />
+              </>
+            )}
           </g>
         )}
         {keyboardMode && onPlace && !answered && (
@@ -406,7 +439,7 @@ export function InteractiveGlobe({
       </svg>
 
       <div className="globe-zoom" role="group" aria-label="Globe zoom controls">
-        <button type="button" onClick={() => zoomBy(ZOOM_STEP)} disabled={scale >= MAX_SCALE} aria-label="Zoom in">
+        <button type="button" onClick={() => zoomBy(ZOOM_STEP)} disabled={scale >= maxScale} aria-label="Zoom in">
           <Plus aria-hidden="true" />
         </button>
         <button type="button" onClick={() => zoomBy(1 / ZOOM_STEP)} disabled={scale <= MIN_SCALE} aria-label="Zoom out">
@@ -415,15 +448,15 @@ export function InteractiveGlobe({
       </div>
 
       <div className="globe-controls" aria-label="Globe rotation controls">
-        <button type="button" onClick={() => rotate(-ROTATION_STEP)} disabled={answered} aria-label="Rotate globe left">
+        <button type="button" onClick={() => rotate(-ROTATION_STEP)} disabled={!canMove} aria-label="Rotate globe left">
           <ChevronLeft aria-hidden="true" />
           <span>Rotate</span>
         </button>
-        <button type="button" onClick={reset} disabled={answered} aria-label="Reset globe view">
+        <button type="button" onClick={reset} disabled={!canMove} aria-label="Reset globe view">
           <RotateCcw aria-hidden="true" />
           <span>Reset</span>
         </button>
-        <button type="button" onClick={() => rotate(ROTATION_STEP)} disabled={answered} aria-label="Rotate globe right">
+        <button type="button" onClick={() => rotate(ROTATION_STEP)} disabled={!canMove} aria-label="Rotate globe right">
           <span>Rotate</span>
           <ChevronRight aria-hidden="true" />
         </button>
@@ -434,6 +467,10 @@ export function InteractiveGlobe({
           Drag or swipe to rotate the globe. Pinch or use the + and − buttons to zoom. Use the other buttons for smaller turns.
           {points.length > 0 && ` ${visiblePointCount} of ${points.length} numbered points are currently visible.`}
         </p>
+      )}
+
+      {answered && explore && (
+        <p className="globe-explore-hint">Drag to turn the globe and zoom in to see how close your pins were.</p>
       )}
 
       {keyboardMode && points.length > 0 && !answered && (

@@ -355,6 +355,8 @@ export default function Mapdle() {
           onPlace={(coordinate) => setPending(coordinate)}
           zoom={globeZoom}
           borders
+          explore
+          targetLabel={regionKind ? 'Center' : 'Answer'}
           onZoomChange={setGlobeZoom}
         />
       </section>
