@@ -357,3 +357,44 @@ html[data-theme="dark"] .mapdle {
 /* mapdle-fun-fact: the fact shown in the result card */
 .mapdle-fun-fact { margin: 0; color: var(--cp-text-muted); font-size: 0.95rem; line-height: 1.5; }
 .mapdle-fun-fact strong { color: var(--cp-text); }
+
+/* Phone in landscape: clues and buttons on the left, the globe on the right (it stays in view while the left side scrolls).
+   Only for wide, short screens. Portrait phones, tablets, and laptops are not affected. */
+@media (orientation: landscape) and (max-height: 500px) and (min-width: 560px) {
+  .mapdle {
+    --globe-size: clamp(230px, calc(100dvh - 76px), 520px);
+    max-width: 1000px;
+    padding: max(10px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(20px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+    grid-template-columns: minmax(0, 1fr) max(var(--globe-size), 290px);
+    grid-auto-flow: row dense;
+    column-gap: 18px;
+    row-gap: 10px;
+    align-items: start;
+  }
+  .mapdle > * { grid-column: 1; }
+  .mapdle > .mapdle-update, .mapdle > .mapdle-result, .mapdle > .mapdle-about, .mapdle > .mapdle-footer { grid-column: 1 / -1; }
+  /* the map section stops being a box, so its parts can sit in the grid on their own */
+  .mapdle-map { display: contents; }
+  .mapdle-map > .mapdle-show-result, .mapdle-map > .mapdle-status { grid-column: 1; }
+  .mapdle .interactive-globe { grid-column: 2; grid-row: span 7; position: sticky; top: 8px; align-self: start; justify-self: stretch; }
+  .mapdle .interactive-globe > svg { width: var(--globe-size); max-height: none; }
+  .mapdle .globe-zoom { right: max(8px, calc((100% - var(--globe-size)) / 2 + 8px)); }
+  .mapdle .globe-guidance { display: none; }
+  .mapdle-header h1 { font-size: 1.5rem; }
+  .mapdle-subject { display: flex; align-items: baseline; gap: 12px; padding: 6px 14px; }
+  .mapdle-subject strong { font-size: 1.1rem; }
+  .mapdle-clues ol { gap: 5px; }
+  .mapdle-clues li { padding: 6px 10px; gap: 8px; }
+  .mapdle-clues { font-size: 0.92rem; }
+  .mapdle-tracker { display: none; }
+  .mapdle-callout { padding: 10px 12px; }
+  .mapdle-clue-notice { padding: 8px 12px; margin-bottom: 6px; }
+  .mapdle-status { gap: 8px; }
+  /* pop-ups: use the short screen well, keep the button reachable */
+  .mapdle-modal { padding: 8px max(16px, env(safe-area-inset-right)) max(14px, calc(env(safe-area-inset-bottom) + 6px)) max(16px, env(safe-area-inset-left)); }
+  .mapdle-modal-card { width: min(100%, 680px); max-height: calc(100dvh - 24px); padding: 14px 18px; gap: 10px; }
+  .mapdle-modal-card .mapdle-result-body { display: block; column-count: 2; column-gap: 22px; }
+  .mapdle-modal-card .mapdle-result-body > * { break-inside: avoid; margin: 0 0 10px; }
+  .mapdle-answer-big strong { font-size: 1.5rem; }
+}
+

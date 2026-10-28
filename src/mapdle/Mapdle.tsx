@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { InteractiveGlobe, type GlobeCoordinate } from '../InteractiveGlobe'
 import {
   BAND_EMOJI, BAND_WORD, MAX_PINS, pinBand, bearingDeg, compass, currentStreak, dayLabel, dayNumber, formatDistance,
@@ -11,6 +11,11 @@ import { LearnPanel, PRACTICE, practiceKeyFor } from './LearnPanel'
 import { PUZZLE_FACTS } from './puzzleFacts'
 import { track } from './analytics'
 import { REGION_KIND, checkInside, preloadRegion } from './regions'
+
+/** True on a phone turned sideways (the two-column layout). */
+function isPhoneLandscape() {
+  try { return window.matchMedia('(orientation: landscape) and (max-height: 500px) and (min-width: 560px)').matches } catch { return false }
+}
 
 function useDay() {
   const [day, setDay] = useState(() => dayNumber())
@@ -110,6 +115,7 @@ export default function Mapdle() {
   const puzzle = useMemo(() => puzzleForDay(day), [day])
   const [saved, setSaved] = useState<Saved>(() => loadSaved())
   const [pending, setPending] = useState<GlobeCoordinate | null>(null)
+  const calloutRef = useRef<HTMLDivElement>(null)
   const [panel, setPanel] = useState<'help' | 'stats' | 'learn' | 'result' | null>(() => (loadSaved().seenHelp ? null : 'help')) // seenHelp = "Don’t show on startup" is ticked
   const [notice, setNotice] = useState('')
   const [checking, setChecking] = useState(false)
@@ -130,6 +136,10 @@ export default function Mapdle() {
   }, [waitingWorker, record.pins.length, pending, panel])
 
   useEffect(() => { setPending(null) }, [day])
+  // Sideways phone: after tapping the globe, bring the Confirm button into view.
+  useEffect(() => {
+    if (pending && isPhoneLandscape()) calloutRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+  }, [pending])
   useEffect(() => {
     if (!panel) return
     const onKey = (event: KeyboardEvent) => { if (event.key === 'Escape') setPanel(null) }
@@ -170,6 +180,7 @@ export default function Mapdle() {
     const stats = nextRecord.status !== 'playing' ? recordFinished(saved.stats, nextRecord) : saved.stats
     update({ ...saved, records: { ...saved.records, [day]: nextRecord }, stats })
     setPending(null)
+    if (isPhoneLandscape()) window.scrollTo({ top: 0, behavior: 'smooth' }) // back up to the clues and distances
     if (nextRecord.status !== 'playing') window.setTimeout(() => setPanel('result'), 900)
   }
 
@@ -326,7 +337,7 @@ export default function Mapdle() {
                   : `You’ve used all 3 clues, but you still have ${pinsLeft} ${pinsLeft === 1 ? 'pin' : 'pins'} left. The arrows and distances will keep guiding you.`}
               </p>
             )}
-            <div className={`mapdle-callout${record.pins.length >= 2 ? ' all-clues' : ''}`} role="status">
+            <div ref={calloutRef} className={`mapdle-callout${record.pins.length >= 2 ? ' all-clues' : ''}`} role="status">
               {pending ? (
                 <>
                   <p><strong>Pin {record.pins.length + 1} is placed.</strong> Confirm it, or tap the globe somewhere else to move it.</p>
