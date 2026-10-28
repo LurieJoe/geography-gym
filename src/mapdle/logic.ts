@@ -125,7 +125,7 @@ export function cluesShown(record: DayRecord): number {
 
 export function shareText(record: DayRecord, subject: string): string {
   const blocks = record.pins.map((p) => BAND_EMOJI[pinBand(p)]).join('')
-  const title = record.day >= 1 ? `Mapdle #${record.day}` : 'Mapdle preview'
+  const title = record.day >= 1 ? `🌍 Mapdle #${record.day}` : '🌍 Mapdle preview'
   return `${title}\n${subject}\n${blocks}\n${SHARE_URL}`
 }
 
