@@ -4,7 +4,7 @@ import { GREEN_KM, YELLOW_KM, PUZZLES, type MapdlePuzzle } from './puzzles'
 export const MAX_PINS = 5
 /** First day of the daily game (local date, YYYY-MM-DD). Change this before you launch. */
 export const LAUNCH_DATE = '2026-11-01'
-export const SHARE_URL = 'https://geographygym.com/mapdle/'
+export const SHARE_URL = 'geographygym.com/mapdle' // no https:// on purpose, so Messages keeps it in the same bubble as the result
 
 export type Band = 'green' | 'yellow' | 'red'
 export type Status = 'playing' | 'won' | 'lost'
