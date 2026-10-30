@@ -8,7 +8,9 @@
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "deploy": "npm run build && gh-pages -d dist"
+    "deploy": "npm run build && gh-pages -d dist",
+    "prebuild": "node scripts/stamp-version.mjs",
+    "predev": "node scripts/stamp-version.mjs"
   },
   "dependencies": {
     "d3-geo": "^3.1.1",

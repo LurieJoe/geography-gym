@@ -357,6 +357,8 @@ html[data-theme="dark"] .mapdle {
 /* mapdle-fun-fact: the fact shown in the result card */
 .mapdle-fun-fact { margin: 0; color: var(--cp-text-muted); font-size: 0.95rem; line-height: 1.5; }
 .mapdle-fun-fact strong { color: var(--cp-text); }
+.mapdle .mapdle-version { text-align: center; margin-top: 14px; }
+.mapdle .mapdle-version button.linkish { color: var(--cp-accent); font-weight: 600; }
 
 /* Phone in landscape: clues and buttons on the left, the globe on the right (it stays in view while the left side scrolls).
    Only for wide, short screens. Portrait phones, tablets, and laptops are not affected. */

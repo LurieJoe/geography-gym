@@ -10,11 +10,24 @@ import { applyTheme, readThemeMode, saveThemeMode, type ThemeMode } from './them
 import { LearnPanel, PRACTICE, practiceKeyFor } from './LearnPanel'
 import { PUZZLE_FACTS } from './puzzleFacts'
 import { track } from './analytics'
+import { MAPDLE_VERSION } from './version'
 import { REGION_KIND, checkInside, preloadRegion } from './regions'
 
 /** True on a phone turned sideways (the two-column layout). */
 function isPhoneLandscape() {
   try { return window.matchMedia('(orientation: landscape) and (max-height: 500px) and (min-width: 560px)').matches } catch { return false }
+}
+
+/** Clears Mapdle's saved app files (never the player's saved games or stats) and reloads, so the newest version loads. */
+async function reloadLatest() {
+  track('reload_latest_clicked')
+  try {
+    const registrations = (await navigator.serviceWorker?.getRegistrations?.()) ?? []
+    await Promise.all(registrations.filter((r) => r.scope.endsWith('/mapdle/')).map((r) => r.unregister()))
+    const keys = await caches.keys()
+    await Promise.all(keys.filter((key) => key.startsWith('mapdle-')).map((key) => caches.delete(key)))
+  } catch { /* reload anyway */ }
+  window.location.reload()
 }
 
 function useDay() {
@@ -438,6 +451,7 @@ export default function Mapdle() {
                   />
                   <span>Don’t show this on startup</span>
                 </label>
+                <p className="mapdle-note mapdle-version">Mapdle v{MAPDLE_VERSION} · <button type="button" className="linkish" onClick={reloadLatest}>Reload latest version</button></p>
               </>
             ) : (
               <>
