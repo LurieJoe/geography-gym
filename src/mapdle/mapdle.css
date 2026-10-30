@@ -400,3 +400,21 @@ html[data-theme="dark"] .mapdle {
   .mapdle-answer-big strong { font-size: 1.5rem; }
 }
 
+
+/* ---- streak badges ---- */
+.mapdle-badge-won { display: grid; gap: 6px; justify-items: center; margin: 0 auto; padding: 14px 18px; border-radius: 0.9rem; background: var(--cp-surface-soft); }
+.mapdle-badge-kicker { margin: 0; font-size: 0.7rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--cp-text-muted); }
+.mapdle-badge-name { margin: 0; font-size: 1.5rem; font-weight: 800; }
+.mapdle-badge-brag { margin: 0; color: var(--cp-text-muted); font-size: 0.9rem; }
+.mapdle-badge-won button { margin-top: 6px; }
+.mapdle-badge-teaser { margin: 0; font-weight: 600; }
+.mapdle-badges { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.mapdle-badges li { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 8px; color: var(--cp-text-muted); font-size: 0.9rem; }
+.mapdle-badges .mapdle-badge-dot { width: 10px; height: 10px; border-radius: 50%; background: currentColor; opacity: 0.3; }
+.mapdle-badges li.is-won { color: var(--cp-text); font-weight: 700; }
+.mapdle-badges li.is-won .mapdle-badge-dot { opacity: 1; }
+.mapdle-badge-days { font-variant-numeric: tabular-nums; font-size: 0.8rem; }
+.mapdle-badges li.is-next { color: var(--cp-accent); }
+.mapdle-badges li.is-next .mapdle-badge-dot { opacity: 1; box-shadow: 0 0 0 3px var(--cp-accent-soft); }
+.mapdle-badges li.is-next .mapdle-badge-days { font-weight: 700; }
+.mapdle-badge-tag { letter-spacing: 0.04em; text-transform: uppercase; font-size: 0.68rem; }

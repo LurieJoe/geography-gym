@@ -5,6 +5,7 @@ import {
   interpolate, loadSaved, msUntilNextDay, newRecord, puzzleForDay, recordFinished, save, shareText, submitPin, winHeadline,
   type DayRecord, type Saved,
 } from './logic'
+import { BADGES, badgeEarnedBy, badgeShareText, nextBadge, streakTeaser, type Badge } from './badges'
 import { GREEN_KM, YELLOW_KM } from './puzzles'
 import { applyTheme, readThemeMode, saveThemeMode, type ThemeMode } from './theme'
 import { LearnPanel, PRACTICE, practiceKeyFor } from './LearnPanel'
@@ -131,6 +132,7 @@ export default function Mapdle() {
   const calloutRef = useRef<HTMLDivElement>(null)
   const [panel, setPanel] = useState<'help' | 'stats' | 'learn' | 'result' | null>(() => (loadSaved().seenHelp ? null : 'help')) // seenHelp = "Don’t show on startup" is ticked
   const [notice, setNotice] = useState('')
+  const [newBadge, setNewBadge] = useState<Badge | null>(null)
   const [checking, setChecking] = useState(false)
   const [globeZoom, setGlobeZoom] = useState<number | undefined>(undefined) // keeps your zoom after each pin
   const [themeMode, setThemeMode] = useState<ThemeMode>(readThemeMode)
@@ -148,7 +150,7 @@ export default function Mapdle() {
     }
   }, [waitingWorker, record.pins.length, pending, panel])
 
-  useEffect(() => { setPending(null) }, [day])
+  useEffect(() => { setPending(null); setNewBadge(null) }, [day])
   // Sideways phone: after tapping the globe, bring the Confirm button into view.
   useEffect(() => {
     if (pending && isPhoneLandscape()) calloutRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
@@ -191,15 +193,17 @@ export default function Mapdle() {
     if (nextRecord.status === 'won') track('game_won', { ...eventBase, pins: nextRecord.pins.length })
     if (nextRecord.status === 'lost') track('game_lost', eventBase)
     const stats = nextRecord.status !== 'playing' ? recordFinished(saved.stats, nextRecord) : saved.stats
+    const earnedBadge = badgeEarnedBy(saved.stats, stats)
+    if (earnedBadge) track('badge_earned', { ...eventBase, badge: earnedBadge.id, streak: stats.maxStreak })
+    setNewBadge(earnedBadge)
     update({ ...saved, records: { ...saved.records, [day]: nextRecord }, stats })
     setPending(null)
     if (isPhoneLandscape()) window.scrollTo({ top: 0, behavior: 'smooth' }) // back up to the clues and distances
     if (nextRecord.status !== 'playing') window.setTimeout(() => setPanel('result'), 900)
   }
 
-  async function share() {
-    track('share_clicked', { puzzle: day, phase: day >= 1 ? 'live' : 'preview', result: record.status })
-    const text = shareText(record, puzzle.subject)
+  /** Share sheet first, clipboard second. Called straight from a tap so iOS keeps the user gesture. */
+  async function sendShare(text: string, copied: string, fallback: string) {
     try {
       if (navigator.share) {
         await navigator.share({ text })
@@ -210,10 +214,20 @@ export default function Mapdle() {
     }
     try {
       await navigator.clipboard.writeText(text)
-      setNotice('Result copied. Paste it anywhere to share.')
+      setNotice(copied)
     } catch {
-      setNotice('Copy this result:\n' + text)
+      setNotice(fallback + '\n' + text)
     }
+  }
+
+  async function share() {
+    track('share_clicked', { puzzle: day, phase: day >= 1 ? 'live' : 'preview', result: record.status })
+    await sendShare(shareText(record, puzzle.subject), 'Result copied. Paste it anywhere to share.', 'Copy this result:')
+  }
+
+  async function shareBadge(badge: Badge) {
+    track('badge_share_clicked', { puzzle: day, phase: day >= 1 ? 'live' : 'preview', badge: badge.id })
+    await sendShare(badgeShareText(badge, day), 'Brag copied. Paste it anywhere to share.', 'Copy this brag:')
   }
 
   const lastPin = record.pins[record.pins.length - 1]
@@ -230,10 +244,20 @@ export default function Mapdle() {
   const maxBar = Math.max(1, ...saved.stats.distribution)
   const practiceKey = practiceKeyFor(puzzle)
   const headline = winHeadline(record)
+  const teaser = newBadge ? null : streakTeaser(streak)
+  const upNext = nextBadge(saved.stats.maxStreak)
   const resultBody = finished ? (
     <>
         <h2 className={headline.special ? 'mapdle-celebrate' : undefined}>{headline.special && <span aria-hidden="true">🎉 </span>}{headline.text}</h2>
         <p className="mapdle-answer-big"><span>The answer was</span><strong>{puzzle.answer}</strong></p>
+        {newBadge && (
+          <div className="mapdle-badge-won">
+            <p className="mapdle-badge-kicker">New badge</p>
+            <p className="mapdle-badge-name">{newBadge.name}</p>
+            <p className="mapdle-badge-brag">{newBadge.brag}</p>
+            <button type="button" className="primary" onClick={() => shareBadge(newBadge)}>Brag about it</button>
+          </div>
+        )}
         {PUZZLE_FACTS[puzzle.id] && <p className="mapdle-fun-fact"><strong>Fun fact:</strong> {PUZZLE_FACTS[puzzle.id].fact}</p>}
         <pre className="mapdle-share">{shareText(record, puzzle.subject)}</pre>
         <div className="mapdle-actions">
@@ -243,6 +267,7 @@ export default function Mapdle() {
         </div>
         <a className="mapdle-practice-cta" href={PRACTICE[practiceKey].href} target="_blank" rel="noopener" onClick={() => track('learn_practice_clicked', { puzzle: day, phase: day >= 1 ? 'live' : 'preview', practice: practiceKey, from: 'result' })}>{PRACTICE[practiceKey].label} <span aria-hidden="true">→</span></a>
         {notice && <p className="mapdle-notice" role="status">{notice}</p>}
+        {teaser && <p className="mapdle-badge-teaser">{teaser}</p>}
         <p className="mapdle-next">Next puzzle in <strong>{countdown}</strong></p>
     </>
   ) : null
@@ -471,6 +496,16 @@ export default function Mapdle() {
                     </li>
                   ))}
                 </ol>
+                <h3>Badges</h3>
+                <ul className="mapdle-badges">
+                  {BADGES.map((badge) => (
+                    <li key={badge.id} className={badge.days <= saved.stats.maxStreak ? 'is-won' : badge.id === upNext?.id ? 'is-next' : undefined}>
+                      <span className="mapdle-badge-dot" aria-hidden="true" />
+                      <span>{badge.name}</span>
+                      <span className="mapdle-badge-days">{badge.days} days{badge.id === upNext?.id && <span className="mapdle-badge-tag"> · up next</span>}</span>
+                    </li>
+                  ))}
+                </ul>
                 <p className="mapdle-note">Stats are saved on this device only.</p>
               </>
             )}
