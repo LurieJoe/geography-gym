@@ -16,9 +16,9 @@ export const BADGES: readonly Badge[] = [
   { id: 'scout', name: 'Scout', days: 3, brag: 'Three days in. Just getting my bearings.' },
   { id: 'explorer', name: 'Explorer', days: 7, brag: 'One week straight. Not lost yet.' },
   { id: 'navigator', name: 'Navigator', days: 14, brag: 'Two weeks without missing a day.' },
-  { id: 'guide', name: 'Guide', days: 30, brag: 'A full month. I know where I am going now.' },
-  { id: 'cartographer', name: 'Cartographer', days: 90, brag: 'Ninety days. I am drawing the maps at this point.' },
-  { id: 'geographer', name: 'Geographer', days: 180, brag: 'Six months, 180 puzzles, zero days missed.' },
+  { id: 'cartographer', name: 'Cartographer', days: 30, brag: 'A full month. I am drawing the maps now.' },
+  { id: 'geographer', name: 'Geographer', days: 90, brag: 'Ninety days without missing one.' },
+  { id: 'atlas-master', name: 'Atlas Master', days: 180, brag: 'Six months, 180 puzzles, zero days missed.' },
 ]
 
 /** Every badge earned so far. Permanent: based on the best streak, not the current one. */
