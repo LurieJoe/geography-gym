@@ -56,6 +56,8 @@ export function bandFor(km: number): Band {
 /** The color of a pin. State and country puzzles store it directly; all others come from the distance. */
 export function pinBand(pin: Pin): Band { return pin.band ?? bandFor(pin.km) }
 export const BAND_EMOJI: Record<Band, string> = { green: '🟩', yellow: '🟨', red: '🟥' }
+/** The color-blind friendly set: blue, yellow, and orange. */
+export const BAND_EMOJI_CB: Record<Band, string> = { green: '🟦', yellow: '🟨', red: '🟧' }
 export const BAND_WORD: Record<Band, string> = { green: 'Green', yellow: 'Yellow', red: 'Red' }
 
 export function formatDistance(km: number, unit: 'km' | 'mi'): string {
@@ -123,8 +125,9 @@ export function cluesShown(record: DayRecord): number {
   return record.status === 'playing' ? Math.min(3, record.pins.length + 1) : 3
 }
 
-export function shareText(record: DayRecord, subject: string): string {
-  const blocks = record.pins.map((p) => BAND_EMOJI[pinBand(p)]).join('')
+export function shareText(record: DayRecord, subject: string, colorblind = false): string {
+  const set = colorblind ? BAND_EMOJI_CB : BAND_EMOJI
+  const blocks = record.pins.map((p) => set[pinBand(p)]).join('')
   const title = record.day >= 1 ? `🌍 Mapdle #${record.day}` : '🌍 Mapdle preview'
   return `${title}\n${subject}\n${blocks}\n${SHARE_URL}`
 }
@@ -162,13 +165,13 @@ export function currentStreak(stats: Stats, today: number): number {
 
 // ---- storage (never throws) ----
 const KEY = 'mapdle:v1'
-interface Saved { records: Record<number, DayRecord>; stats: Stats; unit: 'km' | 'mi'; seenHelp: boolean }
+interface Saved { records: Record<number, DayRecord>; stats: Stats; unit: 'km' | 'mi'; seenHelp: boolean; colorblind?: boolean }
 export function loadSaved(): Saved {
   try {
     const raw = localStorage.getItem(KEY)
     if (raw) {
       const parsed = JSON.parse(raw) as Partial<Saved>
-      return { records: parsed.records ?? {}, stats: { ...emptyStats(), ...parsed.stats }, unit: parsed.unit === 'km' ? 'km' : 'mi', seenHelp: !!parsed.seenHelp }
+      return { records: parsed.records ?? {}, stats: { ...emptyStats(), ...parsed.stats }, unit: parsed.unit === 'km' ? 'km' : 'mi', seenHelp: !!parsed.seenHelp, colorblind: !!parsed.colorblind }
     }
   } catch { /* storage blocked or corrupt: start fresh */ }
   return { records: {}, stats: emptyStats(), unit: 'mi', seenHelp: false }

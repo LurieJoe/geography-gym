@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { InteractiveGlobe, type GlobeCoordinate } from '../InteractiveGlobe'
 import {
-  BAND_EMOJI, BAND_WORD, MAX_PINS, pinBand, bearingDeg, compass, currentStreak, dayLabel, dayNumber, formatDistance,
+  BAND_EMOJI, BAND_EMOJI_CB, BAND_WORD, MAX_PINS, pinBand, bearingDeg, compass, currentStreak, dayLabel, dayNumber, formatDistance,
   interpolate, loadSaved, msUntilNextDay, newRecord, puzzleForDay, recordFinished, save, shareText, submitPin, winHeadline,
   type DayRecord, type Saved,
 } from './logic'
@@ -222,7 +222,7 @@ export default function Mapdle() {
 
   async function share() {
     track('share_clicked', { puzzle: day, phase: day >= 1 ? 'live' : 'preview', result: record.status })
-    await sendShare(shareText(record, puzzle.subject), 'Result copied. Paste it anywhere to share.', 'Copy this result:')
+    await sendShare(shareText(record, puzzle.subject, !!saved.colorblind), 'Result copied. Paste it anywhere to share.', 'Copy this result:')
   }
 
   async function shareBadge(badge: Badge) {
@@ -239,6 +239,7 @@ export default function Mapdle() {
   const pinsLeft = MAX_PINS - record.pins.length
   const clueCount = finished ? 3 : Math.min(3, record.pins.length + 1)
   const unit = saved.unit
+  const emoji = saved.colorblind ? BAND_EMOJI_CB : BAND_EMOJI
   const streak = currentStreak(saved.stats, day)
   const winPct = saved.stats.played ? Math.round((saved.stats.wins / saved.stats.played) * 100) : 0
   const maxBar = Math.max(1, ...saved.stats.distribution)
@@ -259,7 +260,7 @@ export default function Mapdle() {
           </div>
         )}
         {PUZZLE_FACTS[puzzle.id] && <p className="mapdle-fun-fact"><strong>Fun fact:</strong> {PUZZLE_FACTS[puzzle.id].fact}</p>}
-        <pre className="mapdle-share">{shareText(record, puzzle.subject)}</pre>
+        <pre className="mapdle-share">{shareText(record, puzzle.subject, !!saved.colorblind)}</pre>
         <div className="mapdle-actions">
           <button type="button" className="primary" onClick={share}>Share result</button>
           <button type="button" onClick={() => { track('learn_more_opened', { puzzle: day, phase: day >= 1 ? 'live' : 'preview' }); setPanel('learn') }}>Learn more</button>
@@ -273,7 +274,7 @@ export default function Mapdle() {
   ) : null
 
   return (
-    <main className="mapdle">
+    <main className={`mapdle${saved.colorblind ? ' cb' : ''}`}>
       {waitingWorker && (
         <div className="mapdle-update" role="status">
           A new version of Mapdle is ready.
@@ -343,11 +344,11 @@ export default function Mapdle() {
               const win = band === 'green'
               return (
                 <li key={index} className={`pin-chip band-${band}`} aria-label={`Pin ${index + 1}: ${BAND_WORD[band]}${win ? ', you win' : `, ${formatDistance(pin.km, unit)}, go ${heading.label}`}`}>
-                  <span aria-hidden="true">{BAND_EMOJI[band]}</span>
+                  <span aria-hidden="true">{emoji[band]}</span>
                   <strong aria-hidden="true">{index + 1}</strong>
                   {win
                     ? <span aria-hidden="true">{regionKind ? 'Inside!' : 'Close enough!'}</span>
-                    : <span aria-hidden="true">{formatDistance(pin.km, unit)} <span className="chip-arrow">{heading.arrow} {heading.label}</span></span>}
+                    : <span aria-hidden="true">{band === 'yellow' ? 'Near · ' : 'Far · '}{formatDistance(pin.km, unit)} <span className="chip-arrow">{heading.arrow} {heading.label}</span></span>}
                 </li>
               )
             })}
@@ -413,8 +414,8 @@ export default function Mapdle() {
       <section className="mapdle-pins" aria-label="Color legend">
         <p className="mapdle-legend">
           {regionKind
-            ? <>🟩 inside the {regionKind}, you win · 🟨 outside, up to {formatDistance(YELLOW_KM, unit)} away · 🟥 farther.</>
-            : <>🟩 close enough to win (within {formatDistance(GREEN_KM, unit)}) · 🟨 up to {formatDistance(YELLOW_KM, unit)} · 🟥 farther.</>}{' '}
+            ? <>{emoji.green} inside the {regionKind}, you win · {emoji.yellow} outside, up to {formatDistance(YELLOW_KM, unit)} away · {emoji.red} farther.</>
+            : <>{emoji.green} close enough to win (within {formatDistance(GREEN_KM, unit)}) · {emoji.yellow} up to {formatDistance(YELLOW_KM, unit)} · {emoji.red} farther.</>}{' '}
           The arrow points from your pin toward the answer.
         </p>
       </section>
@@ -458,11 +459,36 @@ export default function Mapdle() {
             ) : panel === 'help' ? (
               <>
                 <h2>How to play</h2>
+                <p className="mapdle-intro"><strong>Mapdle is a worldwide daily geography game.</strong> Puzzles cover countries, landmarks, and waterways from around the globe, plus some U.S. states.</p>
+                <div className="mapdle-unit-row">
+                  <span>Show distances in</span>
+                  <div className="unit-toggle" role="group" aria-label="Distance units">
+                    {(['km', 'mi'] as const).map((choice) => (
+                      <button
+                        key={choice}
+                        type="button"
+                        aria-pressed={unit === choice}
+                        className={unit === choice ? 'is-on' : ''}
+                        onClick={() => unit !== choice && update({ ...saved, unit: choice })}
+                      >
+                        {choice === 'km' ? 'Kilometers' : 'Miles'}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <label className="mapdle-check mapdle-cb-toggle">
+                  <input
+                    type="checkbox"
+                    checked={!!saved.colorblind}
+                    onChange={(event) => update({ ...saved, colorblind: event.target.checked })}
+                  />
+                  <span>Color-blind friendly colors (blue, yellow, and orange)</span>
+                </label>
                 <ul>
                   <li>Each day has one hidden place. Today’s subject is shown at the top.</li>
                   <li>Place up to {MAX_PINS} pins on the globe. You start with one clue and unlock more after each pin.</li>
-                  <li>🟩 means within {formatDistance(GREEN_KM, unit)}: close enough, you win! 🟨 is up to {formatDistance(YELLOW_KM, unit)} away. 🟥 is farther.</li>
-                  <li>When the answer is a whole U.S. state or country, 🟩 means your pin is inside it (with a little leeway at the border). The legend under the globe tells you which kind of puzzle you have.</li>
+                  <li>{emoji.green} means within {formatDistance(GREEN_KM, unit)}: close enough, you win! {emoji.yellow} is up to {formatDistance(YELLOW_KM, unit)} away. {emoji.red} is farther. Pins also change shape, so color is never the only clue: a circle is {emoji.green}, a diamond is {emoji.yellow}, and a square is {emoji.red}.</li>
+                  <li>When the answer is a whole U.S. state or country, {emoji.green} means your pin is inside it (with a little leeway at the border). The legend under the globe tells you which kind of puzzle you have.</li>
                   <li>After each miss you see how far away you were and which way to go, and the globe turns closer to the answer.</li>
                   <li>Zoom in with the + and − buttons or by pinching. Country borders fade in as you zoom, and U.S. state lines appear a little closer. Reset puts the globe back.</li>
                   <li>A new puzzle appears every day at midnight.</li>

@@ -35,9 +35,9 @@ const DEFAULT_SCALE = 238
 const ASSISTED_SCALE = 292
 const ROTATION_STEP = 18
 const MIN_SCALE = 180
-const MAX_SCALE = 1600
+const MAX_SCALE = 8000
 /** After a puzzle is finished (explore mode) players may zoom in much closer. */
-const EXPLORE_MAX_SCALE = 5000
+const EXPLORE_MAX_SCALE = 8000
 /** In explore mode, pins become small labeled dots from this zoom on. */
 const COMPACT_SCALE = 500
 const ZOOM_STEP = 1.35
@@ -54,6 +54,13 @@ const topology = landTopology as unknown as Topology<{ land: GeometryCollection 
 const land = feature(topology, topology.objects.land) as GeoPermissibleObjects
 const graticule = geoGraticule10()
 const sphere = { type: 'Sphere' } as const
+
+/** Pins differ by shape as well as color: circle (green), diamond (yellow), square (red). */
+function PinShape({ band, r }: { band?: string; r: number }) {
+  if (band === 'yellow') return <polygon points={`0,${-r * 1.3} ${r * 1.3},0 0,${r * 1.3} ${-r * 1.3},0`} />
+  if (band === 'red') return <rect x={-r * 0.9} y={-r * 0.9} width={r * 1.8} height={r * 1.8} rx={r * 0.2} />
+  return <circle r={r} />
+}
 
 function clampLatitude(latitude: number) {
   return Math.min(80, Math.max(-80, latitude))
@@ -139,7 +146,12 @@ export function InteractiveGlobe({
       // Plain scrolling still scrolls the page. A trackpad pinch (or Ctrl + scroll) zooms the globe instead of the page.
       if (!event.ctrlKey) return
       event.preventDefault()
-      setScaleRef.current(scaleRef.current * Math.min(1.25, Math.max(0.8, Math.exp(-event.deltaY * 0.005))))
+      // A mouse wheel notch reports one big jump, so it gets a gentle fixed step. A trackpad pinch reports many tiny ones.
+      const mouseNotch = Math.abs(event.deltaY) >= 50
+      const factor = mouseNotch
+        ? (event.deltaY < 0 ? 1.12 : 1 / 1.12)
+        : Math.min(1.25, Math.max(0.8, Math.exp(-event.deltaY * 0.005)))
+      setScaleRef.current(scaleRef.current * factor)
     }
     element.addEventListener('wheel', onWheel, { passive: false })
     return () => element.removeEventListener('wheel', onWheel)
@@ -218,7 +230,9 @@ export function InteractiveGlobe({
   }
 
   function zoomBy(factor: number) {
-    setScale(scaleRef.current * factor)
+    // Once the globe is already big, take bigger steps so tiny places (like Rhode Island) do not need a dozen taps.
+    const boost = scaleRef.current >= 800 ? 1.33 : 1
+    setScale(scaleRef.current * (factor > 1 ? factor * boost : factor / boost))
   }
 
   function reset() {
@@ -302,9 +316,11 @@ export function InteractiveGlobe({
       currentDrag.moved = true
       setDragging(true)
     }
+    // The more you are zoomed in, the less one swipe should turn the globe.
+    const speed = Math.min(1, ASSISTED_SCALE / scaleRef.current)
     setRotation({
-      lon: normalizeLongitude(currentDrag.rotation.lon - deltaX * 0.35),
-      lat: clampLatitude(currentDrag.rotation.lat + deltaY * 0.28),
+      lon: normalizeLongitude(currentDrag.rotation.lon - deltaX * 0.35 * speed),
+      lat: clampLatitude(currentDrag.rotation.lat + deltaY * 0.28 * speed),
     })
   }
 
@@ -400,12 +416,12 @@ export function InteractiveGlobe({
             >
               {compact ? (
                 <>
-                  <circle r="5" />
+                  <PinShape band={attempt.band} r={5} />
                   <text className="globe-dot-label" y="-10">{attempt.index}</text>
                 </>
               ) : (
                 <>
-                  <circle r="13" />
+                  <PinShape band={attempt.band} r={13} />
                   <text y="5">{attempt.index}</text>
                 </>
               )}

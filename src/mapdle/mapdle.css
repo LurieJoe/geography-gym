@@ -154,10 +154,11 @@
 }
 
 /* Pin colors on the globe (text labels also appear in the list, so color is never the only signal) */
-.globe-attempt-green circle { fill: #16a34a; }
-.globe-attempt-yellow circle { fill: #eab308; }
+.globe-attempt-green circle { fill: var(--band-green, #16a34a); }
+.globe-attempt-yellow circle, .globe-attempt-yellow polygon { fill: var(--band-yellow, #eab308); }
 .globe-attempt-yellow text { fill: #1a1a1a; }
-.globe-attempt-red circle { fill: #dc2626; }
+.globe-attempt-red circle, .globe-attempt-red rect { fill: var(--band-red, #dc2626); }
+.globe-attempt polygon, .globe-attempt rect { stroke: var(--cp-surface); stroke-width: 4; stroke-linejoin: round; }
 .globe-attempt-pending circle { fill: var(--cp-accent); stroke-dasharray: 5 3; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
@@ -359,6 +360,14 @@ html[data-theme="dark"] .mapdle {
 .mapdle-fun-fact strong { color: var(--cp-text); }
 .mapdle .mapdle-version { text-align: center; margin-top: 14px; }
 .mapdle .mapdle-version button.linkish { color: var(--cp-accent); font-weight: 600; }
+.mapdle .mapdle-intro { margin: 0 0 10px; }
+.mapdle .mapdle-unit-row { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; margin: 0 0 14px; font-weight: 600; }
+.mapdle .mapdle-cb-toggle { margin: 0 0 14px; font-weight: 600; }
+/* Color-blind friendly colors (blue, yellow, orange) */
+.mapdle.cb { --band-green: #0072b2; --band-yellow: #f0e442; --band-red: #d55e00; }
+/* Tracker dots also differ by shape */
+.tracker-dot.used.band-yellow { border-radius: 0; clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%); }
+.tracker-dot.used.band-red { border-radius: 6px; }
 
 /* Phone in landscape: clues and buttons on the left, the globe on the right (it stays in view while the left side scrolls).
    Only for wide, short screens. Portrait phones, tablets, and laptops are not affected. */
