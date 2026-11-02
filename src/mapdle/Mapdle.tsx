@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { InteractiveGlobe, type GlobeCoordinate } from '../InteractiveGlobe'
 import {
-  BAND_EMOJI, BAND_EMOJI_CB, BAND_WORD, MAX_PINS, pinBand, bearingDeg, compass, currentStreak, dayLabel, dayNumber, formatDistance,
+  BAND_EMOJI, BAND_EMOJI_CB, BAND_WORD, BAND_WORD_CB, MAX_PINS, pinBand, bearingDeg, compass, currentStreak, dayLabel, dayNumber, formatDistance,
   interpolate, loadSaved, msUntilNextDay, newRecord, puzzleForDay, recordFinished, save, shareText, submitPin, winHeadline,
   type DayRecord, type Saved,
 } from './logic'
@@ -244,7 +244,7 @@ export default function Mapdle() {
   const winPct = saved.stats.played ? Math.round((saved.stats.wins / saved.stats.played) * 100) : 0
   const maxBar = Math.max(1, ...saved.stats.distribution)
   const practiceKey = practiceKeyFor(puzzle)
-  const headline = winHeadline(record)
+  const headline = winHeadline(record, !!saved.colorblind)
   const teaser = newBadge ? null : streakTeaser(streak)
   const upNext = nextBadge(saved.stats.maxStreak)
   const resultBody = finished ? (
@@ -343,7 +343,7 @@ export default function Mapdle() {
               const heading = compass(bearingDeg(pin, target))
               const win = band === 'green'
               return (
-                <li key={index} className={`pin-chip band-${band}`} aria-label={`Pin ${index + 1}: ${BAND_WORD[band]}${win ? ', you win' : `, ${formatDistance(pin.km, unit)}, go ${heading.label}`}`}>
+                <li key={index} className={`pin-chip band-${band}`} aria-label={`Pin ${index + 1}: ${(saved.colorblind ? BAND_WORD_CB : BAND_WORD)[band]}${win ? ', you win' : `, ${formatDistance(pin.km, unit)}, go ${heading.label}`}`}>
                   <span aria-hidden="true">{emoji[band]}</span>
                   <strong aria-hidden="true">{index + 1}</strong>
                   {win
@@ -431,7 +431,7 @@ export default function Mapdle() {
         <p>
           Mapdle is a free daily geography game. Every day there is one hidden place, such as a state, a country,
           a landmark, or a waterway. You get up to five pins on the globe. After each pin you see how close you were
-          (green, yellow, or red), which direction to go, and a new clue.
+          ({saved.colorblind ? 'blue, yellow, or orange' : 'green, yellow, or red'}), which direction to go, and a new clue.
         </p>
         <p>
           Everyone gets the same puzzle each day, so you can compare results by sharing your colored squares. Mapdle is part

@@ -59,6 +59,7 @@ export const BAND_EMOJI: Record<Band, string> = { green: '🟩', yellow: '🟨',
 /** The color-blind friendly set: blue, yellow, and orange. */
 export const BAND_EMOJI_CB: Record<Band, string> = { green: '🟦', yellow: '🟨', red: '🟧' }
 export const BAND_WORD: Record<Band, string> = { green: 'Green', yellow: 'Yellow', red: 'Red' }
+export const BAND_WORD_CB: Record<Band, string> = { green: 'Blue', yellow: 'Yellow', red: 'Orange' }
 
 export function formatDistance(km: number, unit: 'km' | 'mi'): string {
   const value = unit === 'mi' ? km * 0.621371 : km
@@ -133,11 +134,11 @@ export function shareText(record: DayRecord, subject: string, colorblind = false
 }
 
 /** The headline in the result pop-up. "special" wins get a celebration: first pin, or never a red pin. */
-export function winHeadline(record: DayRecord): { text: string; special: boolean } {
+export function winHeadline(record: DayRecord, colorblind = false): { text: string; special: boolean } {
   if (record.status !== 'won') return { text: 'Out of pins', special: false }
   const n = record.pins.length
   if (n === 1) return { text: 'You got it in 1!', special: true }
-  if (!record.pins.some((p) => pinBand(p) === 'red')) return { text: "You didn't need Red!", special: true }
+  if (!record.pins.some((p) => pinBand(p) === 'red')) return { text: colorblind ? "You didn't need Orange!" : "You didn't need Red!", special: true }
   return { text: `Found it in ${n} pins`, special: false }
 }
 
