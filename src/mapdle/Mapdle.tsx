@@ -5,7 +5,7 @@ import {
   interpolate, loadSaved, msUntilNextDay, newRecord, puzzleForDay, recordFinished, save, shareText, submitPin, winHeadline,
   type DayRecord, type Saved,
 } from './logic'
-import { BADGES, badgeEarnedBy, badgeShareText, nextBadge, streakTeaser, type Badge } from './badges'
+import { BADGES, badgeEarnedBy, badgeShareText, earnedBadges, nextBadge, streakTeaser, type Badge } from './badges'
 import { GREEN_KM, YELLOW_KM } from './puzzles'
 import { applyTheme, readThemeMode, saveThemeMode, type ThemeMode } from './theme'
 import { LearnPanel, PRACTICE, practiceKeyFor } from './LearnPanel'
@@ -247,6 +247,17 @@ export default function Mapdle() {
   const headline = winHeadline(record, !!saved.colorblind)
   const teaser = newBadge ? null : streakTeaser(streak)
   const upNext = nextBadge(saved.stats.maxStreak)
+  // The chip under the title: current streak, best badge so far, and how far away the next one is.
+  const topBadge = earnedBadges(saved.stats).slice(-1)[0] ?? null
+  const chipParts: string[] = []
+  if (streak > 0) chipParts.push(`🔥 ${streak}-day streak`)
+  if (topBadge) chipParts.push(`🏅 ${topBadge.name}`)
+  if (upNext) {
+    const toGo = upNext.days - streak
+    if (streak < 1 && !topBadge) chipParts.push(`Win ${upNext.days} days in a row to earn the ${upNext.name} badge`)
+    else if (toGo <= 3) chipParts.push(toGo === 1 ? `1 more day to ${upNext.name}` : `${toGo} more days to ${upNext.name}`)
+    else chipParts.push(`Next: ${upNext.name} at ${upNext.days} days`)
+  }
   const resultBody = finished ? (
     <>
         <h2 className={headline.special ? 'mapdle-celebrate' : undefined}>{headline.special && <span aria-hidden="true">🎉 </span>}{headline.text}</h2>
@@ -314,6 +325,17 @@ export default function Mapdle() {
           <button type="button" onClick={() => setPanel('help')}>How to play</button>
         </div>
       </header>
+
+      {day >= 1 && chipParts.length > 0 && (
+        <button
+          type="button"
+          className="mapdle-streak-chip"
+          onClick={() => setPanel('stats')}
+          aria-label={`${chipParts.join(', ')}. Open your stats`}
+        >
+          {chipParts.join(' · ')}
+        </button>
+      )}
 
       <section className="mapdle-subject" aria-label="Today's subject">
         <span>Today’s subject</span>

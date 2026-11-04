@@ -427,3 +427,8 @@ html[data-theme="dark"] .mapdle {
 .mapdle-badges li.is-next .mapdle-badge-dot { opacity: 1; box-shadow: 0 0 0 3px var(--cp-accent-soft); }
 .mapdle-badges li.is-next .mapdle-badge-days { font-weight: 700; }
 .mapdle-badge-tag { letter-spacing: 0.04em; text-transform: uppercase; font-size: 0.68rem; }
+
+/* streak and badge chip under the title */
+.mapdle-streak-chip { justify-self: start; align-self: start; width: fit-content; max-width: 100%; padding: 6px 12px; border: 1px solid var(--cp-border); border-radius: 999px; background: var(--cp-surface); color: var(--cp-text); font: inherit; font-size: 0.85rem; font-weight: 600; line-height: 1.3; text-align: left; cursor: pointer; }
+.mapdle-streak-chip:hover { border-color: var(--cp-accent); }
+.mapdle-streak-chip:focus-visible { outline: 2px solid var(--cp-accent); outline-offset: 2px; }
