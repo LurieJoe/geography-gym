@@ -4,6 +4,7 @@ import { ChevronLeft, ChevronRight, Minus, Plus, RotateCcw } from 'lucide-react'
 import { feature } from 'topojson-client'
 import type { GeometryCollection, Topology } from 'topojson-specification'
 import landTopology from 'world-atlas/land-110m.json'
+import { loadProvinceBorders, visibleProvinceBorders, type ProvinceTier } from './provinceBorders'
 
 export type GlobeCoordinate = {
   lat: number
@@ -160,10 +161,12 @@ export function InteractiveGlobe({
   const [dragging, setDragging] = useState(false)
   const drag = useRef<DragState | null>(null)
 
-  const [borderData, setBorderData] = useState<{ countries?: GeoPermissibleObjects; detail?: GeoPermissibleObjects; states?: GeoPermissibleObjects }>({})
+  const [borderData, setBorderData] = useState<{ countries?: GeoPermissibleObjects; detail?: GeoPermissibleObjects; states?: GeoPermissibleObjects; provinces?: ProvinceTier[] }>({})
   const wantCountries = borders && (answered || scale >= COUNTRY_BORDER_START)
   const wantStates = borders && (answered || scale >= STATE_BORDER_START)
   const wantDetail = borders && scale >= DETAIL_BORDER_SCALE
+  // State and province lines for the rest of the world fade in by zoom (never just because the game is over). Countries with small states appear later, so Europe is not a tangle.
+  const wantProvinces = borders && scale >= STATE_BORDER_START
   useEffect(() => {
     if (!wantCountries || borderData.countries) return
     let live = true
@@ -188,6 +191,14 @@ export function InteractiveGlobe({
     }).catch(() => { /* borders are optional */ })
     return () => { live = false }
   }, [wantDetail, borderData.detail])
+  useEffect(() => {
+    if (!wantProvinces || borderData.provinces) return
+    let live = true
+    loadProvinceBorders().then((provinces) => {
+      if (live) setBorderData((current) => ({ ...current, provinces }))
+    }).catch(() => { /* borders are optional */ })
+    return () => { live = false }
+  }, [wantProvinces, borderData.provinces])
 
   const projection = useMemo(
     () => geoOrthographic()
@@ -202,6 +213,18 @@ export function InteractiveGlobe({
   const ramp = (from: number, to: number) => (answered ? 1 : Math.min(1, Math.max(0, (scale - from) / (to - from))))
   const countryOpacity = wantCountries ? ramp(COUNTRY_BORDER_START, COUNTRY_BORDER_FULL) : 0
   const stateOpacity = wantStates ? ramp(STATE_BORDER_START, STATE_BORDER_FULL) : 0
+  // Only the lines that can be on screen are drawn, and none while the globe is being dragged, so turning stays smooth.
+  const provinceLayers = useMemo(() => {
+    if (!borderData.provinces || !wantProvinces || dragging) return []
+    const reach = Math.asin(Math.min(1, (GLOBE_SIZE * Math.SQRT1_2) / scale)) + 0.06
+    return borderData.provinces
+      .filter((tier) => scale >= tier.start)
+      .map((tier) => ({
+        start: tier.start,
+        opacity: Math.min(1, (scale - tier.start) / (tier.start * 0.33)),
+        geometry: visibleProvinceBorders(tier.lines, rotation.lon, rotation.lat, reach),
+      }))
+  }, [borderData.provinces, wantProvinces, dragging, rotation, scale])
   // While dragging, keep to the lighter country lines so turning the globe stays smooth.
   const countryLines = wantDetail && !dragging && borderData.detail ? borderData.detail : borderData.countries
   const center: [number, number] = [rotation.lon, rotation.lat]
@@ -382,6 +405,9 @@ export function InteractiveGlobe({
         {borderData.states && stateOpacity > 0 && (
           <path className="globe-borders globe-borders-states" style={{ opacity: stateOpacity }} d={path(borderData.states) ?? undefined} />
         )}
+        {provinceLayers.map((layer) => (
+          <path key={layer.start} className="globe-borders globe-borders-states" style={{ opacity: layer.opacity }} d={path(layer.geometry) ?? undefined} />
+        ))}
         {projectedPoints.map((point, index) => {
           if (!point.visible || !point.projected) return null
           return (
