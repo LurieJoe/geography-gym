@@ -16,6 +16,8 @@ import {
   HelpCircle,
   Landmark,
   Lightbulb,
+  TreePine,
+  Mountain,
   Map,
   MapPin,
   Moon,
@@ -171,7 +173,7 @@ const accentColors: { id: AccentColor; label: string }[] = [
   { id: 'orange', label: 'Orange' },
   { id: 'crimson', label: 'Crimson' },
 ]
-const categories: Category[] = ['us', 'world', 'landmarks', 'waterways']
+const categories: Category[] = ['us', 'world', 'landmarks', 'waterways', 'parks', 'mountains']
 const practiceModes: PracticeMode[] = ['variety', 'clue-ladder', 'neighbors', 'closer', 'pinpoint']
 
 function compatibleCategories(selectedCategories: readonly Category[], practice: PracticeMode) {
@@ -180,10 +182,18 @@ function compatibleCategories(selectedCategories: readonly Category[], practice:
     return selectedCategories.filter((category) => category === 'us' || category === 'world')
   }
   if (practice === 'closer') {
-    return selectedCategories.filter((category) => category === 'landmarks' || category === 'waterways')
+    return selectedCategories.filter(
+      (category) =>
+        category === 'landmarks' || category === 'waterways' || category === 'parks' || category === 'mountains',
+    )
   }
   return selectedCategories.filter(
-    (category) => category === 'us' || category === 'landmarks' || category === 'waterways',
+    (category) =>
+      category === 'us' ||
+      category === 'landmarks' ||
+      category === 'waterways' ||
+      category === 'parks' ||
+      category === 'mountains',
   )
 }
 
@@ -201,8 +211,8 @@ function practiceScope(selectedCategories: readonly Category[], practice: Practi
   const compatible = compatibleCategories(selectedCategories, practice)
   if (compatible.length === 0) {
     if (practice === 'neighbors') return 'Select U.S. Geography or World Geography'
-    if (practice === 'closer') return 'Select Landmarks or Waterways'
-    return 'Select U.S. Geography, Landmarks, or Waterways'
+    if (practice === 'closer') return 'Select Landmarks, Waterways, National Parks, or Mountains & Volcanoes'
+    return 'Select U.S. Geography, Landmarks, Waterways, National Parks, or Mountains & Volcanoes'
   }
   if (compatible.length < selectedCategories.length) return `Uses ${studyLabel(compatible)}`
   return `${getQuestionPoolCount(compatible, practice).toLocaleString()} questions available`
@@ -215,7 +225,7 @@ const tips = [
   },
   {
     title: 'Build connections, not lists',
-    text: 'Notice neighboring states, relative directions, landmark locations, and the waterways connecting regions. Those relationships make facts easier to remember.',
+    text: 'Notice neighboring states, relative directions, landmark, park, and mountain locations, and the waterways connecting regions. Those relationships make facts easier to remember.',
   },
   {
     title: 'Follow the water',
@@ -239,7 +249,7 @@ const tips = [
   },
   {
     title: 'Use U.S. or World as a filter',
-    text: 'Combine U.S. Geography or World Geography with Landmarks or Waterways to keep every question and answer choice within that geographic scope.',
+    text: 'Combine U.S. Geography or World Geography with Landmarks, Waterways, National Parks, or Mountains & Volcanoes to keep every question and answer choice within that geographic scope.',
   },
   {
     title: 'Explore every part of the U.S.',
@@ -307,7 +317,7 @@ const tips = [
   },
   {
     title: 'Build a workout in two steps',
-    text: 'First select one or more subjects—U.S., World, Landmarks, or Waterways. Then choose the practice style that builds the skill you want.',
+    text: 'First select one or more subjects—U.S., World, Landmarks, Waterways, National Parks, or Mountains & Volcanoes. Then choose the practice style that builds the skill you want.',
   },
   {
     title: 'Start from the app home',
@@ -2121,6 +2131,8 @@ function AppDashboard({
     { category: 'world', icon: <Globe2 />, description: 'Countries and places outside the U.S.: capitals, regions, and maps' },
     { category: 'landmarks', icon: <Landmark />, description: 'Famous places, distances, and locations' },
     { category: 'waterways', icon: <Waves />, description: 'Oceans, seas, gulfs, rivers, straits, lakes, falls, and canals' },
+    { category: 'parks', icon: <TreePine />, description: 'National parks, reserves, and marine parks around the world' },
+    { category: 'mountains', icon: <Mountain />, description: 'Famous peaks and volcanoes on every continent' },
   ]
 
   if (page === 'home') {
@@ -2598,6 +2610,26 @@ function Home({
               games={['Where is it?', 'Matching pairs', 'Map Pinpoint', 'Which Is Closer?']}
               count={questionPoolCounts.waterways}
               selected={selectedCategories.includes('waterways')}
+              onToggle={onToggleCategory}
+            />
+            <TrackCard
+              icon={<TreePine />}
+              category="parks"
+              title="National Parks"
+              description="National parks, reserves, and marine parks around the world, from Yellowstone to the Serengeti."
+              games={['Where is it?', 'Matching pairs', 'Map Pinpoint', 'Which Is Closer?']}
+              count={questionPoolCounts.parks}
+              selected={selectedCategories.includes('parks')}
+              onToggle={onToggleCategory}
+            />
+            <TrackCard
+              icon={<Mountain />}
+              category="mountains"
+              title="Mountains & Volcanoes"
+              description="Famous peaks and volcanoes on every continent, from Everest to Mount Fuji and Kilimanjaro."
+              games={['Where is it?', 'Matching pairs', 'Map Pinpoint', 'Which Is Closer?']}
+              count={questionPoolCounts.mountains}
+              selected={selectedCategories.includes('mountains')}
               onToggle={onToggleCategory}
             />
           </div>

@@ -1699,7 +1699,7 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 }
 
 .tracks-layout { display: flex; align-items: stretch; gap: 16px; }
-.tracks-layout .track-grid { flex: 1; min-width: 0; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.tracks-layout .track-grid { flex: 1; min-width: 0; grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .tracks-layout .track-card { padding: 20px; }
 .tracks-divider { flex: none; width: 1px; background: var(--cp-border); }
 .mapdle-card { flex: none; width: 250px; border-color: var(--cp-accent); background: var(--cp-accent-soft); }

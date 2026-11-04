@@ -1,4 +1,7 @@
-export type Category = 'us' | 'world' | 'landmarks' | 'waterways'
+import { parks, type ParkRecord } from './parksData'
+import { mountains, type MountainRecord } from './mountainsData'
+
+export type Category = 'us' | 'world' | 'landmarks' | 'waterways' | 'parks' | 'mountains'
 export type PracticeMode = 'variety' | 'clue-ladder' | 'neighbors' | 'closer' | 'pinpoint'
 
 type BaseQuestion = {
@@ -70,6 +73,8 @@ export const categoryDetails: Record<Category, { label: string }> = {
   world: { label: 'World Geography' },
   landmarks: { label: 'Landmarks' },
   waterways: { label: 'Waterways' },
+  parks: { label: 'National Parks' },
+  mountains: { label: 'Mountains & Volcanoes' },
 }
 
 export const practiceDetails: Record<PracticeMode, { label: string; description: string }> = {
@@ -87,11 +92,11 @@ export const practiceDetails: Record<PracticeMode, { label: string; description:
   },
   closer: {
     label: 'Which Is Closer?',
-    description: 'Compare real distances between landmarks and waterways.',
+    description: 'Compare real distances between landmarks, waterways, parks, and mountains.',
   },
   pinpoint: {
     label: 'Map Pinpoint',
-    description: 'Place a U.S. jurisdiction, landmark, or waterway on the world map and see how close you were.',
+    description: 'Place a U.S. jurisdiction, landmark, waterway, park, or mountain on the world map and see how close you were.',
   },
 }
 
@@ -1219,35 +1224,457 @@ const waterwayPinpointQuestions: PinpointQuestion[] = waterways.map((waterway, i
   explanation: waterwayExplanation(waterway),
 }))
 
+// ---- National Parks ----
+function parkScope(park: ParkRecord) {
+  return park.region === 'United States' ? 'us' as const : 'world' as const
+}
+
+function parkHemispheres(park: ParkRecord) {
+  return `${park.lat >= 0 ? 'Northern' : 'Southern'} and ${park.lon >= 0 ? 'Eastern' : 'Western'} Hemispheres`
+}
+
+const parkChoiceQuestions: Question[] = parks.flatMap((park, index) => {
+  const scope = parkScope(park)
+  const scopedParks = parks.filter((candidate) => parkScope(candidate) === scope)
+  const placeQuestion: ChoiceQuestion = {
+    id: `park-place-${index}`,
+    category: 'parks',
+    scope,
+    kind: 'choice',
+    label: 'Where is it?',
+    prompt: `Where would you find ${park.name}?`,
+    options: uniqueOptions(park.place, scopedParks.map((candidate) => candidate.place), index),
+    answer: park.place,
+    explanation: `${park.name} is in ${park.place}, ${park.region}.`,
+  }
+  const regionQuestion: ChoiceQuestion = scope === 'us'
+    ? {
+        id: `park-region-${index}`,
+        category: 'parks',
+        scope,
+        kind: 'choice',
+        label: 'Map position',
+        prompt: `Which hemispheres contain ${park.name}?`,
+        options: [
+          'Northern and Western Hemispheres',
+          'Northern and Eastern Hemispheres',
+          'Southern and Western Hemispheres',
+          'Southern and Eastern Hemispheres',
+        ],
+        answer: parkHemispheres(park),
+        explanation: `${park.name} is in the ${parkHemispheres(park)}.`,
+      }
+    : {
+        id: `park-region-${index}`,
+        category: 'parks',
+        scope,
+        kind: 'choice',
+        label: 'Country or region',
+        prompt: `Which country or region is home to ${park.name}?`,
+        options: uniqueOptions(park.region, scopedParks.map((candidate) => candidate.region), index + 9),
+        answer: park.region,
+        explanation: `${park.name} is located in ${park.region}.`,
+      }
+  return [placeQuestion, regionQuestion]
+})
+
+// Groups of four parks for Matching pairs and the ordering games. Every park in a group has a
+// different place, and the parks are far enough apart that north-south and west-east order are clear.
+function parkGroups(scopedParks: ParkRecord[]) {
+  const remaining = [...scopedParks]
+  const groups: ParkRecord[][] = []
+  while (remaining.length >= 4) {
+    const group: ParkRecord[] = []
+    for (let i = 0; i < remaining.length && group.length < 4; i += 1) {
+      const candidate = remaining[i]
+      const fits = group.every(
+        (member) =>
+          member.place !== candidate.place &&
+          Math.abs(member.lat - candidate.lat) >= 1.5 &&
+          Math.abs(member.lon - candidate.lon) >= 1.5,
+      )
+      if (fits) group.push(candidate)
+    }
+    if (group.length < 4) break
+    groups.push(group)
+    for (const member of group) remaining.splice(remaining.indexOf(member), 1)
+  }
+  return groups
+}
+
+const parkMatchingQuestions: MatchingQuestion[] = []
+const parkOrderQuestions: OrderQuestion[] = []
+for (const scope of ['us', 'world'] as const) {
+  const scopedParks = parks.filter((park) => parkScope(park) === scope)
+  parkGroups(scopedParks).forEach((group, groupIndex) => {
+    const northSouth = [...group].sort((a, b) => b.lat - a.lat)
+    const westEast = [...group].sort((a, b) => a.lon - b.lon)
+    parkMatchingQuestions.push({
+      id: `park-match-${scope}-${groupIndex}`,
+      category: 'parks',
+      scope,
+      kind: 'matching',
+      label: 'Matching pairs',
+      prompt: 'Match each park to its location.',
+      hint: 'Choose one item from each column.',
+      pairs: group.map((park) => ({ left: park.name, right: park.place })),
+      explanation: 'Each park is now connected to its place on your mental map.',
+    })
+    parkOrderQuestions.push({
+      id: `park-north-south-${scope}-${groupIndex}`,
+      category: 'parks',
+      scope,
+      kind: 'order',
+      label: 'North to south',
+      prompt: 'Put these parks in order from north to south.',
+      items: group.map((park) => park.name),
+      answer: northSouth.map((park) => park.name),
+      startLabel: 'North',
+      endLabel: 'South',
+      explanation: `From north to south: ${northSouth.map((park) => park.name).join(', ')}.`,
+    })
+    parkOrderQuestions.push({
+      id: `park-west-east-${scope}-${groupIndex}`,
+      category: 'parks',
+      scope,
+      kind: 'order',
+      label: 'West to east',
+      prompt: 'Put these parks in order from west to east.',
+      items: group.map((park) => park.name),
+      answer: westEast.map((park) => park.name),
+      startLabel: 'West',
+      endLabel: 'East',
+      explanation: `From west to east: ${westEast.map((park) => park.name).join(', ')}.`,
+    })
+  })
+}
+
+const parkQuestions: Question[] = [
+  ...parkChoiceQuestions,
+  ...parkMatchingQuestions,
+  ...parkOrderQuestions,
+]
+
+const parkClueQuestions: ClueQuestion[] = parks.map((park, index) => ({
+  id: `clue-park-${index}`,
+  category: 'parks',
+  scope: parkScope(park),
+  practice: 'clue-ladder',
+  kind: 'clue',
+  label: 'Clue Ladder',
+  prompt: 'Which park matches these clues?',
+  clues: [
+    hemisphereClue(park.lat, park.lon),
+    `It is in ${park.region}.`,
+    `Look for it in or near ${park.place}.`,
+  ],
+  options: uniqueOptions(
+    park.name,
+    parks.filter((candidate) => parkScope(candidate) === parkScope(park)).map((candidate) => candidate.name),
+    index + 83,
+  ),
+  answer: park.name,
+  explanation: `${park.name} is in ${park.place}, ${park.region}.`,
+}))
+
+const parkCloserQuestions: ChoiceQuestion[] = parks.map((anchor, index) => {
+  const scope = parkScope(anchor)
+  const scopedParks = parks.filter((park) => parkScope(park) === scope)
+  const anchorIndex = scopedParks.indexOf(anchor)
+  // Pick two parks whose distances are clearly different, so there is always one right answer.
+  let first = scopedParks[(anchorIndex + 3) % scopedParks.length]
+  let second = scopedParks[(anchorIndex + 7) % scopedParks.length]
+  for (let step = 0; step < scopedParks.length; step += 1) {
+    const a = scopedParks[(anchorIndex + 3 + step) % scopedParks.length]
+    const b = scopedParks[(anchorIndex + 7 + step * 2) % scopedParks.length]
+    if (a === anchor || b === anchor || a === b) continue
+    const da = distanceKm(anchor, a)
+    const db = distanceKm(anchor, b)
+    if (Math.abs(da - db) >= 0.25 * Math.max(da, db) && Math.abs(da - db) >= 300) {
+      first = a
+      second = b
+      break
+    }
+  }
+  const firstDistance = distanceKm(anchor, first)
+  const secondDistance = distanceKm(anchor, second)
+  const answer = firstDistance < secondDistance ? first.name : second.name
+  return {
+    id: `closer-park-${index}`,
+    category: 'parks',
+    scope,
+    practice: 'closer',
+    kind: 'choice',
+    label: 'Which Is Closer?',
+    prompt: `Which park is closer to ${anchor.name}?`,
+    options: [first.name, second.name],
+    answer,
+    explanation: `By straight-line distance, ${first.name} is about ${Math.round(firstDistance).toLocaleString()} km away; ${second.name} is about ${Math.round(secondDistance).toLocaleString()} km away.`,
+  }
+})
+
+const parkPinpointQuestions: PinpointQuestion[] = parks.map((park, index) => ({
+  id: `pinpoint-park-${index}`,
+  category: 'parks',
+  scope: parkScope(park),
+  practice: 'pinpoint',
+  kind: 'pinpoint',
+  label: 'Map Pinpoint',
+  prompt: `Place ${park.name} on the world map.`,
+  hint: `It is in ${park.region}. Tap as close as you can.`,
+  answer: park.name,
+  target: { lat: park.lat, lon: park.lon },
+  place: `${park.place}, ${park.region}`,
+  explanation: `${park.name} is in ${park.place}, ${park.region}.`,
+}))
+
+// ---- Mountains & Volcanoes ----
+function mountainScope(mountain: MountainRecord) {
+  return mountain.region === 'United States' ? 'us' as const : 'world' as const
+}
+
+function mountainNote(mountain: MountainRecord) {
+  return mountain.note ? ` ${mountain.note}` : ''
+}
+
+function mountainHemispheres(mountain: MountainRecord) {
+  return `${mountain.lat >= 0 ? 'Northern' : 'Southern'} and ${mountain.lon >= 0 ? 'Eastern' : 'Western'} Hemispheres`
+}
+
+const mountainChoiceQuestions: Question[] = mountains.flatMap((mountain, index) => {
+  const scope = mountainScope(mountain)
+  const scopedMountains = mountains.filter((candidate) => mountainScope(candidate) === scope)
+  const placeQuestion: ChoiceQuestion = {
+    id: `mountain-place-${index}`,
+    category: 'mountains',
+    scope,
+    kind: 'choice',
+    label: 'Where is it?',
+    prompt: `Where would you find ${mountain.name}?`,
+    options: uniqueOptions(mountain.place, scopedMountains.map((candidate) => candidate.place), index),
+    answer: mountain.place,
+    explanation: `${mountain.name} is in ${mountain.place}, ${mountain.region}.${mountainNote(mountain)}`,
+  }
+  const regionQuestion: ChoiceQuestion = scope === 'us'
+    ? {
+        id: `mountain-region-${index}`,
+        category: 'mountains',
+        scope,
+        kind: 'choice',
+        label: 'Map position',
+        prompt: `Which hemispheres contain ${mountain.name}?`,
+        options: [
+          'Northern and Western Hemispheres',
+          'Northern and Eastern Hemispheres',
+          'Southern and Western Hemispheres',
+          'Southern and Eastern Hemispheres',
+        ],
+        answer: mountainHemispheres(mountain),
+        explanation: `${mountain.name} is in the ${mountainHemispheres(mountain)}.${mountainNote(mountain)}`,
+      }
+    : {
+        id: `mountain-region-${index}`,
+        category: 'mountains',
+        scope,
+        kind: 'choice',
+        label: 'Country or region',
+        prompt: `Which country or region is home to ${mountain.name}?`,
+        options: uniqueOptions(mountain.region, scopedMountains.map((candidate) => candidate.region), index + 9),
+        answer: mountain.region,
+        explanation: `${mountain.name} is located in ${mountain.region}.${mountainNote(mountain)}`,
+      }
+  return [placeQuestion, regionQuestion]
+})
+
+// Groups of four mountains for Matching pairs and the ordering games. Every mountain in a group has a
+// different place, and the mountains are far enough apart that north-south and west-east order are clear.
+function mountainGroups(scopedMountains: MountainRecord[]) {
+  const remaining = [...scopedMountains]
+  const groups: MountainRecord[][] = []
+  while (remaining.length >= 4) {
+    const group: MountainRecord[] = []
+    for (let i = 0; i < remaining.length && group.length < 4; i += 1) {
+      const candidate = remaining[i]
+      const fits = group.every(
+        (member) =>
+          member.place !== candidate.place &&
+          Math.abs(member.lat - candidate.lat) >= 1.5 &&
+          Math.abs(member.lon - candidate.lon) >= 1.5,
+      )
+      if (fits) group.push(candidate)
+    }
+    if (group.length < 4) break
+    groups.push(group)
+    for (const member of group) remaining.splice(remaining.indexOf(member), 1)
+  }
+  return groups
+}
+
+const mountainMatchingQuestions: MatchingQuestion[] = []
+const mountainOrderQuestions: OrderQuestion[] = []
+for (const scope of ['us', 'world'] as const) {
+  const scopedMountains = mountains.filter((mountain) => mountainScope(mountain) === scope)
+  mountainGroups(scopedMountains).forEach((group, groupIndex) => {
+    const northSouth = [...group].sort((a, b) => b.lat - a.lat)
+    const westEast = [...group].sort((a, b) => a.lon - b.lon)
+    mountainMatchingQuestions.push({
+      id: `mountain-match-${scope}-${groupIndex}`,
+      category: 'mountains',
+      scope,
+      kind: 'matching',
+      label: 'Matching pairs',
+      prompt: 'Match each mountain to its location.',
+      hint: 'Choose one item from each column.',
+      pairs: group.map((mountain) => ({ left: mountain.name, right: mountain.place })),
+      explanation: 'Each mountain is now connected to its place on your mental map.',
+    })
+    mountainOrderQuestions.push({
+      id: `mountain-north-south-${scope}-${groupIndex}`,
+      category: 'mountains',
+      scope,
+      kind: 'order',
+      label: 'North to south',
+      prompt: 'Put these mountains in order from north to south.',
+      items: group.map((mountain) => mountain.name),
+      answer: northSouth.map((mountain) => mountain.name),
+      startLabel: 'North',
+      endLabel: 'South',
+      explanation: `From north to south: ${northSouth.map((mountain) => mountain.name).join(', ')}.`,
+    })
+    mountainOrderQuestions.push({
+      id: `mountain-west-east-${scope}-${groupIndex}`,
+      category: 'mountains',
+      scope,
+      kind: 'order',
+      label: 'West to east',
+      prompt: 'Put these mountains in order from west to east.',
+      items: group.map((mountain) => mountain.name),
+      answer: westEast.map((mountain) => mountain.name),
+      startLabel: 'West',
+      endLabel: 'East',
+      explanation: `From west to east: ${westEast.map((mountain) => mountain.name).join(', ')}.`,
+    })
+  })
+}
+
+const mountainQuestions: Question[] = [
+  ...mountainChoiceQuestions,
+  ...mountainMatchingQuestions,
+  ...mountainOrderQuestions,
+]
+
+const mountainClueQuestions: ClueQuestion[] = mountains.map((mountain, index) => ({
+  id: `clue-mountain-${index}`,
+  category: 'mountains',
+  scope: mountainScope(mountain),
+  practice: 'clue-ladder',
+  kind: 'clue',
+  label: 'Clue Ladder',
+  prompt: 'Which mountain matches these clues?',
+  clues: [
+    hemisphereClue(mountain.lat, mountain.lon),
+    `It is a ${mountain.type.toLowerCase()} in ${mountain.region}.`,
+    `Look for it in or near ${mountain.place}.`,
+  ],
+  options: uniqueOptions(
+    mountain.name,
+    mountains.filter((candidate) => mountainScope(candidate) === mountainScope(mountain)).map((candidate) => candidate.name),
+    index + 83,
+  ),
+  answer: mountain.name,
+  explanation: `${mountain.name} is in ${mountain.place}, ${mountain.region}.${mountainNote(mountain)}`,
+}))
+
+const mountainCloserQuestions: ChoiceQuestion[] = mountains.map((anchor, index) => {
+  const scope = mountainScope(anchor)
+  const scopedMountains = mountains.filter((mountain) => mountainScope(mountain) === scope)
+  const anchorIndex = scopedMountains.indexOf(anchor)
+  // Pick two mountains whose distances are clearly different, so there is always one right answer.
+  let first = scopedMountains[(anchorIndex + 3) % scopedMountains.length]
+  let second = scopedMountains[(anchorIndex + 7) % scopedMountains.length]
+  for (let step = 0; step < scopedMountains.length; step += 1) {
+    const a = scopedMountains[(anchorIndex + 3 + step) % scopedMountains.length]
+    const b = scopedMountains[(anchorIndex + 7 + step * 2) % scopedMountains.length]
+    if (a === anchor || b === anchor || a === b) continue
+    const da = distanceKm(anchor, a)
+    const db = distanceKm(anchor, b)
+    if (Math.abs(da - db) >= 0.25 * Math.max(da, db) && Math.abs(da - db) >= 300) {
+      first = a
+      second = b
+      break
+    }
+  }
+  const firstDistance = distanceKm(anchor, first)
+  const secondDistance = distanceKm(anchor, second)
+  const answer = firstDistance < secondDistance ? first.name : second.name
+  return {
+    id: `closer-mountain-${index}`,
+    category: 'mountains',
+    scope,
+    practice: 'closer',
+    kind: 'choice',
+    label: 'Which Is Closer?',
+    prompt: `Which mountain is closer to ${anchor.name}?`,
+    options: [first.name, second.name],
+    answer,
+    explanation: `By straight-line distance, ${first.name} is about ${Math.round(firstDistance).toLocaleString()} km away; ${second.name} is about ${Math.round(secondDistance).toLocaleString()} km away.`,
+  }
+})
+
+const mountainPinpointQuestions: PinpointQuestion[] = mountains.map((mountain, index) => ({
+  id: `pinpoint-mountain-${index}`,
+  category: 'mountains',
+  scope: mountainScope(mountain),
+  practice: 'pinpoint',
+  kind: 'pinpoint',
+  label: 'Map Pinpoint',
+  prompt: `Place ${mountain.name} on the world map.`,
+  hint: `It is in ${mountain.region}. Tap as close as you can.`,
+  answer: mountain.name,
+  target: { lat: mountain.lat, lon: mountain.lon },
+  place: `${mountain.place}, ${mountain.region}`,
+  explanation: `${mountain.name} is in ${mountain.place}, ${mountain.region}.${mountainNote(mountain)}`,
+}))
+
 const varietyBanks = {
   us: usQuestions,
   world: worldQuestions,
   landmarks: landmarkQuestions,
   waterways: waterwayQuestions,
+  parks: parkQuestions,
+  mountains: mountainQuestions,
 }
 const clueBanks = {
   us: usClueQuestions,
   world: worldClueQuestions,
   landmarks: landmarkClueQuestions,
   waterways: waterwayClueQuestions,
+  parks: parkClueQuestions,
+  mountains: mountainClueQuestions,
 }
 const neighborBanks = {
   us: usNeighborQuestions,
   world: worldNeighborQuestions,
   landmarks: [] as Question[],
   waterways: [] as Question[],
+  parks: [] as Question[],
+  mountains: [] as Question[],
 }
 const closerBanks = {
   us: [] as Question[],
   world: [] as Question[],
   landmarks: closerQuestions,
   waterways: waterwayCloserQuestions,
+  parks: parkCloserQuestions,
+  mountains: mountainCloserQuestions,
 }
 const pinpointBanks = {
   us: jurisdictionPinpointQuestions,
   world: [] as Question[],
   landmarks: pinpointQuestions,
   waterways: waterwayPinpointQuestions,
+  parks: parkPinpointQuestions,
+  mountains: mountainPinpointQuestions,
 }
 const practiceBanks: Record<
   PracticeMode,
@@ -1265,6 +1692,8 @@ const allQuestions = Object.values(practiceBanks).flatMap((bank) => [
   ...bank.world,
   ...bank.landmarks,
   ...bank.waterways,
+  ...bank.parks,
+  ...bank.mountains,
 ])
 const questionsById = new Map(allQuestions.map((question) => [question.id, question]))
 
@@ -1273,6 +1702,8 @@ export const questionPoolCounts = {
   world: worldQuestions.length,
   landmarks: landmarkQuestions.length,
   waterways: waterwayQuestions.length,
+  parks: parkQuestions.length,
+  mountains: mountainQuestions.length,
 }
 
 export function shuffled<T>(items: readonly T[]) {
