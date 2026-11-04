@@ -2,7 +2,7 @@
 // APPEND-ONLY: never reorder or delete entries, or players' day numbers will shift.
 // Day N of the game shows PUZZLES[(N - 1) % PUZZLES.length]. Add new puzzles only at the END.
 
-export type MapdleSubject = 'States & Countries' | 'Landmarks' | 'Waterways'
+export type MapdleSubject = 'States & Countries' | 'Landmarks' | 'Waterways' | 'National Parks' | 'Mountains & Volcanoes'
 
 export interface MapdlePuzzle {
   id: number
@@ -359,4 +359,60 @@ export const PUZZLES: MapdlePuzzle[] = [
   { id: 338, subject: "States & Countries", answer: "Tennessee", lat: 35.8, lon: -86.3, clues: ["A U.S. state in the Southeast.", "It borders Alabama, Arkansas, Georgia, Kentucky, Mississippi, Missouri, North Carolina, and Virginia.", "Its capital is Nashville. Its name is one word of 9 letters, starting with T."] },
   { id: 339, subject: "Landmarks", answer: "Masada", lat: 31.316, lon: 35.354, clues: ["A landmark in Western Asia (the Middle East).", "It is a rock plateau on the western shore of the Dead Sea.", "Look in or near the Dead Sea shore. Its name is one word of 6 letters, starting with M."] },
   { id: 340, subject: "States & Countries", answer: "Bosnia and Herzegovina", lat: 44.17, lon: 17.77, clues: ["A country in Southeastern Europe.", "It borders Serbia, Montenegro, and Croatia.", "Its capital is Sarajevo. Its name has three words, starting with B."] },
+  { id: 341, subject: "National Parks", answer: "Zion National Park", lat: 37.3, lon: -113.05, clues: ["A national park in North America.", "It is in the red-rock desert of southwestern Utah.", "Its cliffs rise above the Virgin River. Its name has three words, starting with Z."] },
+  { id: 342, subject: "Mountains & Volcanoes", answer: "Mont Blanc", lat: 45.833, lon: 6.865, clues: ["A mountain in Western Europe.", "It is in the Alps, on the border between France and Italy.", "It is the highest peak in the Alps. Its name has two words, starting with M."] },
+  { id: 343, subject: "National Parks", answer: "Plitvice Lakes National Park", lat: 44.88, lon: 15.62, clues: ["A national park in Southeastern Europe.", "It is in Croatia, inland from the Adriatic coast.", "Sixteen terraced lakes are joined by waterfalls. Its name has four words, starting with P."] },
+  { id: 344, subject: "Mountains & Volcanoes", answer: "Mauna Kea", lat: 19.821, lon: -155.468, clues: ["A volcano in the Pacific Ocean.", "It is on the island of Hawaii, in the United States.", "It is taller than Everest if measured from its base on the ocean floor. Its name has two words, starting with M."] },
+  { id: 345, subject: "National Parks", answer: "Everglades National Park", lat: 25.32, lon: -80.93, clues: ["A national park in North America.", "It is a vast wetland at the southern tip of Florida.", "Alligators and crocodiles both live here. Its name has three words, starting with E."] },
+  { id: 346, subject: "Mountains & Volcanoes", answer: "Mount Etna", lat: 37.751, lon: 14.994, clues: ["A volcano in Southern Europe.", "It is on the Italian island of Sicily.", "It is one of the most active volcanoes in the world. Its name has two words, starting with M."] },
+  { id: 347, subject: "National Parks", answer: "Kruger National Park", lat: -23.99, lon: 31.55, clues: ["A national park in Southern Africa.", "It is in northeastern South Africa, along the Mozambique border.", "It is famous for safaris and the Big Five. Its name has three words, starting with K."] },
+  { id: 348, subject: "Mountains & Volcanoes", answer: "Aconcagua", lat: -32.653, lon: -70.011, clues: ["A mountain in South America.", "It is in the Andes of western Argentina, near the Chilean border.", "It is the highest peak outside Asia. Its name is one word of 9 letters, starting with A."] },
+  { id: 349, subject: "National Parks", answer: "Acadia National Park", lat: 44.35, lon: -68.21, clues: ["A national park in North America.", "It is on the rocky coast of Maine.", "Cadillac Mountain is its highest point. Its name has three words, starting with A."] },
+  { id: 350, subject: "Mountains & Volcanoes", answer: "Mount Rainier", lat: 46.853, lon: -121.76, clues: ["A volcano in North America.", "It is in the Cascade Range of Washington State.", "It looms over Seattle and Tacoma. Its name has two words, starting with M."] },
+  { id: 351, subject: "National Parks", answer: "Fiordland National Park", lat: -45.5, lon: 167.3, clues: ["A national park in Oceania.", "It is in the southwest of New Zealand’s South Island.", "Milford Sound is its best-known fiord. Its name has three words, starting with F."] },
+  { id: 352, subject: "Mountains & Volcanoes", answer: "K2", lat: 35.882, lon: 76.513, clues: ["A mountain in Asia.", "It is in the Karakoram range, on the border between Pakistan and China.", "It is the second-highest mountain on Earth. Its name is one word of 2 characters, starting with K."] },
+  { id: 353, subject: "National Parks", answer: "Grand Canyon National Park", lat: 36.11, lon: -112.11, clues: ["A national park in North America.", "It is in northern Arizona.", "The Colorado River carved it over millions of years. Its name has four words, starting with G."] },
+  { id: 354, subject: "Mountains & Volcanoes", answer: "Mount Kenya", lat: -0.152, lon: 37.308, clues: ["A mountain in Eastern Africa.", "It is in central Kenya, almost on the equator.", "It is the second-highest peak in Africa. Its name has two words, starting with M."] },
+  { id: 355, subject: "National Parks", answer: "Komodo National Park", lat: -8.55, lon: 119.49, clues: ["A national park in Southeast Asia.", "It is on islands in the Lesser Sunda chain of Indonesia.", "It is home to the world’s largest lizard. Its name has three words, starting with K."] },
+  { id: 356, subject: "Mountains & Volcanoes", answer: "Mount Vesuvius", lat: 40.821, lon: 14.426, clues: ["A volcano in Southern Europe.", "It overlooks the Bay of Naples in Italy.", "Its eruption in 79 CE buried Pompeii. Its name has two words, starting with M."] },
+  { id: 357, subject: "National Parks", answer: "Glacier National Park", lat: 48.76, lon: -113.79, clues: ["A national park in North America.", "It is in northwestern Montana, on the border with Canada.", "It is named for the ice that carved its valleys. Its name has three words, starting with G."] },
+  { id: 358, subject: "Mountains & Volcanoes", answer: "Mount Kosciuszko", lat: -36.456, lon: 148.264, clues: ["A mountain in Oceania.", "It is in the Snowy Mountains of southeastern Australia.", "It is the highest peak on the Australian mainland. Its name has two words, starting with M."] },
+  { id: 359, subject: "National Parks", answer: "Torres del Paine National Park", lat: -51.0, lon: -73.1, clues: ["A national park in South America.", "It is in southern Chile, in Patagonia.", "Granite towers rise above its glacial lakes. Its name has five words, starting with T."] },
+  { id: 360, subject: "Mountains & Volcanoes", answer: "Mount Elbrus", lat: 43.35, lon: 42.445, clues: ["A volcano in Eastern Europe.", "It is in the Caucasus Mountains of southern Russia.", "It is the highest peak in Europe. Its name has two words, starting with M."] },
+  { id: 361, subject: "National Parks", answer: "Galápagos National Park", lat: -0.6, lon: -90.5, clues: ["A national park in South America.", "It protects volcanic islands in the Pacific, about 1,000 kilometers west of Ecuador.", "Charles Darwin studied its wildlife. Its name has three words, starting with G."] },
+  { id: 362, subject: "Mountains & Volcanoes", answer: "Popocatépetl", lat: 19.023, lon: -98.628, clues: ["A volcano in North America.", "It is in central Mexico, southeast of Mexico City.", "Its name means “smoking mountain.” Its name is one word of 12 letters, starting with P."] },
+  { id: 363, subject: "National Parks", answer: "Kakadu National Park", lat: -12.8, lon: 132.5, clues: ["A national park in Oceania.", "It is in the tropical north of Australia.", "It lies east of Darwin and holds ancient rock art. Its name has three words, starting with K."] },
+  { id: 364, subject: "Mountains & Volcanoes", answer: "Mount Kinabalu", lat: 6.075, lon: 116.558, clues: ["A mountain in Southeast Asia.", "It is in Sabah, on the island of Borneo in Malaysia.", "It is the highest peak on Borneo. Its name has two words, starting with M."] },
 ]
+
+/**
+ * Days that show a specific new puzzle (by id) instead of the normal rotation. Puzzles 341 and up are shown only on these days.
+ * Day 10 is the first. The puzzle a special day replaces comes up in the second year. To add more, append new puzzles above
+ * and add their days here.
+ */
+export const SPECIAL_DAYS: Record<number, number> = {
+  10: 341,
+  17: 342,
+  24: 343,
+  31: 344,
+  38: 345,
+  45: 346,
+  52: 347,
+  59: 348,
+  66: 349,
+  73: 350,
+  80: 351,
+  87: 352,
+  94: 353,
+  101: 354,
+  108: 355,
+  115: 356,
+  122: 357,
+  129: 358,
+  136: 359,
+  143: 360,
+  150: 361,
+  157: 362,
+  164: 363,
+  171: 364
+}

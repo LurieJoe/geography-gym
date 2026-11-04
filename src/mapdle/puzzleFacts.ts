@@ -4,7 +4,7 @@
 // Batch 1 of 4: puzzles 1-85, plus Massachusetts (90) and the ten preview-week puzzles (331-340).
 // Add the next batches to the end of this object.
 
-export type PracticeKey = 'us' | 'world' | 'landmarks' | 'waterways'
+export type PracticeKey = 'us' | 'world' | 'landmarks' | 'waterways' | 'parks' | 'mountains'
 export interface PuzzleFact { wiki: string; practice: PracticeKey; fact: string }
 
 export const PUZZLE_FACTS: Record<number, PuzzleFact> = {
@@ -104,4 +104,28 @@ export const PUZZLE_FACTS: Record<number, PuzzleFact> = {
   338: { wiki: 'Tennessee', practice: 'us', fact: 'Nashville is nicknamed Music City, and Memphis is home to Elvis Presley’s Graceland.' },
   339: { wiki: 'Masada', practice: 'landmarks', fact: 'King Herod built palaces on this rock plateau above the Dead Sea. It is also where Jewish rebels made their last stand against Rome, around 73 CE.' },
   340: { wiki: 'Bosnia and Herzegovina', practice: 'world', fact: 'Sarajevo, the capital of Bosnia and Herzegovina, hosted the 1984 Winter Olympics.' },
+  341: { wiki: "Zion National Park", practice: "parks", fact: "Its sandstone cliffs rise more than 600 meters (2,000 feet) above the Virgin River. The Narrows, a slot canyon you hike through the river itself, is one of its most famous trails." },
+  342: { wiki: "Mont Blanc", practice: "mountains", fact: "At about 4,806 meters (15,770 feet), it is the highest mountain in the Alps and in Western Europe. France and Italy have long disagreed about exactly where the border runs near its summit." },
+  343: { wiki: "Plitvice Lakes National Park", practice: "parks", fact: "Sixteen terraced lakes are linked by waterfalls, and the water shifts between green, blue, and gray depending on the minerals and the light. It is Croatia’s oldest national park, founded in 1949." },
+  344: { wiki: "Mauna Kea", practice: "mountains", fact: "Measured from its base on the ocean floor, it is taller than Mount Everest, at more than 10,000 meters (33,000 feet). Only about 4,207 meters (13,803 feet) of that is above sea level." },
+  345: { wiki: "Everglades National Park", practice: "parks", fact: "It protects the largest subtropical wilderness in the United States. Water creeps across it in a wide, shallow “river of grass,” and it is the only place where alligators and crocodiles live side by side." },
+  346: { wiki: "Mount Etna", practice: "mountains", fact: "It is the tallest active volcano in Europe, at about 3,300 meters (10,800 feet), and its height changes after eruptions. It has erupted many times in recent decades." },
+  347: { wiki: "Kruger National Park", practice: "parks", fact: "It covers about 19,500 square kilometers (7,500 square miles) and is home to the Big Five: lions, leopards, elephants, rhinoceroses, and Cape buffalo." },
+  348: { wiki: "Aconcagua", practice: "mountains", fact: "At about 6,961 meters (22,838 feet), it is the highest mountain outside Asia and the tallest in both the Southern and Western Hemispheres." },
+  349: { wiki: "Acadia National Park", practice: "parks", fact: "Cadillac Mountain is one of the first places in the United States to see the sunrise for part of the year. The park is on Mount Desert Island, and its network of carriage roads was built by John D. Rockefeller Jr." },
+  350: { wiki: "Mount Rainier", practice: "mountains", fact: "At 4,392 meters (14,411 feet), it is the highest mountain in Washington State and holds more glacial ice than any other peak in the contiguous United States. It is an active volcano about 90 kilometers (55 miles) from Seattle." },
+  351: { wiki: "Fiordland National Park", practice: "parks", fact: "It is the largest national park in New Zealand and includes Milford Sound and Doubtful Sound. Glaciers carved its steep fiords, and it gets some of the heaviest rainfall in the country." },
+  352: { wiki: "K2", practice: "mountains", fact: "At 8,611 meters (28,251 feet), it is the second-highest mountain on Earth, after Mount Everest. Climbers call it the “Savage Mountain” because it is so hard and dangerous to climb." },
+  353: { wiki: "Grand Canyon National Park", practice: "parks", fact: "The canyon is about 446 kilometers (277 miles) long, up to 29 kilometers (18 miles) wide, and more than 1.6 kilometers (a mile) deep. Rocks at the bottom are almost two billion years old." },
+  354: { wiki: "Mount Kenya", practice: "mountains", fact: "At 5,199 meters (17,057 feet), it is the second-highest mountain in Africa, after Kilimanjaro. It sits almost exactly on the equator, yet it still has glaciers on its upper slopes." },
+  355: { wiki: "Komodo National Park", practice: "parks", fact: "It is home to the Komodo dragon, the world’s largest living lizard, which can grow to about 3 meters (10 feet) long. The park was created in 1980 to protect it." },
+  356: { wiki: "Mount Vesuvius", practice: "mountains", fact: "Its eruption in 79 CE buried the Roman towns of Pompeii and Herculaneum. It last erupted in 1944, and hundreds of thousands of people live in the danger zone around it." },
+  357: { wiki: "Glacier National Park", practice: "parks", fact: "It joins Canada’s Waterton Lakes National Park to form Waterton-Glacier International Peace Park. Its glaciers have shrunk steadily, and most of those that existed in 1850 are gone." },
+  358: { wiki: "Mount Kosciuszko", practice: "mountains", fact: "At 2,228 meters (7,310 feet), it is the highest mountain on the Australian mainland. A Polish explorer named it in 1840 after the Polish national hero Tadeusz Kościuszko." },
+  359: { wiki: "Torres del Paine National Park", practice: "parks", fact: "The park is known for its three granite towers, glacial lakes, and herds of guanacos. “Paine” is a Tehuelche word often translated as “blue.”" },
+  360: { wiki: "Mount Elbrus", practice: "mountains", fact: "At 5,642 meters (18,510 feet), it is the highest peak in Europe, if the Caucasus is counted as the boundary with Asia. It is a dormant volcano with two summits." },
+  361: { wiki: "Galápagos National Park", practice: "parks", fact: "Charles Darwin visited in 1835, and its giant tortoises and finches with differently shaped beaks helped shape his ideas about evolution. About 97 percent of the land is protected as a national park." },
+  362: { wiki: "Popocatépetl", practice: "mountains", fact: "Its name means “smoking mountain” in Nahuatl, the language of the Aztecs. It is one of Mexico’s most active volcanoes, about 70 kilometers (45 miles) from Mexico City." },
+  363: { wiki: "Kakadu National Park", practice: "parks", fact: "It is one of Australia’s largest national parks, and Aboriginal people have lived there for tens of thousands of years. Its rock art galleries are among the oldest records of human life anywhere." },
+  364: { wiki: "Mount Kinabalu", practice: "mountains", fact: "At 4,095 meters (13,435 feet), it is the highest mountain on the island of Borneo. It is a UNESCO World Heritage Site known for its remarkable variety of plants." },
 }

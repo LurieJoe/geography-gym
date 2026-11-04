@@ -9,6 +9,8 @@ export const PRACTICE: Record<PracticeKey, { href: string; label: string }> = {
   world: { href: '../world-countries-and-capitals/', label: 'Practice world countries and capitals' },
   landmarks: { href: '../famous-landmarks/', label: 'Explore famous landmarks' },
   waterways: { href: '../waterways/', label: 'Explore rivers, lakes, and seas' },
+  parks: { href: '../app/', label: 'Practice national parks in Geography Gym' },
+  mountains: { href: '../app/', label: 'Practice mountains and volcanoes in Geography Gym' },
 }
 
 function formatCoords(lat: number, lon: number): string {
@@ -16,7 +18,7 @@ function formatCoords(lat: number, lon: number): string {
 }
 
 function mapUrl(puzzle: MapdlePuzzle): string {
-  const zoom = puzzle.subject === 'Landmarks' ? 12 : puzzle.subject === 'Waterways' ? 6 : 5
+  const zoom = puzzle.subject === 'Landmarks' ? 12 : puzzle.subject === 'Mountains & Volcanoes' ? 9 : puzzle.subject === 'National Parks' ? 8 : puzzle.subject === 'Waterways' ? 6 : 5
   return `https://www.openstreetmap.org/?mlat=${puzzle.lat}&mlon=${puzzle.lon}#map=${zoom}/${puzzle.lat}/${puzzle.lon}`
 }
 
@@ -42,6 +44,8 @@ export function practiceKeyFor(puzzle: MapdlePuzzle): PracticeKey {
   if (entry?.practice) return entry.practice
   if (puzzle.subject === 'Landmarks') return 'landmarks'
   if (puzzle.subject === 'Waterways') return 'waterways'
+  if (puzzle.subject === 'National Parks') return 'parks'
+  if (puzzle.subject === 'Mountains & Volcanoes') return 'mountains'
   return REGION_KIND[puzzle.id] === 'state' ? 'us' : 'world'
 }
 

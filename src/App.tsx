@@ -2183,7 +2183,7 @@ function AppDashboard({
             <p className="eyebrow">Daily game</p>
             <h2>Play today’s Mapdle</h2>
             <p>One hidden place each day. Find it in five pins.</p>
-            <p className="app-mapdle-cats">States &amp; Countries · Landmarks · Waterways</p>
+            <p className="app-mapdle-cats">States &amp; Countries · Landmarks · Waterways · National Parks · Mountains &amp; Volcanoes</p>
           </div>
           <a className="primary-button app-mapdle-play" href={websiteHref('./mapdle/')} target="_blank" rel="noreferrer">
             Play now <span aria-hidden="true">→</span>
@@ -2563,6 +2563,8 @@ function Home({
               <li><Check size={14} /> States &amp; Countries</li>
               <li><Check size={14} /> Landmarks</li>
               <li><Check size={14} /> Waterways</li>
+              <li><Check size={14} /> National Parks</li>
+              <li><Check size={14} /> Mountains &amp; Volcanoes</li>
             </ul>
             <a className="card-button mapdle-play" href={websiteHref('./mapdle/')}>
               Play now

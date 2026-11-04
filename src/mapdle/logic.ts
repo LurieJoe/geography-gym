@@ -1,5 +1,5 @@
 // Pure game rules for Mapdle. No React, no browser APIs except localStorage helpers at the bottom.
-import { GREEN_KM, YELLOW_KM, PUZZLES, type MapdlePuzzle } from './puzzles'
+import { GREEN_KM, YELLOW_KM, PUZZLES, SPECIAL_DAYS, type MapdlePuzzle } from './puzzles'
 
 export const MAX_PINS = 5
 /** First day of the daily game (local date, YYYY-MM-DD). Change this before you launch. */
@@ -100,6 +100,11 @@ export function dayLabel(day: number, launch: string = LAUNCH_DATE): string {
   return `Preview puzzle · daily puzzles start ${when}`
 }
 export function puzzleForDay(day: number, puzzles: MapdlePuzzle[] = PUZZLES): MapdlePuzzle {
+  if (puzzles === PUZZLES) {
+    const special = SPECIAL_DAYS[day]
+    const match = special ? puzzles.find((puzzle) => puzzle.id === special) : undefined
+    if (match) return match
+  }
   return puzzles[(((day - 1) % puzzles.length) + puzzles.length) % puzzles.length]
 }
 export function msUntilNextDay(now: Date = new Date()): number {
