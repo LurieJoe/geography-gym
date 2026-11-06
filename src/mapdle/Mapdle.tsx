@@ -10,6 +10,7 @@ import { GREEN_KM, YELLOW_KM } from './puzzles'
 import { applyTheme, readThemeMode, saveThemeMode, type ThemeMode } from './theme'
 import { LearnPanel, PRACTICE, practiceKeyFor } from './LearnPanel'
 import { PUZZLE_FACTS } from './puzzleFacts'
+import { REGION_NOTES } from './regionNotes'
 import { track } from './analytics'
 import { MAPDLE_VERSION } from './version'
 import { REGION_KIND, checkInside, preloadRegion } from './regions'
@@ -271,6 +272,7 @@ export default function Mapdle() {
           </div>
         )}
         {PUZZLE_FACTS[puzzle.id] && <p className="mapdle-fun-fact"><strong>Fun fact:</strong> {PUZZLE_FACTS[puzzle.id].fact}</p>}
+        {REGION_NOTES[puzzle.id] && <p className="mapdle-fun-fact mapdle-region-note"><strong>Region note:</strong> {REGION_NOTES[puzzle.id]}</p>}
         <pre className="mapdle-share">{shareText(record, puzzle.subject, !!saved.colorblind)}</pre>
         <div className="mapdle-actions">
           <button type="button" className="primary" onClick={share}>Share result</button>
