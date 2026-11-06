@@ -459,7 +459,7 @@ export default function Mapdle() {
         </p>
         <p>
           Everyone gets the same puzzle each day, so you can compare results by sharing your colored squares. Mapdle is part
-          of <a href="../">Geography Gym</a>, where you can also <a href="../quizzes/">study states, countries, landmarks, and waterways</a>.
+          of <a href="../">Geography Gym</a>, where you can also <a href="../app/">study states, countries, landmarks, waterways, national parks, and mountains &amp; volcanoes</a>.
         </p>
       </section>
 
@@ -483,7 +483,7 @@ export default function Mapdle() {
             ) : panel === 'help' ? (
               <>
                 <h2>How to play</h2>
-                <p className="mapdle-intro"><strong>Mapdle is a worldwide daily geography game.</strong> Puzzles cover countries, landmarks, and waterways from around the globe, plus some U.S. states.</p>
+                <p className="mapdle-intro"><strong>Mapdle is a worldwide daily geography game.</strong> Puzzles cover countries, landmarks, waterways, national parks, and mountains &amp; volcanoes from around the globe, plus some U.S. states.</p>
                 <div className="mapdle-unit-row">
                   <span>Show distances in</span>
                   <div className="unit-toggle" role="group" aria-label="Distance units">
