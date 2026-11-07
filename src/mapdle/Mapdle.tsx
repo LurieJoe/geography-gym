@@ -460,6 +460,8 @@ export default function Mapdle() {
         <p>
           Everyone gets the same puzzle each day, so you can compare results by sharing your colored squares. Mapdle is part
           of <a href="../">Geography Gym</a>, where you can also <a href="../app/">study states, countries, landmarks, waterways, national parks, and mountains &amp; volcanoes</a>.
+          <span aria-hidden="true">·</span>
+          <a href="https://brainbenchapps.com/">Brain Bench Apps</a>
         </p>
       </section>
 

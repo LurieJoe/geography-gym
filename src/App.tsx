@@ -3619,6 +3619,7 @@ function AppFooter() {
       <div>
         <span>© 2026 Geography Gym</span>
         <nav aria-label="Footer navigation">
+          <a href="https://brainbenchapps.com/">Brain Bench Apps</a>
           <a href={websiteHref('./mapdle/')}>Mapdle</a>
           <a href={websiteHref('./quizzes/')}>Quizzes</a>
           <a href="./faq/">FAQ</a>
