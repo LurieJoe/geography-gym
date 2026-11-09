@@ -429,6 +429,7 @@ export default function Mapdle() {
           onPlace={(coordinate) => setPending(coordinate)}
           zoom={globeZoom}
           borders
+          rivers={puzzle.subject !== 'Waterways' || finished}
           explore
           targetLabel={regionKind ? 'Center' : 'Answer'}
           onZoomChange={setGlobeZoom}
@@ -516,7 +517,7 @@ export default function Mapdle() {
                   <li>{emoji.green} means within {formatDistance(GREEN_KM, unit)}: close enough, you win! {emoji.yellow} is up to {formatDistance(YELLOW_KM, unit)} away. {emoji.red} is farther. Pins also change shape, so color is never the only clue: a circle is {emoji.green}, a diamond is {emoji.yellow}, and a square is {emoji.red}.</li>
                   <li>When the answer is a whole U.S. state or country, {emoji.green} means your pin is inside it (with a little leeway at the border). The legend under the globe tells you which kind of puzzle you have.</li>
                   <li>After each miss you see how far away you were and which way to go, and the globe turns closer to the answer.</li>
-                  <li>Zoom in with the + and − buttons or by pinching. Country borders fade in as you zoom, and U.S. state lines appear a little closer. Reset puts the globe back.</li>
+                  <li>Zoom in with the + and − buttons or by pinching. Country borders fade in as you zoom, and U.S. state lines and major rivers (in blue) appear a little closer. In Waterways puzzles the rivers stay hidden until the puzzle is over. Reset puts the globe back.</li>
                   <li>A new puzzle appears every day at midnight.</li>
                 </ul>
                 <p className="mapdle-note"><a href="./how-to-play/">Read the full guide</a> with an example round.</p>

@@ -5,6 +5,7 @@ import { feature } from 'topojson-client'
 import type { GeometryCollection, Topology } from 'topojson-specification'
 import landTopology from 'world-atlas/land-110m.json'
 import { loadProvinceBorders, visibleProvinceBorders, type ProvinceTier } from './provinceBorders'
+import { loadRivers } from './riverLines'
 
 export type GlobeCoordinate = {
   lat: number
@@ -48,6 +49,9 @@ const COUNTRY_BORDER_FULL = 470
 const STATE_BORDER_START = 480
 const STATE_BORDER_FULL = 640
 const DETAIL_BORDER_SCALE = 620
+// Major rivers fade in between these globe sizes. With the 1.35 zoom step from the default size, that is the 4th zoom step.
+const RIVER_START = 500
+const RIVER_FULL = 585
 function clampScale(value: number, max = MAX_SCALE) {
   return Math.min(max, Math.max(MIN_SCALE, value))
 }
@@ -101,6 +105,7 @@ export function InteractiveGlobe({
   zoom,
   onZoomChange,
   borders = false,
+  rivers = false,
   explore = false,
   targetLabel = 'Answer',
 }: {
@@ -118,6 +123,8 @@ export function InteractiveGlobe({
   onZoomChange?: (scale: number | undefined) => void
   /** Draw country borders and U.S. state lines as the globe is zoomed in, and always once `answered` is true. */
   borders?: boolean
+  /** Draw the major rivers in blue once zoomed in far enough. */
+  rivers?: boolean
   /** Keep the globe turnable and zoomable after `answered` (pins still cannot be placed), with a closer maximum zoom. */
   explore?: boolean
   /** Label for the answer dot when zoomed in close in explore mode. */
@@ -199,6 +206,18 @@ export function InteractiveGlobe({
     }).catch(() => { /* borders are optional */ })
     return () => { live = false }
   }, [wantProvinces, borderData.provinces])
+
+  const [riverLines, setRiverLines] = useState<GeoPermissibleObjects | undefined>(undefined)
+  const wantRivers = rivers && scale >= RIVER_START
+  useEffect(() => {
+    if (!wantRivers || riverLines) return
+    let live = true
+    loadRivers().then((lines) => {
+      if (live) setRiverLines(lines)
+    }).catch(() => { /* rivers are optional */ })
+    return () => { live = false }
+  }, [wantRivers, riverLines])
+  const riverOpacity = wantRivers ? Math.min(1, Math.max(0, (scale - RIVER_START) / (RIVER_FULL - RIVER_START))) : 0
 
   const projection = useMemo(
     () => geoOrthographic()
@@ -408,6 +427,9 @@ export function InteractiveGlobe({
         {provinceLayers.map((layer) => (
           <path key={layer.start} className="globe-borders globe-borders-states" style={{ opacity: layer.opacity }} d={path(layer.geometry) ?? undefined} />
         ))}
+        {riverLines && riverOpacity > 0 && (
+          <path className="globe-rivers" style={{ opacity: riverOpacity }} d={path(riverLines) ?? undefined} />
+        )}
         {projectedPoints.map((point, index) => {
           if (!point.visible || !point.projected) return null
           return (
