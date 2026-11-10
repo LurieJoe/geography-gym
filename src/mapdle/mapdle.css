@@ -446,3 +446,11 @@ html[data-theme="dark"] .globe-rivers { stroke: #5aaaf0; }
 
 /* region note under the fun fact in the results pop-up */
 .mapdle-region-note { margin-top: 8px; font-size: 0.88rem; }
+
+/* mapdle-sandbox: banner for the practice round and replays, plus the practice tips */
+.mapdle-sandbox { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; justify-content: space-between; padding: 10px 12px; border-radius: 0.75rem; background: var(--cp-accent-soft); border: 1px solid var(--cp-accent); font-size: 0.9rem; }
+.mapdle-sandbox a { color: var(--cp-accent); font-weight: 700; }
+.mapdle-coach { display: grid; gap: 8px; padding: 12px 14px; border-radius: 0.8rem; border: 2px solid var(--cp-accent); background: var(--cp-accent-soft); }
+.mapdle-coach p { margin: 0; line-height: 1.45; }
+.mapdle-coach .mapdle-actions { justify-content: flex-start; }
+.mapdle-coach button.linkish { justify-self: start; padding: 0; border: 0; background: none; color: var(--cp-text-muted); font-size: 0.8rem; text-decoration: underline; }

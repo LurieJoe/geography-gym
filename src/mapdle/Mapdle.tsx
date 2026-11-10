@@ -12,6 +12,7 @@ import { LearnPanel, PRACTICE, practiceKeyFor } from './LearnPanel'
 import { PUZZLE_FACTS } from './puzzleFacts'
 import { REGION_NOTES } from './regionNotes'
 import { track } from './analytics'
+import { readSandbox, sandboxSaved } from './sandbox'
 import { MAPDLE_VERSION } from './version'
 import { REGION_KIND, checkInside, preloadRegion } from './regions'
 
@@ -126,13 +127,18 @@ function ThemeIcon({ mode }: { mode: ThemeMode }) {
 }
 
 export default function Mapdle() {
-  const day = useDay()
+  const sandbox = useMemo(readSandbox, []) // practice round or replay: played in memory only, never saved
+  const liveDay = useDay()
+  const day = sandbox ? sandbox.day : liveDay
   const puzzle = useMemo(() => puzzleForDay(day), [day])
-  const [saved, setSaved] = useState<Saved>(() => loadSaved())
+  const [saved, setSaved] = useState<Saved>(() => sandboxSaved(loadSaved(), sandbox))
   const [pending, setPending] = useState<GlobeCoordinate | null>(null)
   const calloutRef = useRef<HTMLDivElement>(null)
-  const [panel, setPanel] = useState<'help' | 'stats' | 'learn' | 'result' | null>(() => (loadSaved().seenHelp ? null : 'help')) // seenHelp = "Don’t show on startup" is ticked
+  const [panel, setPanel] = useState<'help' | 'stats' | 'learn' | 'result' | null>(() => (!sandbox && !loadSaved().seenHelp ? 'help' : null)) // seenHelp = "Don’t show on startup" is ticked
   const [notice, setNotice] = useState('')
+  const [coachIntro, setCoachIntro] = useState(true) // the welcome pop-up of the practice round
+  const [coachOff, setCoachOff] = useState(false)
+  const [coachSeen, setCoachSeen] = useState<Record<string, boolean>>({})
   const [newBadge, setNewBadge] = useState<Badge | null>(null)
   const [checking, setChecking] = useState(false)
   const [globeZoom, setGlobeZoom] = useState<number | undefined>(undefined) // keeps your zoom after each pin
@@ -180,7 +186,11 @@ export default function Mapdle() {
     setThemeMode(next)
   }
 
-  const update = useCallback((next: Saved) => { setSaved(next); save(next) }, [])
+  const update = useCallback((next: Saved) => {
+    if (sandbox) { setSaved({ ...next, stats: loadSaved().stats }); return } // practice and replay never save or change stats
+    setSaved(next)
+    save(next)
+  }, [sandbox])
 
   async function confirmPin() {
     if (!pending || finished || checking) return
@@ -238,6 +248,10 @@ export default function Mapdle() {
     ...(pending && !finished ? [{ lat: pending.lat, lon: pending.lon, index: record.pins.length + 1, band: 'pending' as string }] : []),
   ]
   const pinsLeft = MAX_PINS - record.pins.length
+  // Practice round tips: one at a time, following what the player is doing.
+  const coachTip: 'place' | 'confirm' | 'feedback' | null = sandbox?.kind === 'practice' && !coachOff && !coachIntro && !finished
+    ? record.pins.length === 0 ? (pending ? 'confirm' : 'place') : record.pins.length === 1 && !pending && !coachSeen.feedback ? 'feedback' : null
+    : null
   const clueCount = finished ? 3 : Math.min(3, record.pins.length + 1)
   const unit = saved.unit
   const emoji = saved.colorblind ? BAND_EMOJI_CB : BAND_EMOJI
@@ -275,14 +289,16 @@ export default function Mapdle() {
         {REGION_NOTES[puzzle.id] && <p className="mapdle-fun-fact mapdle-region-note"><strong>Region note:</strong> {REGION_NOTES[puzzle.id]}</p>}
         <pre className="mapdle-share">{shareText(record, puzzle.subject, !!saved.colorblind)}</pre>
         <div className="mapdle-actions">
-          <button type="button" className="primary" onClick={share}>Share result</button>
+          {!sandbox && <button type="button" className="primary" onClick={share}>Share result</button>}
           <button type="button" onClick={() => { track('learn_more_opened', { puzzle: day, phase: day >= 1 ? 'live' : 'preview' }); setPanel('learn') }}>Learn more</button>
           <button type="button" onClick={() => setPanel('stats')}>See stats</button>
         </div>
         <a className="mapdle-practice-cta" href={PRACTICE[practiceKey].href} target="_blank" rel="noopener" onClick={() => track('learn_practice_clicked', { puzzle: day, phase: day >= 1 ? 'live' : 'preview', practice: practiceKey, from: 'result' })}>{PRACTICE[practiceKey].label} <span aria-hidden="true">→</span></a>
         {notice && <p className="mapdle-notice" role="status">{notice}</p>}
         {teaser && <p className="mapdle-badge-teaser">{teaser}</p>}
-        <p className="mapdle-next">Next puzzle in <strong>{countdown}</strong></p>
+        {sandbox
+          ? <p className="mapdle-next">{sandbox.kind === 'practice' ? 'That’s the practice round! Ready for the real thing? ' : 'This replay was not saved. '}<a href="./">Play today’s puzzle</a></p>
+          : <p className="mapdle-next">Next puzzle in <strong>{countdown}</strong></p>}
     </>
   ) : null
 
@@ -295,10 +311,16 @@ export default function Mapdle() {
         </div>
       )}
 
+      {sandbox && (
+        <div className="mapdle-sandbox" role="status">
+          <span>{sandbox.kind === 'practice' ? <><strong>Practice round.</strong> Nothing here counts toward your stats or streak.</> : <><strong>Replay of puzzle #{day}.</strong> Not saved, and your stats are not changed.</>}</span>
+          <a href="./">Play today’s puzzle</a>
+        </div>
+      )}
       <header className="mapdle-header">
         <div>
           <h1>Mapdle</h1>
-          <p className="mapdle-day">{dayLabel(day)}</p>
+          <p className="mapdle-day">{sandbox ? (sandbox.kind === 'practice' ? `Practice · puzzle #${day}` : `Replay · puzzle #${day}`) : dayLabel(day)}</p>
         </div>
         <div className="mapdle-header-buttons">
           <div className="unit-toggle" role="group" aria-label="Distance units">
@@ -380,6 +402,23 @@ export default function Mapdle() {
         </section>
       )}
 
+      {coachTip && (
+        <section className="mapdle-coach" aria-live="polite">
+          {coachTip === 'place' && (
+            <p><strong>Tip 1 of 3: place a pin.</strong> Read clue 1 above. Then drag the globe to turn it, use + and − to zoom, and tap where you think the place is. This one is a whole state, so you win by landing inside it.</p>
+          )}
+          {coachTip === 'confirm' && (
+            <p><strong>Tip 2 of 3: confirm it.</strong> Not sure about your spot? Tap somewhere else to move the pin. When you are happy, press Confirm. You get {MAX_PINS} pins in all.</p>
+          )}
+          {coachTip === 'feedback' && (
+            <>
+              <p><strong>Tip 3 of 3: read your result.</strong> {emoji.green} means you win, {emoji.yellow} is near, and {emoji.red} is far. The box above shows how far away you were and which way to go (follow the arrow). The globe turned toward the answer, and clue 2 unlocked.</p>
+              <div className="mapdle-actions"><button type="button" className="primary" onClick={() => setCoachSeen({ ...coachSeen, feedback: true })}>Got it</button></div>
+            </>
+          )}
+          <button type="button" className="linkish" onClick={() => setCoachOff(true)}>Skip the tips</button>
+        </section>
+      )}
       <section className={`mapdle-map${finished ? ' is-finished' : ''}`}>
         {finished && (
           <button type="button" className="primary mapdle-show-result" onClick={() => setPanel('result')}>Show result, share, and fun fact</button>
@@ -520,6 +559,7 @@ export default function Mapdle() {
                   <li>Zoom in with the + and − buttons or by pinching. Country borders fade in as you zoom, and U.S. state lines and major rivers (in blue) appear a little closer. In Waterways puzzles the rivers stay hidden until the puzzle is over. Reset puts the globe back.</li>
                   <li>A new puzzle appears every day at midnight.</li>
                 </ul>
+                <p><a className="mapdle-practice-cta" href="?practice=1" onClick={() => track('practice_opened')}>Try a practice round <span aria-hidden="true">→</span></a></p>
                 <p className="mapdle-note"><a href="./how-to-play/">Read the full guide</a> with an example round.</p>
                 <label className="mapdle-check">
                   <input
@@ -569,6 +609,24 @@ export default function Mapdle() {
             >
               {panel === 'help' ? 'Start playing' : panel === 'result' ? 'Back to the globe' : 'Close'}
             </button>
+          </div>
+        </div>
+      )}
+      {sandbox?.kind === 'practice' && coachIntro && !coachOff && (
+        <div className="mapdle-modal" role="dialog" aria-modal="true" aria-label="Practice round">
+          <div className="mapdle-modal-card">
+            <h2>Practice round</h2>
+            <p className="mapdle-intro"><strong>This is Mapdle #1, the very first puzzle.</strong> Play it as many times as you like. Nothing here counts toward your stats or streak.</p>
+            <ul>
+              <li>Find the hidden place in up to {MAX_PINS} pins.</li>
+              <li>After each pin you see how far away it was and which way to go.</li>
+              <li>Each pin also unlocks the next clue.</li>
+            </ul>
+            <p className="mapdle-note">A few short tips will pop up as you play.</p>
+            <div className="mapdle-actions">
+              <button type="button" className="primary" onClick={() => setCoachIntro(false)}>Start the tips</button>
+              <button type="button" onClick={() => { setCoachIntro(false); setCoachOff(true) }}>Skip the tips</button>
+            </div>
           </div>
         </div>
       )}
