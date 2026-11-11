@@ -557,6 +557,7 @@ export default function Mapdle() {
                   <li>When the answer is a whole U.S. state or country, {emoji.green} means your pin is inside it (with a little leeway at the border). The legend under the globe tells you which kind of puzzle you have.</li>
                   <li>After each miss you see how far away you were and which way to go, and the globe turns closer to the answer.</li>
                   <li>Zoom in with the + and − buttons or by pinching. Country borders fade in as you zoom, and U.S. state lines and major rivers (in blue) appear a little closer. In Waterways puzzles the rivers stay hidden until the puzzle is over. Reset puts the globe back.</li>
+                  <li>Rivers are long, so for a river the clues tell you which spot to pin, usually its mouth (where it meets the sea or a lake). A pin elsewhere along the river does not count.</li>
                   <li>A new puzzle appears every day at midnight.</li>
                 </ul>
                 <p><a className="mapdle-practice-cta" href="?practice=1" onClick={() => track('practice_opened')}>Try a practice round <span aria-hidden="true">→</span></a></p>
