@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react'
 import { geoDistance, geoGraticule10, geoOrthographic, geoPath, type GeoPermissibleObjects } from 'd3-geo'
-import { ChevronLeft, ChevronRight, Minus, Plus, RotateCcw } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Minus, Plus, RotateCcw, Waves } from 'lucide-react'
 import { feature } from 'topojson-client'
 import type { GeometryCollection, Topology } from 'topojson-specification'
 import landTopology from 'world-atlas/land-110m.json'
@@ -52,6 +52,17 @@ const DETAIL_BORDER_SCALE = 620
 // Major rivers fade in between these globe sizes. With the 1.35 zoom step from the default size, that is the 4th zoom step.
 const RIVER_START = 500
 const RIVER_FULL = 585
+// The "hide rivers" choice is remembered on this device. Storage can be blocked, so every access is wrapped.
+const RIVERS_HIDDEN_KEY = 'mapdle-rivers-hidden'
+function readRiversHidden() {
+  try { return localStorage.getItem(RIVERS_HIDDEN_KEY) === '1' } catch { return false }
+}
+function saveRiversHidden(hidden: boolean) {
+  try {
+    if (hidden) localStorage.setItem(RIVERS_HIDDEN_KEY, '1')
+    else localStorage.removeItem(RIVERS_HIDDEN_KEY)
+  } catch { /* the choice just will not be remembered */ }
+}
 function clampScale(value: number, max = MAX_SCALE) {
   return Math.min(max, Math.max(MIN_SCALE, value))
 }
@@ -208,7 +219,15 @@ export function InteractiveGlobe({
   }, [wantProvinces, borderData.provinces])
 
   const [riverLines, setRiverLines] = useState<GeoPermissibleObjects | undefined>(undefined)
-  const wantRivers = rivers && scale >= RIVER_START
+  const [riversHidden, setRiversHidden] = useState(readRiversHidden)
+  const wantRivers = rivers && !riversHidden && scale >= RIVER_START
+  // The toggle only shows while the rivers could be on screen.
+  const showRiverToggle = rivers && scale > RIVER_START
+  const toggleRivers = () => {
+    const next = !riversHidden
+    setRiversHidden(next)
+    saveRiversHidden(next)
+  }
   useEffect(() => {
     if (!wantRivers || riverLines) return
     let live = true
@@ -509,6 +528,18 @@ export function InteractiveGlobe({
         <button type="button" onClick={() => zoomBy(1 / ZOOM_STEP)} disabled={scale <= MIN_SCALE} aria-label="Zoom out">
           <Minus aria-hidden="true" />
         </button>
+        {showRiverToggle && (
+          <button
+            type="button"
+            className="globe-river-toggle"
+            onClick={toggleRivers}
+            aria-pressed={!riversHidden}
+            aria-label="Show rivers"
+            title={riversHidden ? 'Show rivers' : 'Hide rivers'}
+          >
+            <Waves aria-hidden="true" />
+          </button>
+        )}
       </div>
 
       <div className="globe-controls" aria-label="Globe rotation controls">

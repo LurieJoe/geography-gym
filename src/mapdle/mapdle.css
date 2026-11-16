@@ -344,6 +344,20 @@ html[data-theme="dark"] .mapdle {
 .interactive-globe .globe-zoom button:disabled { opacity: 0.45; cursor: default; }
 .interactive-globe .globe-zoom svg { width: 20px; height: 20px; }
 
+/* globe-river-toggle: appears under the zoom buttons only while the rivers are in view */
+.interactive-globe .globe-zoom .globe-river-toggle { position: relative; color: #2f7fd1; }
+html[data-theme="dark"] .interactive-globe .globe-zoom .globe-river-toggle { color: #5aaaf0; }
+.interactive-globe .globe-zoom .globe-river-toggle[aria-pressed="false"] { color: var(--cp-text-muted); }
+.interactive-globe .globe-zoom .globe-river-toggle[aria-pressed="false"]::after {
+  content: '';
+  position: absolute;
+  width: 28px;
+  height: 2px;
+  border-radius: 1px;
+  background: currentColor;
+  transform: rotate(-45deg);
+}
+
 /* globe-borders: country borders and U.S. state lines */
 .globe-borders {
   fill: none;
