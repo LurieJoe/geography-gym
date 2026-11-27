@@ -170,6 +170,8 @@ export function currentStreak(stats: Stats, today: number): number {
 }
 
 // ---- storage (never throws) ----
+import { readColorblind, saveColorblind } from './theme'
+
 const KEY = 'mapdle:v1'
 interface Saved { records: Record<number, DayRecord>; stats: Stats; unit: 'km' | 'mi'; seenHelp: boolean; colorblind?: boolean }
 export function loadSaved(): Saved {
@@ -177,10 +179,10 @@ export function loadSaved(): Saved {
     const raw = localStorage.getItem(KEY)
     if (raw) {
       const parsed = JSON.parse(raw) as Partial<Saved>
-      return { records: parsed.records ?? {}, stats: { ...emptyStats(), ...parsed.stats }, unit: parsed.unit === 'km' ? 'km' : 'mi', seenHelp: !!parsed.seenHelp, colorblind: !!parsed.colorblind }
+      return { records: parsed.records ?? {}, stats: { ...emptyStats(), ...parsed.stats }, unit: parsed.unit === 'km' ? 'km' : 'mi', seenHelp: !!parsed.seenHelp, colorblind: readColorblind(parsed.colorblind) }
     }
   } catch { /* storage blocked or corrupt: start fresh */ }
-  return { records: {}, stats: emptyStats(), unit: 'mi', seenHelp: false }
+  return { records: {}, stats: emptyStats(), unit: 'mi', seenHelp: false, colorblind: readColorblind() }
 }
 export function save(saved: Saved) {
   try {
@@ -188,6 +190,7 @@ export function save(saved: Saved) {
     const records: Record<number, DayRecord> = {}
     for (const d of days) records[d] = saved.records[d]
     localStorage.setItem(KEY, JSON.stringify({ ...saved, records }))
+    saveColorblind(!!saved.colorblind)
   } catch { /* ignore */ }
 }
 export type { Saved }

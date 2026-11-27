@@ -50,6 +50,18 @@ html[data-theme="dark"] {
   --cp-sheen: rgba(255, 255, 255, 0.04);
   --cp-highlight: rgba(165, 180, 252, 0.12);
 }
+/* Color-blind friendly feedback: blue for right, vermillion for wrong, so
+   being right or wrong never depends on telling red from green. Okabe-Ito
+   hues, the same set Mapdle already uses for its distance bands. */
+html[data-colorblind="true"] {
+  --cp-success: #0072b2;
+  --cp-danger: #d55e00;
+}
+html[data-theme="dark"][data-colorblind="true"] {
+  --cp-success: #56b4e9;
+  --cp-danger: #e69f00;
+}
+
 html[data-theme="light"][data-accent="blue"] {
   --cp-accent: #1d4ed8;
   --cp-accent-hover: #1e40af;

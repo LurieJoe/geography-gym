@@ -89,6 +89,7 @@ type Preferences = {
   distanceUnit: DistanceUnit
   highContrast: boolean
   fontSize: FontSize
+  colorblind: boolean
 }
 
 type Profile = {
@@ -162,6 +163,7 @@ const defaultPreferences: Preferences = {
   distanceUnit: 'miles',
   highContrast: false,
   fontSize: 'm',
+  colorblind: false,
 }
 const accentColors: { id: AccentColor; label: string }[] = [
   { id: 'indigo', label: 'Indigo' },
@@ -269,7 +271,7 @@ const tips = [
   },
   {
     title: 'Personalize every profile',
-    text: 'Theme, contrast, font size, accent color, answer sounds, timer, startup tips, distance units, and default workout length are saved separately for each profile.',
+    text: 'Theme, contrast, colors, font size, accent color, answer sounds, timer, startup tips, distance units, and default workout length are saved separately for each profile.',
   },
   {
     title: 'Make Geography Gym easier to read',
@@ -421,6 +423,9 @@ function parseProfileStore(value: unknown): ProfileStore | null {
         highContrast: typeof preferencesValue.highContrast === 'boolean'
           ? preferencesValue.highContrast
           : defaultPreferences.highContrast,
+        colorblind: typeof preferencesValue.colorblind === 'boolean'
+          ? preferencesValue.colorblind
+          : defaultPreferences.colorblind,
         fontSize,
       },
       tipIndex: nonNegativeInteger(candidate.tipIndex),
@@ -742,6 +747,7 @@ function App() {
       document.documentElement.setAttribute('data-accent', preferences.accent)
       document.documentElement.setAttribute('data-high-contrast', String(preferences.highContrast))
       document.documentElement.setAttribute('data-font-size', preferences.fontSize)
+      document.documentElement.setAttribute('data-colorblind', String(preferences.colorblind))
     }
     resolveTheme()
     const media = window.matchMedia('(prefers-color-scheme: dark)')
@@ -1711,6 +1717,28 @@ function App() {
                       name="profile-contrast"
                       checked={preferences.highContrast === highContrast}
                       onChange={() => updatePreference('highContrast', highContrast)}
+                    />
+                    {label}
+                  </label>
+                ))}
+              </div>
+            </div>
+            <div className="appearance-row">
+              <span>Colors</span>
+              <div className="theme-options">
+                {([
+                  [false, 'Standard'],
+                  [true, 'Color-blind friendly'],
+                ] as const).map(([colorblind, label]) => (
+                  <label
+                    key={label}
+                    className={preferences.colorblind === colorblind ? 'selected-option' : ''}
+                  >
+                    <input
+                      type="radio"
+                      name="profile-colorblind"
+                      checked={preferences.colorblind === colorblind}
+                      onChange={() => updatePreference('colorblind', colorblind)}
                     />
                     {label}
                   </label>
